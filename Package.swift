@@ -102,17 +102,17 @@ func addDoccDependency() {
 func addServiceTarget(_ name: String) {
     let allowed = Set(["AWSRekognition", "AWSPolly", "AWSCognitoIdentityProvider", "AWSTranscribeStreaming", "AWSCognitoIdentity", "AWSCloudWatchLogs", "AWSS3", "AWSClientRuntime", "AWSPinpoint", "AWSTextract", "AWSTranslate", "AWSComprehend", "AWSLocation"])
     if allowed.contains(name) {
-	    package.products += [
-		.library(name: name, targets: [name]),
-	    ]
-	    package.targets += [
-		.target(
-		    name: name,
-		    dependencies: [.clientRuntime, .awsClientRuntime],
-		    path: "./Sources/Services/\(name)"
-		)
-	    ]
-	}
+        package.products += [
+            .library(name: name, targets: [name]),
+        ]
+        package.targets += [
+            .target(
+                name: name,
+                dependencies: [.clientRuntime, .awsClientRuntime],
+                path: "./Sources/Services/\(name)"
+            )
+        ]
+    }
 }
 
 func addServiceUnitTestTarget(_ name: String) {
