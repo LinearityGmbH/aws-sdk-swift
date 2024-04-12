@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -e
+
+echo
+
+# Log CPU for hardware in use, if running on Mac
+
+if [[ "$OSTYPE" == "darwin"* ]];
+then
+  which sysctl
+  sysctl -a | grep machdep.cpu || true
+else
+  echo "sysctl not run (not a Mac)"
+fi
+echo
+
+# Log location & version for swiftc, xcodebuild, java, xcbeautify
+
+if command -v swiftc &> /dev/null
+then
+  which swiftc
+  swiftc --version
+else
+  echo "swiftc not installed"
+fi
+echo
+
+if command -v xcodebuild &> /dev/null
+then
+  which xcodebuild
+  xcodebuild -version
+else
+  echo "xcodebuild not installed"
+fi
+echo
+
+if command -v java &> /dev/null
+then
+  which java
+  java --version
+else
+  echo "java not installed"
+fi
+echo
+
+if command -v xcbeautify &> /dev/null
+then
+  which xcbeautify
+  xcbeautify --version
+else
+  echo "xcbeautify not installed"
+fi

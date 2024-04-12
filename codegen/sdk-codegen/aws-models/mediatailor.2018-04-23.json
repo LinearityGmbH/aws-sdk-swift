@@ -7,7 +7,7 @@
                 "AccessType": {
                     "target": "com.amazonaws.mediatailor#AccessType",
                     "traits": {
-                        "smithy.api#documentation": "<p>The type of authentication used to access content from <code>HttpConfiguration::BaseUrl</code> on your source location. Accepted value: <code>S3_SIGV4</code>.</p>\n         <p>\n            <code>S3_SIGV4</code> - AWS Signature Version 4 authentication for Amazon S3 hosted virtual-style access. If your source location base URL is an Amazon S3 bucket, MediaTailor can use AWS Signature Version 4 (SigV4) authentication to access the bucket where your source content is stored. Your MediaTailor source location baseURL must follow the S3 virtual hosted-style request URL format. For example, https://bucket-name.s3.Region.amazonaws.com/key-name.</p>\n         <p>Before you can use <code>S3_SIGV4</code>, you must meet these requirements:</p>\n         <p>• You must allow MediaTailor to access your S3 bucket by granting mediatailor.amazonaws.com principal access in IAM. For information about configuring access in IAM, see Access management in the IAM User Guide.</p>\n         <p>• The mediatailor.amazonaws.com service principal must have permissions to read all top level manifests referenced by the VodSource packaging configurations.</p>\n         <p>• The caller of the API must have s3:GetObject IAM permissions to read all top level manifests referenced by your MediaTailor VodSource packaging configurations.</p>"
+                        "smithy.api#documentation": "<p>The type of authentication used to access content from <code>HttpConfiguration::BaseUrl</code> on your source location.</p>\n         <p>\n            <code>S3_SIGV4</code> - AWS Signature Version 4 authentication for Amazon S3 hosted virtual-style access. If your source location base URL is an Amazon S3 bucket, MediaTailor can use AWS Signature Version 4 (SigV4) authentication to access the bucket where your source content is stored. Your MediaTailor source location baseURL must follow the S3 virtual hosted-style request URL format. For example, https://bucket-name.s3.Region.amazonaws.com/key-name.</p>\n         <p>Before you can use <code>S3_SIGV4</code>, you must meet these requirements:</p>\n         <p>• You must allow MediaTailor to access your S3 bucket by granting mediatailor.amazonaws.com principal access in IAM. For information about configuring access in IAM, see Access management in the IAM User Guide.</p>\n         <p>• The mediatailor.amazonaws.com service principal must have permissions to read all top level manifests referenced by the VodSource packaging configurations.</p>\n         <p>• The caller of the API must have s3:GetObject IAM permissions to read all top level manifests referenced by your MediaTailor VodSource packaging configurations.</p>\n         <p>\n            <code>AUTODETECT_SIGV4</code> - AWS Signature Version 4 authentication for a set of supported services: MediaPackage Version 2 and Amazon S3 hosted virtual-style access. If your source location base URL is a MediaPackage Version 2 endpoint or an Amazon S3 bucket, MediaTailor can use AWS Signature Version 4 (SigV4) authentication to access the resource where your source content is stored.</p>\n         <p>Before you can use <code>AUTODETECT_SIGV4</code> with a MediaPackage Version 2 endpoint, you must meet these requirements:</p>\n         <p>• You must grant MediaTailor access to your MediaPackage endpoint by granting <code>mediatailor.amazonaws.com</code> principal access in an Origin Access policy on the endpoint.</p>\n         <p>• Your MediaTailor source location base URL must be a MediaPackage V2 endpoint.</p>\n         <p>• The caller of the API must have <code>mediapackagev2:GetObject</code> IAM permissions to read all top level manifests referenced by the MediaTailor source packaging configurations.</p>\n         <p>Before you can use <code>AUTODETECT_SIGV4</code> with an Amazon S3 bucket, you must meet these requirements:</p>\n         <p>• You must grant MediaTailor access to your S3 bucket by granting <code>mediatailor.amazonaws.com</code> principal access in IAM. For more information about configuring access in IAM, see <a href=\"https://docs.aws.amazon.com/IAM/latest/UserGuide/access.html\">Access management</a> in the <i>IAM User Guide.</i>.</p>\n         <p>• The <code>mediatailor.amazonaws.com</code> service principal must have permissions to read all top-level manifests referenced by the <code>VodSource</code> packaging configurations.</p>\n         <p>• The caller of the API must have <code>s3:GetObject</code> IAM permissions to read all top level manifests referenced by your MediaTailor <code>VodSource</code> packaging configurations.</p>"
                     }
                 },
                 "SecretsManagerAccessTokenConfiguration": {
@@ -34,6 +34,12 @@
                     "target": "smithy.api#Unit",
                     "traits": {
                         "smithy.api#enumValue": "SECRETS_MANAGER_ACCESS_TOKEN"
+                    }
+                },
+                "AUTODETECT_SIGV4": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "AUTODETECT_SIGV4"
                     }
                 }
             }
@@ -71,10 +77,47 @@
                     "traits": {
                         "smithy.api#documentation": "<p>Defines the SCTE-35 <code>time_signal</code> message inserted around the ad.</p>\n         <p>Programs on a channel's schedule can be configured with one or more ad breaks. You can attach a <code>splice_insert</code> SCTE-35 message to the ad break. This message provides basic metadata about the ad break.</p>\n         <p>See section 9.7.4 of the 2022 SCTE-35 specification for more information.</p>"
                     }
+                },
+                "AdBreakMetadata": {
+                    "target": "com.amazonaws.mediatailor#AdBreakMetadataList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Defines a list of key/value pairs that MediaTailor generates within the <code>EXT-X-ASSET</code>tag for <code>SCTE35_ENHANCED</code> output.</p>"
+                    }
                 }
             },
             "traits": {
                 "smithy.api#documentation": "<p>Ad break configuration parameters.</p>"
+            }
+        },
+        "com.amazonaws.mediatailor#AdBreakMetadataList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.mediatailor#KeyValuePair"
+            }
+        },
+        "com.amazonaws.mediatailor#AdBreakOpportunities": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.mediatailor#AdBreakOpportunity"
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>The list of ad break opportunities detected within the VOD source.</p>"
+            }
+        },
+        "com.amazonaws.mediatailor#AdBreakOpportunity": {
+            "type": "structure",
+            "members": {
+                "OffsetMillis": {
+                    "target": "com.amazonaws.mediatailor#__long",
+                    "traits": {
+                        "smithy.api#default": 0,
+                        "smithy.api#documentation": "<p>The offset in milliseconds from the start of the VOD source at which an ad marker was detected.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>A location at which a zero-duration ad marker was detected in a VOD source manifest.</p>"
             }
         },
         "com.amazonaws.mediatailor#AdMarkerPassthrough": {
@@ -90,6 +133,23 @@
             },
             "traits": {
                 "smithy.api#documentation": "<p>For HLS, when set to <code>true</code>, MediaTailor passes through <code>EXT-X-CUE-IN</code>, <code>EXT-X-CUE-OUT</code>, and <code>EXT-X-SPLICEPOINT-SCTE35</code> ad markers from the origin manifest to the MediaTailor personalized manifest.</p>\n         <p>No logic is applied to these ad markers. For example, if <code>EXT-X-CUE-OUT</code> has a value of <code>60</code>, but no ads are filled for that ad break, MediaTailor will not set the value to <code>0</code>.</p>"
+            }
+        },
+        "com.amazonaws.mediatailor#AdMarkupType": {
+            "type": "enum",
+            "members": {
+                "DATERANGE": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "DATERANGE"
+                    }
+                },
+                "SCTE35_ENHANCED": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "SCTE35_ENHANCED"
+                    }
+                }
             }
         },
         "com.amazonaws.mediatailor#Alert": {
@@ -129,10 +189,39 @@
                         "smithy.api#documentation": "<p>The Amazon Resource Name (ARN) of the resource.</p>",
                         "smithy.api#required": {}
                     }
+                },
+                "Category": {
+                    "target": "com.amazonaws.mediatailor#AlertCategory",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The category that MediaTailor assigns to the alert.</p>"
+                    }
                 }
             },
             "traits": {
                 "smithy.api#documentation": "<p>Alert configuration parameters.</p>"
+            }
+        },
+        "com.amazonaws.mediatailor#AlertCategory": {
+            "type": "enum",
+            "members": {
+                "SCHEDULING_ERROR": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "SCHEDULING_ERROR"
+                    }
+                },
+                "PLAYBACK_WARNING": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "PLAYBACK_WARNING"
+                    }
+                },
+                "INFO": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "INFO"
+                    }
+                }
             }
         },
         "com.amazonaws.mediatailor#AvailMatchingCriteria": {
@@ -163,13 +252,19 @@
                 "Mode": {
                     "target": "com.amazonaws.mediatailor#Mode",
                     "traits": {
-                        "smithy.api#documentation": "<p>Sets the ad suppression mode. By default, ad suppression is off and all ad breaks are filled with ads or slate. When Mode is set to <code>BEHIND_LIVE_EDGE</code>, ad suppression is active and MediaTailor won't fill ad breaks on or behind the ad suppression Value time in the manifest lookback window.</p>"
+                        "smithy.api#documentation": "<p>Sets the ad suppression mode. By default, ad suppression is off and all ad breaks are filled with ads or slate. When Mode is set to <code>BEHIND_LIVE_EDGE</code>, ad suppression is active and MediaTailor won't fill ad breaks on or behind the ad suppression Value time in the manifest lookback window. When Mode is set to <code>AFTER_LIVE_EDGE</code>, ad suppression is active and MediaTailor won't fill ad breaks that are within the live edge plus the avail suppression value.</p>"
                     }
                 },
                 "Value": {
                     "target": "com.amazonaws.mediatailor#__string",
                     "traits": {
                         "smithy.api#documentation": "<p>A live edge offset time in HH:MM:SS. MediaTailor won't fill ad breaks on or behind this time in the manifest lookback window. If Value is set to 00:00:00, it is in sync with the live edge, and MediaTailor won't fill any ad breaks on or behind the live edge. If you set a Value time, MediaTailor won't fill any ad breaks on or behind this time in the manifest lookback window. For example, if you set 00:45:00, then MediaTailor will fill ad breaks that occur within 45 minutes behind the live edge, but won't fill ad breaks on or behind 45 minutes behind the live edge.</p>"
+                    }
+                },
+                "FillPolicy": {
+                    "target": "com.amazonaws.mediatailor#FillPolicy",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Defines the policy to apply to the avail suppression mode. <code>BEHIND_LIVE_EDGE</code> will always use the full avail suppression policy. <code>AFTER_LIVE_EDGE</code> mode can be used to invoke partial ad break fills when a session starts mid-break.</p>"
                     }
                 }
             },
@@ -336,7 +431,11 @@
             "traits": {
                 "aws.api#arn": {
                     "template": "channel/{ChannelName}"
-                }
+                },
+                "aws.cloudformation#cfnResource": {
+                    "name": "ChannelPolicy"
+                },
+                "smithy.api#unstable": {}
             }
         },
         "com.amazonaws.mediatailor#ChannelResource": {
@@ -390,7 +489,11 @@
                 "aws.api#arn": {
                     "template": "channel/{ChannelName}"
                 },
-                "smithy.api#noReplace": {}
+                "aws.cloudformation#cfnResource": {
+                    "name": "Channel"
+                },
+                "smithy.api#noReplace": {},
+                "smithy.api#unstable": {}
             }
         },
         "com.amazonaws.mediatailor#ChannelState": {
@@ -416,7 +519,6 @@
                 "EndOffsetMillis": {
                     "target": "com.amazonaws.mediatailor#__long",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The end offset of the clip range, in milliseconds, starting from the beginning of the VOD source associated with the program.</p>",
                         "smithy.api#required": {}
                     }
@@ -636,6 +738,12 @@
                     "traits": {
                         "smithy.api#documentation": "<p>The tier of the channel.</p>"
                     }
+                },
+                "TimeShiftConfiguration": {
+                    "target": "com.amazonaws.mediatailor#TimeShiftConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n            The time-shifted viewing configuration you want to associate to the channel.\n        </p>"
+                    }
                 }
             }
         },
@@ -681,13 +789,17 @@
                 "Outputs": {
                     "target": "com.amazonaws.mediatailor#ResponseOutputs",
                     "traits": {
-                        "smithy.api#documentation": "<p>The output properties to assign to the channel.</p>"
+                        "aws.cloudformation#cfnExcludeProperty": {},
+                        "smithy.api#documentation": "<p>The output properties to assign to the channel.</p>",
+                        "smithy.api#unstable": {}
                     }
                 },
                 "PlaybackMode": {
                     "target": "com.amazonaws.mediatailor#__string",
                     "traits": {
-                        "smithy.api#documentation": "<p>The playback mode to assign to the channel.</p>"
+                        "aws.cloudformation#cfnExcludeProperty": {},
+                        "smithy.api#documentation": "<p>The playback mode to assign to the channel.</p>",
+                        "smithy.api#unstable": {}
                     }
                 },
                 "Tags": {
@@ -700,7 +812,15 @@
                 "Tier": {
                     "target": "com.amazonaws.mediatailor#__string",
                     "traits": {
-                        "smithy.api#documentation": "<p>The tier of the channel.</p>"
+                        "aws.cloudformation#cfnExcludeProperty": {},
+                        "smithy.api#documentation": "<p>The tier of the channel.</p>",
+                        "smithy.api#unstable": {}
+                    }
+                },
+                "TimeShiftConfiguration": {
+                    "target": "com.amazonaws.mediatailor#TimeShiftConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n            The time-shifted viewing configuration assigned to the channel.\n        </p>"
                     }
                 }
             }
@@ -1043,7 +1163,6 @@
                 "DurationMillis": {
                     "target": "com.amazonaws.mediatailor#__long",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The duration of the live program in milliseconds.</p>"
                     }
                 }
@@ -1325,28 +1444,24 @@
                 "ManifestWindowSeconds": {
                     "target": "com.amazonaws.mediatailor#__integer",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The total duration (in seconds) of each manifest. Minimum value: <code>30</code> seconds. Maximum value: <code>3600</code> seconds.</p>"
                     }
                 },
                 "MinBufferTimeSeconds": {
                     "target": "com.amazonaws.mediatailor#__integer",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>Minimum amount of content (measured in seconds) that a player must keep available in the buffer. Minimum value: <code>2</code> seconds. Maximum value: <code>60</code> seconds.</p>"
                     }
                 },
                 "MinUpdatePeriodSeconds": {
                     "target": "com.amazonaws.mediatailor#__integer",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>Minimum amount of time (in seconds) that the player should wait before requesting updates to the manifest. Minimum value: <code>2</code> seconds. Maximum value: <code>60</code> seconds.</p>"
                     }
                 },
                 "SuggestedPresentationDelaySeconds": {
                     "target": "com.amazonaws.mediatailor#__integer",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>Amount of time (in seconds) that the player should be from the live point at the end of the manifest. Minimum value: <code>2</code> seconds. Maximum value: <code>60</code> seconds.</p>"
                     }
                 }
@@ -1754,13 +1869,17 @@
                 "Outputs": {
                     "target": "com.amazonaws.mediatailor#ResponseOutputs",
                     "traits": {
-                        "smithy.api#documentation": "<p>The channel's output properties.</p>"
+                        "aws.cloudformation#cfnExcludeProperty": {},
+                        "smithy.api#documentation": "<p>The channel's output properties.</p>",
+                        "smithy.api#unstable": {}
                     }
                 },
                 "PlaybackMode": {
                     "target": "com.amazonaws.mediatailor#__string",
                     "traits": {
-                        "smithy.api#documentation": "<p>The channel's playback mode.</p>"
+                        "aws.cloudformation#cfnExcludeProperty": {},
+                        "smithy.api#documentation": "<p>The channel's playback mode.</p>",
+                        "smithy.api#unstable": {}
                     }
                 },
                 "Tags": {
@@ -1773,7 +1892,9 @@
                 "Tier": {
                     "target": "com.amazonaws.mediatailor#__string",
                     "traits": {
-                        "smithy.api#documentation": "<p>The channel's tier.</p>"
+                        "aws.cloudformation#cfnExcludeProperty": {},
+                        "smithy.api#documentation": "<p>The channel's tier.</p>",
+                        "smithy.api#unstable": {}
                     }
                 },
                 "LogConfiguration": {
@@ -1781,6 +1902,12 @@
                     "traits": {
                         "smithy.api#documentation": "<p>The log configuration for the channel.</p>",
                         "smithy.api#required": {}
+                    }
+                },
+                "TimeShiftConfiguration": {
+                    "target": "com.amazonaws.mediatailor#TimeShiftConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n            The time-shifted viewing configuration for the channel.\n        </p>"
                     }
                 }
             }
@@ -2115,6 +2242,12 @@
         "com.amazonaws.mediatailor#DescribeVodSourceResponse": {
             "type": "structure",
             "members": {
+                "AdBreakOpportunities": {
+                    "target": "com.amazonaws.mediatailor#AdBreakOpportunities",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The ad break opportunities within the VOD source.</p>"
+                    }
+                },
                 "Arn": {
                     "target": "com.amazonaws.mediatailor#__string",
                     "traits": {
@@ -2156,6 +2289,23 @@
                     "target": "com.amazonaws.mediatailor#__string",
                     "traits": {
                         "smithy.api#documentation": "<p>The name of the VOD source.</p>"
+                    }
+                }
+            }
+        },
+        "com.amazonaws.mediatailor#FillPolicy": {
+            "type": "enum",
+            "members": {
+                "FULL_AVAIL_ONLY": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "FULL_AVAIL_ONLY"
+                    }
+                },
+                "PARTIAL_AVAIL": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "PARTIAL_AVAIL"
                     }
                 }
             }
@@ -2247,7 +2397,6 @@
                 "MaxResults": {
                     "target": "com.amazonaws.mediatailor#MaxResults",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The maximum number of channel schedules that you want MediaTailor to return in response to the current request. If there are more than <code>MaxResults</code> channel schedules, use the value of <code>NextToken</code> in the response to get the next page of results.</p>",
                         "smithy.api#httpQuery": "maxResults"
                     }
@@ -2381,7 +2530,6 @@
                 "PersonalizationThresholdSeconds": {
                     "target": "com.amazonaws.mediatailor#__integerMin1",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>Defines the maximum duration of underfilled ad time (in seconds) allowed in an ad break. If the duration of underfilled ad time exceeds the personalization threshold, then the personalization of the ad break is abandoned and the underlying content is shown. This feature applies to <i>ad replacement</i> in live and VOD streams, rather than ad insertion, because it relies on an underlying content stream. For more information about ad break behavior, including ad replacement and insertion, see <a href=\"https://docs.aws.amazon.com/mediatailor/latest/ug/ad-behavior.html\">Ad Behavior in AWS Elemental MediaTailor</a>.</p>"
                     }
                 },
@@ -2530,8 +2678,13 @@
                 "ManifestWindowSeconds": {
                     "target": "com.amazonaws.mediatailor#__integer",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The total duration (in seconds) of each manifest. Minimum value: <code>30</code> seconds. Maximum value: <code>3600</code> seconds.</p>"
+                    }
+                },
+                "AdMarkupType": {
+                    "target": "com.amazonaws.mediatailor#adMarkupTypes",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Determines the type of SCTE 35 tags to use in ad markup. Specify <code>DATERANGE</code> to use <code>DATERANGE</code> tags (for live or VOD content). Specify <code>SCTE35_ENHANCED</code> to use <code>EXT-X-CUE-OUT</code> and <code>EXT-X-CUE-IN</code> tags (for VOD content only).</p>"
                     }
                 }
             },
@@ -2592,6 +2745,28 @@
                 "smithy.api#documentation": "<p>The VOD source's HTTP package configuration settings.</p>"
             }
         },
+        "com.amazonaws.mediatailor#KeyValuePair": {
+            "type": "structure",
+            "members": {
+                "Key": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>For <code>SCTE35_ENHANCED</code> output, defines a key. MediaTailor takes this key, and its associated value, and generates the key/value pair within the <code>EXT-X-ASSET</code>tag. If you specify a key, you must also specify a corresponding value.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "Value": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>For <code>SCTE35_ENHANCED</code> output, defines a value. MediaTailor; takes this value, and its associated key, and generates the key/value pair within the <code>EXT-X-ASSET</code>tag. If you specify a value, you must also specify a corresponding key.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>For <code>SCTE35_ENHANCED</code> output, defines a key and corresponding value. MediaTailor generates these pairs within the <code>EXT-X-ASSET</code>tag.</p>"
+            }
+        },
         "com.amazonaws.mediatailor#ListAlerts": {
             "type": "operation",
             "input": {
@@ -2622,7 +2797,6 @@
                 "MaxResults": {
                     "target": "com.amazonaws.mediatailor#MaxResults",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The maximum number of alerts that you want MediaTailor to return in response to the current request. If there are more than <code>MaxResults</code> alerts, use the value of <code>NextToken</code> in the response to get the next page of results.</p>",
                         "smithy.api#httpQuery": "maxResults"
                     }
@@ -2691,7 +2865,6 @@
                 "MaxResults": {
                     "target": "com.amazonaws.mediatailor#MaxResults",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The maximum number of channels that you want MediaTailor to return in response to the current request. If there are more than <code>MaxResults</code> channels, use the value of <code>NextToken</code> in the response to get the next page of results.</p>",
                         "smithy.api#httpQuery": "maxResults"
                     }
@@ -2752,7 +2925,6 @@
                 "MaxResults": {
                     "target": "com.amazonaws.mediatailor#MaxResults",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The maximum number of live sources that you want MediaTailor to return in response to the current request. If there are more than <code>MaxResults</code> live sources, use the value of <code>NextToken</code> in the response to get the next page of results.</p>",
                         "smithy.api#httpQuery": "maxResults"
                     }
@@ -2821,7 +2993,6 @@
                 "MaxResults": {
                     "target": "com.amazonaws.mediatailor#MaxResults",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The maximum number of playback configurations that you want MediaTailor to return in response to the current request. If there are more than <code>MaxResults</code> playback configurations, use the value of <code>NextToken</code> in the response to get the next page of results.</p>",
                         "smithy.api#httpQuery": "MaxResults"
                     }
@@ -2885,7 +3056,6 @@
                 "MaxResults": {
                     "target": "com.amazonaws.mediatailor#__integerMin1Max100",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The maximum number of prefetch schedules that you want MediaTailor to return in response to the current request. If there are more than <code>MaxResults</code> prefetch schedules, use the value of <code>NextToken</code> in the response to get the next page of results.</p>"
                     }
                 },
@@ -2958,7 +3128,6 @@
                 "MaxResults": {
                     "target": "com.amazonaws.mediatailor#MaxResults",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p> The maximum number of source locations that you want MediaTailor to return in response to the current request. If there are more than <code>MaxResults</code> source locations, use the value of <code>NextToken</code> in the response to get the next page of results.</p>",
                         "smithy.api#httpQuery": "maxResults"
                     }
@@ -3067,7 +3236,6 @@
                 "MaxResults": {
                     "target": "com.amazonaws.mediatailor#MaxResults",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p> The maximum number of VOD sources that you want MediaTailor to return in response to the current request. If there are more than <code>MaxResults</code> VOD sources, use the value of <code>NextToken</code> in the response to get the next page of results.</p>",
                         "smithy.api#httpQuery": "maxResults"
                     }
@@ -3118,7 +3286,6 @@
                 "MaxDurationSeconds": {
                     "target": "com.amazonaws.mediatailor#__integer",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The maximum allowed duration for the pre-roll ad avail. AWS Elemental MediaTailor won't play pre-roll ads to exceed this duration, regardless of the total duration of ads that the ADS returns.</p>"
                     }
                 }
@@ -3215,7 +3382,11 @@
             "traits": {
                 "aws.api#arn": {
                     "template": "liveSource/{SourceLocationName}/{LiveSourceName}"
-                }
+                },
+                "aws.cloudformation#cfnResource": {
+                    "name": "LiveSource"
+                },
+                "smithy.api#unstable": {}
             }
         },
         "com.amazonaws.mediatailor#LogConfiguration": {
@@ -3282,7 +3453,6 @@
         "com.amazonaws.mediatailor#MaxResults": {
             "type": "integer",
             "traits": {
-                "smithy.api#default": 0,
                 "smithy.api#range": {
                     "min": 1,
                     "max": 100
@@ -3409,7 +3579,6 @@
                                     ]
                                 }
                             ],
-                            "type": "tree",
                             "rules": [
                                 {
                                     "conditions": [
@@ -3427,9 +3596,187 @@
                                     "type": "error"
                                 },
                                 {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseDualStack"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
                                     "conditions": [],
-                                    "type": "tree",
+                                    "endpoint": {
+                                        "url": {
+                                            "ref": "Endpoint"
+                                        },
+                                        "properties": {},
+                                        "headers": {}
+                                    },
+                                    "type": "endpoint"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Region"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "aws.partition",
+                                            "argv": [
+                                                {
+                                                    "ref": "Region"
+                                                }
+                                            ],
+                                            "assign": "PartitionResult"
+                                        }
+                                    ],
                                     "rules": [
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                },
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://api.mediatailor-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                },
+                                                                true
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://api.mediatailor-fips.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS is enabled but this partition does not support FIPS",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
                                         {
                                             "conditions": [
                                                 {
@@ -3442,278 +3789,65 @@
                                                     ]
                                                 }
                                             ],
-                                            "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
-                                            "type": "error"
-                                        },
-                                        {
-                                            "conditions": [],
-                                            "endpoint": {
-                                                "url": {
-                                                    "ref": "Endpoint"
-                                                },
-                                                "properties": {},
-                                                "headers": {}
-                                            },
-                                            "type": "endpoint"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "conditions": [],
-                            "type": "tree",
-                            "rules": [
-                                {
-                                    "conditions": [
-                                        {
-                                            "fn": "isSet",
-                                            "argv": [
-                                                {
-                                                    "ref": "Region"
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "type": "tree",
-                                    "rules": [
-                                        {
-                                            "conditions": [
-                                                {
-                                                    "fn": "aws.partition",
-                                                    "argv": [
-                                                        {
-                                                            "ref": "Region"
-                                                        }
-                                                    ],
-                                                    "assign": "PartitionResult"
-                                                }
-                                            ],
-                                            "type": "tree",
                                             "rules": [
                                                 {
                                                     "conditions": [
                                                         {
                                                             "fn": "booleanEquals",
                                                             "argv": [
+                                                                true,
                                                                 {
-                                                                    "ref": "UseFIPS"
-                                                                },
-                                                                true
-                                                            ]
-                                                        },
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseDualStack"
-                                                                },
-                                                                true
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
                                                             ]
                                                         }
                                                     ],
-                                                    "type": "tree",
-                                                    "rules": [
-                                                        {
-                                                            "conditions": [
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsFIPS"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsDualStack"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://api.mediatailor-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseFIPS"
-                                                                },
-                                                                true
-                                                            ]
-                                                        }
-                                                    ],
-                                                    "type": "tree",
-                                                    "rules": [
-                                                        {
-                                                            "conditions": [
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsFIPS"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://api.mediatailor-fips.{Region}.{PartitionResult#dnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "FIPS is enabled but this partition does not support FIPS",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseDualStack"
-                                                                },
-                                                                true
-                                                            ]
-                                                        }
-                                                    ],
-                                                    "type": "tree",
-                                                    "rules": [
-                                                        {
-                                                            "conditions": [
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsDualStack"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://api.mediatailor.{Region}.{PartitionResult#dualStackDnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "DualStack is enabled but this partition does not support DualStack",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [],
-                                                    "type": "tree",
                                                     "rules": [
                                                         {
                                                             "conditions": [],
                                                             "endpoint": {
-                                                                "url": "https://api.mediatailor.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "url": "https://api.mediatailor.{Region}.{PartitionResult#dualStackDnsSuffix}",
                                                                 "properties": {},
                                                                 "headers": {}
                                                             },
                                                             "type": "endpoint"
                                                         }
-                                                    ]
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "DualStack is enabled but this partition does not support DualStack",
+                                                    "type": "error"
                                                 }
-                                            ]
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [],
+                                            "endpoint": {
+                                                "url": "https://api.mediatailor.{Region}.{PartitionResult#dnsSuffix}",
+                                                "properties": {},
+                                                "headers": {}
+                                            },
+                                            "type": "endpoint"
                                         }
-                                    ]
-                                },
-                                {
-                                    "conditions": [],
-                                    "error": "Invalid Configuration: Missing Region",
-                                    "type": "error"
+                                    ],
+                                    "type": "tree"
                                 }
-                            ]
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [],
+                            "error": "Invalid Configuration: Missing Region",
+                            "type": "error"
                         }
                     ]
                 },
@@ -3728,8 +3862,8 @@
                             },
                             "params": {
                                 "Region": "ap-northeast-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -3741,8 +3875,8 @@
                             },
                             "params": {
                                 "Region": "ap-southeast-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -3754,8 +3888,8 @@
                             },
                             "params": {
                                 "Region": "ap-southeast-2",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -3767,8 +3901,8 @@
                             },
                             "params": {
                                 "Region": "eu-central-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -3780,8 +3914,8 @@
                             },
                             "params": {
                                 "Region": "eu-west-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -3793,8 +3927,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -3806,8 +3940,8 @@
                             },
                             "params": {
                                 "Region": "us-west-2",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -3819,8 +3953,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -3832,8 +3966,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -3845,8 +3979,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -3858,8 +3992,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -3871,8 +4005,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -3884,8 +4018,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -3897,8 +4031,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -3910,8 +4044,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -3923,8 +4057,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -3936,8 +4070,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -3949,8 +4083,19 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -3962,8 +4107,19 @@
                             },
                             "params": {
                                 "Region": "us-iso-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -3975,8 +4131,19 @@
                             },
                             "params": {
                                 "Region": "us-iso-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -3988,8 +4155,19 @@
                             },
                             "params": {
                                 "Region": "us-isob-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -4001,8 +4179,8 @@
                             },
                             "params": {
                                 "Region": "us-isob-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -4014,8 +4192,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
                                 "UseFIPS": false,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -4027,8 +4205,8 @@
                                 }
                             },
                             "params": {
-                                "UseDualStack": false,
                                 "UseFIPS": false,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -4039,8 +4217,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
                                 "UseFIPS": true,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -4051,9 +4229,15 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
                                 "UseFIPS": false,
+                                "UseDualStack": true,
                                 "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "Missing region",
+                            "expect": {
+                                "error": "Invalid Configuration: Missing Region"
                             }
                         }
                     ],
@@ -4091,6 +4275,12 @@
                     "target": "smithy.api#Unit",
                     "traits": {
                         "smithy.api#enumValue": "BEHIND_LIVE_EDGE"
+                    }
+                },
+                "AFTER_LIVE_EDGE": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "AFTER_LIVE_EDGE"
                     }
                 }
             }
@@ -4195,7 +4385,6 @@
                 "PersonalizationThresholdSeconds": {
                     "target": "com.amazonaws.mediatailor#__integerMin1",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>Defines the maximum duration of underfilled ad time (in seconds) allowed in an ad break. If the duration of underfilled ad time exceeds the personalization threshold, then the personalization of the ad break is abandoned and the underlying content is shown. This feature applies to <i>ad replacement</i> in live and VOD streams, rather than ad insertion, because it relies on an underlying content stream. For more information about ad break behavior, including ad replacement and insertion, see <a href=\"https://docs.aws.amazon.com/mediatailor/latest/ug/ad-behavior.html\">Ad Behavior in AWS Elemental MediaTailor</a>.</p>"
                     }
                 },
@@ -4581,7 +4770,6 @@
                 "PersonalizationThresholdSeconds": {
                     "target": "com.amazonaws.mediatailor#__integerMin1",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>Defines the maximum duration of underfilled ad time (in seconds) allowed in an ad break. If the duration of underfilled ad time exceeds the personalization threshold, then the personalization of the ad break is abandoned and the underlying content is shown. This feature applies to <i>ad replacement</i> in live and VOD streams, rather than ad insertion, because it relies on an underlying content stream. For more information about ad break behavior, including ad replacement and insertion, see <a href=\"https://docs.aws.amazon.com/mediatailor/latest/ug/ad-behavior.html\">Ad Behavior in AWS Elemental MediaTailor</a>.</p>"
                     }
                 },
@@ -4684,7 +4872,6 @@
                 "PersonalizationThresholdSeconds": {
                     "target": "com.amazonaws.mediatailor#__integerMin1",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>Defines the maximum duration of underfilled ad time (in seconds) allowed in an ad break. If the duration of underfilled ad time exceeds the personalization threshold, then the personalization of the ad break is abandoned and the underlying content is shown. This feature applies to <i>ad replacement</i> in live and VOD streams, rather than ad insertion, because it relies on an underlying content stream. For more information about ad break behavior, including ad replacement and insertion, see <a href=\"https://docs.aws.amazon.com/mediatailor/latest/ug/ad-behavior.html\">Ad Behavior in AWS Elemental MediaTailor</a>.</p>"
                     }
                 },
@@ -4846,7 +5033,6 @@
                 "ApproximateDurationSeconds": {
                     "target": "com.amazonaws.mediatailor#__long",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The approximate duration of the ad break, in seconds.</p>"
                     }
                 },
@@ -4900,7 +5086,6 @@
                 "ApproximateDurationSeconds": {
                     "target": "com.amazonaws.mediatailor#__long",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The approximate duration of this program, in seconds.</p>"
                     }
                 },
@@ -5209,7 +5394,11 @@
                 "aws.api#arn": {
                     "template": "sourceLocation/{SourceLocationName}"
                 },
-                "smithy.api#noReplace": {}
+                "aws.cloudformation#cfnResource": {
+                    "name": "SourceLocation"
+                },
+                "smithy.api#noReplace": {},
+                "smithy.api#unstable": {}
             }
         },
         "com.amazonaws.mediatailor#SpliceInsertMessage": {
@@ -5218,28 +5407,24 @@
                 "AvailNum": {
                     "target": "com.amazonaws.mediatailor#__integer",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>This is written to <code>splice_insert.avail_num</code>, as defined in section 9.7.3.1 of the SCTE-35 specification. The default value is <code>0</code>. Values must be between <code>0</code> and <code>256</code>, inclusive.</p>"
                     }
                 },
                 "AvailsExpected": {
                     "target": "com.amazonaws.mediatailor#__integer",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>This is written to <code>splice_insert.avails_expected</code>, as defined in section 9.7.3.1 of the SCTE-35 specification. The default value is <code>0</code>. Values must be between <code>0</code> and <code>256</code>, inclusive.</p>"
                     }
                 },
                 "SpliceEventId": {
                     "target": "com.amazonaws.mediatailor#__integer",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>This is written to <code>splice_insert.splice_event_id</code>, as defined in section 9.7.3.1 of the SCTE-35 specification. The default value is <code>1</code>.</p>"
                     }
                 },
                 "UniqueProgramId": {
                     "target": "com.amazonaws.mediatailor#__integer",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>This is written to <code>splice_insert.unique_program_id</code>, as defined in section 9.7.3.1 of the SCTE-35 specification. The default value is <code>0</code>. Values must be between <code>0</code> and <code>256</code>, inclusive.</p>"
                     }
                 }
@@ -5378,6 +5563,21 @@
                 }
             }
         },
+        "com.amazonaws.mediatailor#TimeShiftConfiguration": {
+            "type": "structure",
+            "members": {
+                "MaxTimeDelaySeconds": {
+                    "target": "com.amazonaws.mediatailor#__integer",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n            The maximum time delay for time-shifted viewing. The minimum allowed maximum time delay is 0 seconds, \n            and the maximum allowed maximum time delay is 21600 seconds (6 hours).\n        </p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>\n            The configuration for time-shifted viewing.\n        </p>"
+            }
+        },
         "com.amazonaws.mediatailor#TimeSignalMessage": {
             "type": "structure",
             "members": {
@@ -5398,7 +5598,6 @@
                 "DurationMillis": {
                     "target": "com.amazonaws.mediatailor#__long",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The duration of the live program in seconds.</p>"
                     }
                 },
@@ -5418,7 +5617,6 @@
                 "ScheduledStartTimeMillis": {
                     "target": "com.amazonaws.mediatailor#__long",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The date and time that the program is scheduled to start, in epoch milliseconds.</p>"
                     }
                 },
@@ -5536,6 +5734,12 @@
                         "smithy.api#documentation": "<p>The channel's output properties.</p>",
                         "smithy.api#required": {}
                     }
+                },
+                "TimeShiftConfiguration": {
+                    "target": "com.amazonaws.mediatailor#TimeShiftConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n            The time-shifted viewing configuration you want to associate to the channel.\n        </p>"
+                    }
                 }
             }
         },
@@ -5581,13 +5785,17 @@
                 "Outputs": {
                     "target": "com.amazonaws.mediatailor#ResponseOutputs",
                     "traits": {
-                        "smithy.api#documentation": "<p>The channel's output properties.</p>"
+                        "aws.cloudformation#cfnExcludeProperty": {},
+                        "smithy.api#documentation": "<p>The channel's output properties.</p>",
+                        "smithy.api#unstable": {}
                     }
                 },
                 "PlaybackMode": {
                     "target": "com.amazonaws.mediatailor#__string",
                     "traits": {
-                        "smithy.api#documentation": "<p>The type of playback mode for this channel.</p>\n         <p>\n            <code>LINEAR</code> - Programs play back-to-back only once.</p>\n         <p>\n            <code>LOOP</code> - Programs play back-to-back in an endless loop. When the last program in the schedule plays, playback loops back to the first program in the schedule.</p>"
+                        "aws.cloudformation#cfnExcludeProperty": {},
+                        "smithy.api#documentation": "<p>The type of playback mode for this channel.</p>\n         <p>\n            <code>LINEAR</code> - Programs play back-to-back only once.</p>\n         <p>\n            <code>LOOP</code> - Programs play back-to-back in an endless loop. When the last program in the schedule plays, playback loops back to the first program in the schedule.</p>",
+                        "smithy.api#unstable": {}
                     }
                 },
                 "Tags": {
@@ -5600,7 +5808,15 @@
                 "Tier": {
                     "target": "com.amazonaws.mediatailor#__string",
                     "traits": {
-                        "smithy.api#documentation": "<p>The tier associated with this Channel.</p>"
+                        "aws.cloudformation#cfnExcludeProperty": {},
+                        "smithy.api#documentation": "<p>The tier associated with this Channel.</p>",
+                        "smithy.api#unstable": {}
+                    }
+                },
+                "TimeShiftConfiguration": {
+                    "target": "com.amazonaws.mediatailor#TimeShiftConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>\n            The time-shifted viewing configuration for the channel.\n        </p>"
                     }
                 }
             }
@@ -5811,7 +6027,6 @@
                 "DurationMillis": {
                     "target": "com.amazonaws.mediatailor#__long",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The duration of the live program in milliseconds.</p>"
                     }
                 },
@@ -5849,14 +6064,12 @@
                 "ScheduledStartTimeMillis": {
                     "target": "com.amazonaws.mediatailor#__long",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The date and time that the program is scheduled to start, in epoch milliseconds.</p>"
                     }
                 },
                 "DurationMillis": {
                     "target": "com.amazonaws.mediatailor#__long",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The duration of the live program in seconds.</p>"
                     }
                 }
@@ -6164,25 +6377,22 @@
                 "aws.api#arn": {
                     "template": "vodSource/{SourceLocationName}/{VodSourceName}"
                 },
-                "smithy.api#noReplace": {}
+                "aws.cloudformation#cfnResource": {
+                    "name": "VodSource"
+                },
+                "smithy.api#noReplace": {},
+                "smithy.api#unstable": {}
             }
         },
         "com.amazonaws.mediatailor#__boolean": {
-            "type": "boolean",
-            "traits": {
-                "smithy.api#default": false
-            }
+            "type": "boolean"
         },
         "com.amazonaws.mediatailor#__integer": {
-            "type": "integer",
-            "traits": {
-                "smithy.api#default": 0
-            }
+            "type": "integer"
         },
         "com.amazonaws.mediatailor#__integerMin1": {
             "type": "integer",
             "traits": {
-                "smithy.api#default": 0,
                 "smithy.api#range": {
                     "min": 1
                 }
@@ -6191,7 +6401,6 @@
         "com.amazonaws.mediatailor#__integerMin1Max100": {
             "type": "integer",
             "traits": {
-                "smithy.api#default": 0,
                 "smithy.api#range": {
                     "min": 1,
                     "max": 100
@@ -6277,10 +6486,7 @@
             }
         },
         "com.amazonaws.mediatailor#__long": {
-            "type": "long",
-            "traits": {
-                "smithy.api#default": 0
-            }
+            "type": "long"
         },
         "com.amazonaws.mediatailor#__mapOf__string": {
             "type": "map",
@@ -6298,6 +6504,12 @@
             "type": "timestamp",
             "traits": {
                 "smithy.api#timestampFormat": "epoch-seconds"
+            }
+        },
+        "com.amazonaws.mediatailor#adMarkupTypes": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.mediatailor#AdMarkupType"
             }
         }
     }

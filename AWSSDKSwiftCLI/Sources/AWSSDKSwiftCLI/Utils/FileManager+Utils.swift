@@ -33,5 +33,16 @@ extension FileManager {
         try FileManager.default
             .contentsOfDirectory(atPath: "Sources/Services")
             .sorted()
+            .filter { !$0.hasPrefix(".") }
+    }
+
+    /// Returns the list of integration tests.
+    ///
+    /// - Returns: The list of integration tests.
+    func integrationTests() throws -> [String] {
+        try FileManager.default
+            .contentsOfDirectory(atPath: "IntegrationTests/Services")
+            .sorted()
+            .filter { !$0.hasPrefix(".") }
     }
 }

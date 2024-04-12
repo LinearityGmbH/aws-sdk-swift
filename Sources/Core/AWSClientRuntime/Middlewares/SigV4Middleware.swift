@@ -6,8 +6,7 @@
 import ClientRuntime
 import AwsCommonRuntimeKit
 
-public struct SigV4Middleware<OperationStackOutput: HttpResponseBinding,
-                              OperationStackError: HttpResponseBinding>: Middleware {
+public struct SigV4Middleware<OperationStackOutput>: Middleware {
     public let id: String = "Sigv4Signer"
 
     let config: SigV4Config
@@ -31,22 +30,24 @@ public struct SigV4Middleware<OperationStackOutput: HttpResponseBinding,
     Self.MOutput == H.Output {
 
         let originalRequest = input.build()
-        let crtUnsignedRequest = try originalRequest.toHttpRequest()
+        let crtUnsignedRequest: HTTPRequestBase
+        if context.isBidirectionalStreamingEnabled() {
+            crtUnsignedRequest = try originalRequest.toHttp2Request()
+        } else {
+            crtUnsignedRequest = try originalRequest.toHttpRequest()
+        }
 
         guard let credentialsProvider = context.getCredentialsProvider() else {
-            throw SdkError<OperationStackError>.client(
-                ClientError.authError("AwsSigv4Signer requires a credentialsProvider"))
+            throw ClientError.authError("AwsSigv4Signer requires a credentialsProvider")
         }
 
         guard let signingName = context.getSigningName() ?? config.signingService else {
-            throw SdkError<OperationStackError>.client(
-                ClientError.authError("AwsSigv4Signer requires a signing service"))
+            throw ClientError.authError("AwsSigv4Signer requires a signing service")
         }
 
         guard let signingRegion = context.getSigningRegion(),
               !signingRegion.isEmpty else {
-            throw SdkError<OperationStackError>.client(
-                ClientError.authError("AwsSigv4Signer requires a signing region"))
+            throw ClientError.authError("AwsSigv4Signer requires a signing region")
         }
 
         // If the context has a signing algorithm, use that. Otherwise, use the operation config's signing algorithm
@@ -75,6 +76,9 @@ public struct SigV4Middleware<OperationStackOutput: HttpResponseBinding,
             request: crtUnsignedRequest,
             config: signingConfig.toCRTType()
         )
+
+        context.attributes.set(key: HttpContext.requestSignature, value: crtSignedRequest.signature)
+
         let sdkSignedRequest = input.update(from: crtSignedRequest, originalRequest: originalRequest)
 
         return try await next.handle(context: context, input: sdkSignedRequest)

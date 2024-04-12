@@ -28,7 +28,7 @@
                 "releaseLabel": {
                     "target": "com.amazonaws.emrserverless#ReleaseLabel",
                     "traits": {
-                        "smithy.api#documentation": "<p>The EMR release associated with the application.</p>",
+                        "smithy.api#documentation": "<p>The Amazon EMR release associated with the application.</p>",
                         "smithy.api#required": {}
                     }
                 },
@@ -119,10 +119,19 @@
                     "traits": {
                         "smithy.api#documentation": "<p>The specification applied to each worker type.</p>"
                     }
+                },
+                "runtimeConfiguration": {
+                    "target": "com.amazonaws.emrserverless#ConfigurationList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The <a href=\"https://docs.aws.amazon.com/emr-serverless/latest/APIReference/API_Configuration.html\">Configuration</a> \n         specifications of an application. Each configuration consists of a classification and properties. You use this \n      parameter when creating or updating an application. To see the runtimeConfiguration object of an application,\n      run the <a href=\"https://docs.aws.amazon.com/emr-serverless/latest/APIReference/API_GetApplication.html\">GetApplication</a> API operation.</p>"
+                    }
+                },
+                "monitoringConfiguration": {
+                    "target": "com.amazonaws.emrserverless#MonitoringConfiguration"
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Information about an application. EMR Serverless uses applications to run jobs.</p>"
+                "smithy.api#documentation": "<p>Information about an application. Amazon EMR Serverless uses applications to run\n         jobs.</p>"
             }
         },
         "com.amazonaws.emrserverless#ApplicationArn": {
@@ -272,7 +281,7 @@
                 "releaseLabel": {
                     "target": "com.amazonaws.emrserverless#ReleaseLabel",
                     "traits": {
-                        "smithy.api#documentation": "<p>The EMR release associated with the application.</p>",
+                        "smithy.api#documentation": "<p>The Amazon EMR release associated with the application.</p>",
                         "smithy.api#required": {}
                     }
                 },
@@ -428,7 +437,7 @@
                         "x-amz-apigw-id"
                     ]
                 },
-                "smithy.api#documentation": "<p>Amazon EMR Serverless is a new deployment option for Amazon EMR. EMR Serverless provides\n         a serverless runtime environment that simplifies running analytics applications using the\n         latest open source frameworks such as Apache Spark and Apache Hive. With EMR Serverless,\n         you don’t have to configure, optimize, secure, or operate clusters to run applications with\n         these frameworks.</p>\n         <p>The API reference to Amazon EMR Serverless is <code>emr-serverless</code>. The\n            <code>emr-serverless</code> prefix is used in the following scenarios: </p>\n         <ul>\n            <li>\n               <p>It is the prefix in the CLI commands for Amazon EMR Serverless. For example,\n                  <code>aws emr-serverless start-job-run</code>.</p>\n            </li>\n            <li>\n               <p>It is the prefix before IAM policy actions for Amazon EMR Serverless. For example,\n                  <code>\"Action\": [\"emr-serverless:StartJobRun\"]</code>. For more information, see\n                  <a href=\"https://docs.aws.amazon.com/emr/latest/EMR-Serverless-UserGuide/security_iam_service-with-iam.html#security_iam_service-with-iam-id-based-policies-actions\">Policy actions for Amazon EMR Serverless</a>.</p>\n            </li>\n            <li>\n               <p>It is the prefix used in Amazon EMR Serverless service endpoints. For example,\n                  <code>emr-serverless.us-east-2.amazonaws.com</code>.</p>\n            </li>\n         </ul>",
+                "smithy.api#documentation": "<p>Amazon EMR Serverless is a new deployment option for Amazon EMR. Amazon EMR Serverless provides a serverless runtime environment that simplifies running\n         analytics applications using the latest open source frameworks such as Apache Spark and\n         Apache Hive. With Amazon EMR Serverless, you don’t have to configure, optimize,\n         secure, or operate clusters to run applications with these frameworks.</p>\n         <p>The API reference to Amazon EMR Serverless is <code>emr-serverless</code>. The\n            <code>emr-serverless</code> prefix is used in the following scenarios: </p>\n         <ul>\n            <li>\n               <p>It is the prefix in the CLI commands for Amazon EMR Serverless. For\n               example, <code>aws emr-serverless start-job-run</code>.</p>\n            </li>\n            <li>\n               <p>It is the prefix before IAM policy actions for Amazon EMR Serverless. For\n               example, <code>\"Action\": [\"emr-serverless:StartJobRun\"]</code>. For more information,\n               see <a href=\"https://docs.aws.amazon.com/emr/latest/EMR-Serverless-UserGuide/security_iam_service-with-iam.html#security_iam_service-with-iam-id-based-policies-actions\">Policy actions for Amazon EMR Serverless</a>.</p>\n            </li>\n            <li>\n               <p>It is the prefix used in Amazon EMR Serverless service endpoints. For\n               example, <code>emr-serverless.us-east-2.amazonaws.com</code>.</p>\n            </li>\n         </ul>",
                 "smithy.api#title": "EMR Serverless",
                 "smithy.rules#endpointRuleSet": {
                     "version": "1.0",
@@ -472,7 +481,6 @@
                                     ]
                                 }
                             ],
-                            "type": "tree",
                             "rules": [
                                 {
                                     "conditions": [
@@ -490,9 +498,187 @@
                                     "type": "error"
                                 },
                                 {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseDualStack"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
                                     "conditions": [],
-                                    "type": "tree",
+                                    "endpoint": {
+                                        "url": {
+                                            "ref": "Endpoint"
+                                        },
+                                        "properties": {},
+                                        "headers": {}
+                                    },
+                                    "type": "endpoint"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Region"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "aws.partition",
+                                            "argv": [
+                                                {
+                                                    "ref": "Region"
+                                                }
+                                            ],
+                                            "assign": "PartitionResult"
+                                        }
+                                    ],
                                     "rules": [
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                },
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://emr-serverless-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                },
+                                                                true
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://emr-serverless-fips.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS is enabled but this partition does not support FIPS",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
                                         {
                                             "conditions": [
                                                 {
@@ -505,278 +691,65 @@
                                                     ]
                                                 }
                                             ],
-                                            "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
-                                            "type": "error"
-                                        },
-                                        {
-                                            "conditions": [],
-                                            "endpoint": {
-                                                "url": {
-                                                    "ref": "Endpoint"
-                                                },
-                                                "properties": {},
-                                                "headers": {}
-                                            },
-                                            "type": "endpoint"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "conditions": [],
-                            "type": "tree",
-                            "rules": [
-                                {
-                                    "conditions": [
-                                        {
-                                            "fn": "isSet",
-                                            "argv": [
-                                                {
-                                                    "ref": "Region"
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "type": "tree",
-                                    "rules": [
-                                        {
-                                            "conditions": [
-                                                {
-                                                    "fn": "aws.partition",
-                                                    "argv": [
-                                                        {
-                                                            "ref": "Region"
-                                                        }
-                                                    ],
-                                                    "assign": "PartitionResult"
-                                                }
-                                            ],
-                                            "type": "tree",
                                             "rules": [
                                                 {
                                                     "conditions": [
                                                         {
                                                             "fn": "booleanEquals",
                                                             "argv": [
+                                                                true,
                                                                 {
-                                                                    "ref": "UseFIPS"
-                                                                },
-                                                                true
-                                                            ]
-                                                        },
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseDualStack"
-                                                                },
-                                                                true
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
                                                             ]
                                                         }
                                                     ],
-                                                    "type": "tree",
-                                                    "rules": [
-                                                        {
-                                                            "conditions": [
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsFIPS"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsDualStack"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://emr-serverless-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseFIPS"
-                                                                },
-                                                                true
-                                                            ]
-                                                        }
-                                                    ],
-                                                    "type": "tree",
-                                                    "rules": [
-                                                        {
-                                                            "conditions": [
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsFIPS"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://emr-serverless-fips.{Region}.{PartitionResult#dnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "FIPS is enabled but this partition does not support FIPS",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseDualStack"
-                                                                },
-                                                                true
-                                                            ]
-                                                        }
-                                                    ],
-                                                    "type": "tree",
-                                                    "rules": [
-                                                        {
-                                                            "conditions": [
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsDualStack"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://emr-serverless.{Region}.{PartitionResult#dualStackDnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "DualStack is enabled but this partition does not support DualStack",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [],
-                                                    "type": "tree",
                                                     "rules": [
                                                         {
                                                             "conditions": [],
                                                             "endpoint": {
-                                                                "url": "https://emr-serverless.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "url": "https://emr-serverless.{Region}.{PartitionResult#dualStackDnsSuffix}",
                                                                 "properties": {},
                                                                 "headers": {}
                                                             },
                                                             "type": "endpoint"
                                                         }
-                                                    ]
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "DualStack is enabled but this partition does not support DualStack",
+                                                    "type": "error"
                                                 }
-                                            ]
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [],
+                                            "endpoint": {
+                                                "url": "https://emr-serverless.{Region}.{PartitionResult#dnsSuffix}",
+                                                "properties": {},
+                                                "headers": {}
+                                            },
+                                            "type": "endpoint"
                                         }
-                                    ]
-                                },
-                                {
-                                    "conditions": [],
-                                    "error": "Invalid Configuration: Missing Region",
-                                    "type": "error"
+                                    ],
+                                    "type": "tree"
                                 }
-                            ]
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [],
+                            "error": "Invalid Configuration: Missing Region",
+                            "type": "error"
                         }
                     ]
                 },
@@ -791,8 +764,8 @@
                             },
                             "params": {
                                 "Region": "ap-northeast-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -804,8 +777,8 @@
                             },
                             "params": {
                                 "Region": "eu-west-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -817,8 +790,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -830,8 +803,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -843,8 +816,8 @@
                             },
                             "params": {
                                 "Region": "us-west-2",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -856,8 +829,8 @@
                             },
                             "params": {
                                 "Region": "us-west-2",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -869,8 +842,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -882,8 +855,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -895,8 +868,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -908,8 +881,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -921,8 +894,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -934,8 +907,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -947,8 +920,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -960,8 +933,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -973,8 +946,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -986,8 +959,19 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -999,8 +983,19 @@
                             },
                             "params": {
                                 "Region": "us-iso-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1012,8 +1007,19 @@
                             },
                             "params": {
                                 "Region": "us-iso-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1025,8 +1031,19 @@
                             },
                             "params": {
                                 "Region": "us-isob-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1038,8 +1055,8 @@
                             },
                             "params": {
                                 "Region": "us-isob-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1051,8 +1068,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
                                 "UseFIPS": false,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -1064,8 +1081,8 @@
                                 }
                             },
                             "params": {
-                                "UseDualStack": false,
                                 "UseFIPS": false,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -1076,8 +1093,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
                                 "UseFIPS": true,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -1088,9 +1105,15 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
                                 "UseFIPS": false,
+                                "UseDualStack": true,
                                 "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "Missing region",
+                            "expect": {
+                                "error": "Invalid Configuration: Missing Region"
                             }
                         }
                     ],
@@ -1178,6 +1201,45 @@
                     "max": 64
                 },
                 "smithy.api#pattern": "^[A-Za-z0-9._-]+$"
+            }
+        },
+        "com.amazonaws.emrserverless#CloudWatchLoggingConfiguration": {
+            "type": "structure",
+            "members": {
+                "enabled": {
+                    "target": "smithy.api#Boolean",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Enables CloudWatch logging.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "logGroupName": {
+                    "target": "com.amazonaws.emrserverless#LogGroupName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The name of the log group in Amazon CloudWatch Logs where you want to publish your\n         logs.</p>"
+                    }
+                },
+                "logStreamNamePrefix": {
+                    "target": "com.amazonaws.emrserverless#LogStreamNamePrefix",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Prefix for the CloudWatch log stream name.</p>"
+                    }
+                },
+                "encryptionKeyArn": {
+                    "target": "com.amazonaws.emrserverless#EncryptionKeyArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The Key Management Service (KMS) key ARN to encrypt the logs that you store in CloudWatch Logs.</p>"
+                    }
+                },
+                "logTypes": {
+                    "target": "com.amazonaws.emrserverless#LogTypeMap",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The types of logs that you want to publish to CloudWatch. If you don't specify\n         any log types, driver STDOUT and STDERR logs will be published to CloudWatch Logs by\n         default. For more information including the supported worker types for Hive and Spark, see\n            <a href=\"https://docs.aws.amazon.com/emr/latest/EMR-Serverless-UserGuide/logging.html#jobs-log-storage-cw\">Logging for\n            EMR Serverless with CloudWatch</a>.</p>\n         <ul>\n            <li>\n               <p>\n                  <b>Key Valid Values</b>: <code>SPARK_DRIVER</code>,\n                  <code>SPARK_EXECUTOR</code>, <code>HIVE_DRIVER</code>,\n               <code>TEZ_TASK</code>\n               </p>\n            </li>\n            <li>\n               <p>\n                  <b>Array Members Valid Values</b>: <code>STDOUT</code>,\n                  <code>STDERR</code>, <code>HIVE_LOG</code>, <code>TEZ_AM</code>,\n                  <code>SYSTEM_LOGS</code>\n               </p>\n            </li>\n         </ul>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>The Amazon CloudWatch configuration for monitoring logs. You can configure your jobs\n         to send log information to CloudWatch.</p>"
             }
         },
         "com.amazonaws.emrserverless#Configuration": {
@@ -1308,7 +1370,7 @@
                 "releaseLabel": {
                     "target": "com.amazonaws.emrserverless#ReleaseLabel",
                     "traits": {
-                        "smithy.api#documentation": "<p>The EMR release associated with the application.</p>",
+                        "smithy.api#documentation": "<p>The Amazon EMR release associated with the application.</p>",
                         "smithy.api#required": {}
                     }
                 },
@@ -1372,13 +1434,25 @@
                 "imageConfiguration": {
                     "target": "com.amazonaws.emrserverless#ImageConfigurationInput",
                     "traits": {
-                        "smithy.api#documentation": "<p>The image configuration for all worker types. You can either set this parameter or <code>imageConfiguration</code> \n         for each worker type in <code>workerTypeSpecifications</code>.</p>"
+                        "smithy.api#documentation": "<p>The image configuration for all worker types. You can either set this parameter or\n            <code>imageConfiguration</code> for each worker type in\n            <code>workerTypeSpecifications</code>.</p>"
                     }
                 },
                 "workerTypeSpecifications": {
                     "target": "com.amazonaws.emrserverless#WorkerTypeSpecificationInputMap",
                     "traits": {
-                        "smithy.api#documentation": "<p>The key-value pairs that specify worker type to <code>WorkerTypeSpecificationInput</code>. This parameter must contain all valid \n         worker types for a Spark or Hive application. Valid worker types include <code>Driver</code> and <code>Executor</code> for \n         Spark applications and <code>HiveDriver</code> and <code>TezTask</code> for Hive applications. You can either set \n         image details in this parameter for each worker type, or in <code>imageConfiguration</code> for all worker types.</p>"
+                        "smithy.api#documentation": "<p>The key-value pairs that specify worker type to\n            <code>WorkerTypeSpecificationInput</code>. This parameter must contain all valid worker\n         types for a Spark or Hive application. Valid worker types include <code>Driver</code> and\n            <code>Executor</code> for Spark applications and <code>HiveDriver</code> and\n            <code>TezTask</code> for Hive applications. You can either set image details in this\n         parameter for each worker type, or in <code>imageConfiguration</code> for all worker\n         types.</p>"
+                    }
+                },
+                "runtimeConfiguration": {
+                    "target": "com.amazonaws.emrserverless#ConfigurationList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The <a href=\"https://docs.aws.amazon.com/emr-serverless/latest/APIReference/API_Configuration.html\">Configuration</a> \n         specifications to use when creating an application. Each configuration consists of a classification and properties.\n      This configuration is applied to all the job runs submitted under the application.</p>"
+                    }
+                },
+                "monitoringConfiguration": {
+                    "target": "com.amazonaws.emrserverless#MonitoringConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The configuration setting for monitoring.</p>"
                     }
                 }
             }
@@ -1600,7 +1674,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Returns a URL to access the job run dashboard.</p>",
+                "smithy.api#documentation": "<p>Creates and returns a URL that you can use to access the application UIs for a job\n         run.</p>\n         <p>For jobs in a running state, the application UI is a live user interface such as the\n         Spark or Tez web UI. For completed jobs, the application UI is a persistent application\n         user interface such as the Spark History Server or persistent Tez UI.</p>\n         <note>\n            <p>The URL is valid for one hour after you generate it. To access the application UI\n            after that hour elapses, you must invoke the API again to generate a new URL.</p>\n         </note>",
                 "smithy.api#http": {
                     "method": "GET",
                     "uri": "/applications/{applicationId}/jobruns/{jobRunId}/dashboard"
@@ -1768,7 +1842,7 @@
                 "resolvedImageDigest": {
                     "target": "com.amazonaws.emrserverless#ImageDigest",
                     "traits": {
-                        "smithy.api#documentation": "<p>The SHA256 digest of the image URI. This indicates which specific image \n         the application is configured for. The image digest doesn't exist until an application has started.</p>"
+                        "smithy.api#documentation": "<p>The SHA256 digest of the image URI. This indicates which specific image the application\n         is configured for. The image digest doesn't exist until an application has started.</p>"
                     }
                 }
             },
@@ -1782,7 +1856,7 @@
                 "imageUri": {
                     "target": "com.amazonaws.emrserverless#ImageUri",
                     "traits": {
-                        "smithy.api#documentation": "<p>The URI of an image in the Amazon ECR registry. This field is required when you create a new \n         application. If you leave this field blank in an update, Amazon EMR will remove the image configuration.</p>"
+                        "smithy.api#documentation": "<p>The URI of an image in the Amazon ECR registry. This field is required when you create a\n         new application. If you leave this field blank in an update, Amazon EMR will remove\n         the image configuration.</p>"
                     }
                 }
             },
@@ -1793,14 +1867,12 @@
         "com.amazonaws.emrserverless#ImageDigest": {
             "type": "string",
             "traits": {
-                "smithy.api#documentation": "Image Digest",
                 "smithy.api#pattern": "^sha256:[0-9a-f]{64}$"
             }
         },
         "com.amazonaws.emrserverless#ImageUri": {
             "type": "string",
             "traits": {
-                "smithy.api#documentation": "Image URI",
                 "smithy.api#length": {
                     "min": 1,
                     "max": 1024
@@ -1980,7 +2052,7 @@
                 "releaseLabel": {
                     "target": "com.amazonaws.emrserverless#ReleaseLabel",
                     "traits": {
-                        "smithy.api#documentation": "<p>The EMR release associated with the application your job is running on.</p>",
+                        "smithy.api#documentation": "<p>The Amazon EMR release associated with the application your job is running\n         on.</p>",
                         "smithy.api#required": {}
                     }
                 },
@@ -2006,7 +2078,7 @@
                 "totalResourceUtilization": {
                     "target": "com.amazonaws.emrserverless#TotalResourceUtilization",
                     "traits": {
-                        "smithy.api#documentation": "<p>The aggregate vCPU, memory, and storage resources used from the time job start executing\n         till the time job is terminated, rounded up to the nearest second.</p>"
+                        "smithy.api#documentation": "<p>The aggregate vCPU, memory, and storage resources used from the time the job starts to\n         execute, until the time the job terminates, rounded up to the nearest second.</p>"
                     }
                 },
                 "networkConfiguration": {
@@ -2017,10 +2089,23 @@
                     "traits": {
                         "smithy.api#documentation": "<p>The job run total execution duration in seconds. This field is only available for job\n         runs in a <code>COMPLETED</code>, <code>FAILED</code>, or <code>CANCELLED</code>\n         state.</p>"
                     }
+                },
+                "executionTimeoutMinutes": {
+                    "target": "com.amazonaws.emrserverless#Duration",
+                    "traits": {
+                        "smithy.api#default": null,
+                        "smithy.api#documentation": "<p>Returns the job run timeout value from the <code>StartJobRun</code> call. If no timeout\n         was specified, then it returns the default timeout of 720 minutes.</p>"
+                    }
+                },
+                "billedResourceUtilization": {
+                    "target": "com.amazonaws.emrserverless#ResourceUtilization",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The aggregate vCPU, memory, and storage that Amazon Web Services has billed for the job\n         run. The billed resources include a 1-minute minimum usage for workers, plus additional\n         storage over 20 GB per worker. Note that billed resources do not include usage for idle\n         pre-initialized workers.</p>"
+                    }
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Information about a job run. A job run is a unit of work, such as a Spark JAR, Hive\n         query, or SparkSQL query, that you submit to an EMR Serverless application.</p>"
+                "smithy.api#documentation": "<p>Information about a job run. A job run is a unit of work, such as a Spark JAR, Hive\n         query, or SparkSQL query, that you submit to an Amazon EMR Serverless\n         application.</p>"
             }
         },
         "com.amazonaws.emrserverless#JobRunId": {
@@ -2190,7 +2275,7 @@
                 "releaseLabel": {
                     "target": "com.amazonaws.emrserverless#ReleaseLabel",
                     "traits": {
-                        "smithy.api#documentation": "<p>The EMR release associated with the application your job is running on.</p>",
+                        "smithy.api#documentation": "<p>The Amazon EMR release associated with the application your job is running\n         on.</p>",
                         "smithy.api#required": {}
                     }
                 },
@@ -2449,6 +2534,64 @@
                 }
             }
         },
+        "com.amazonaws.emrserverless#LogGroupName": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 512
+                },
+                "smithy.api#pattern": "^[\\.\\-_/#A-Za-z0-9]+$"
+            }
+        },
+        "com.amazonaws.emrserverless#LogStreamNamePrefix": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 512
+                },
+                "smithy.api#pattern": "^[^:*]*$"
+            }
+        },
+        "com.amazonaws.emrserverless#LogTypeList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.emrserverless#LogTypeString"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 5
+                }
+            }
+        },
+        "com.amazonaws.emrserverless#LogTypeMap": {
+            "type": "map",
+            "key": {
+                "target": "com.amazonaws.emrserverless#WorkerTypeString"
+            },
+            "value": {
+                "target": "com.amazonaws.emrserverless#LogTypeList"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 4
+                }
+            }
+        },
+        "com.amazonaws.emrserverless#LogTypeString": {
+            "type": "string",
+            "traits": {
+                "smithy.api#documentation": "Log type for a Spark/Hive job-run.",
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 50
+                },
+                "smithy.api#pattern": "^[a-zA-Z]+[-_]*[a-zA-Z]+$"
+            }
+        },
         "com.amazonaws.emrserverless#ManagedPersistenceMonitoringConfiguration": {
             "type": "structure",
             "members": {
@@ -2520,6 +2663,12 @@
                     "target": "com.amazonaws.emrserverless#ManagedPersistenceMonitoringConfiguration",
                     "traits": {
                         "smithy.api#documentation": "<p>The managed log persistence configuration for a job run.</p>"
+                    }
+                },
+                "cloudWatchLoggingConfiguration": {
+                    "target": "com.amazonaws.emrserverless#CloudWatchLoggingConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The Amazon CloudWatch configuration for monitoring logs. You can configure your jobs\n         to send log information to CloudWatch.</p>"
                     }
                 }
             },
@@ -2612,6 +2761,32 @@
                 "smithy.api#documentation": "<p>The specified resource was not found.</p>",
                 "smithy.api#error": "client",
                 "smithy.api#httpError": 404
+            }
+        },
+        "com.amazonaws.emrserverless#ResourceUtilization": {
+            "type": "structure",
+            "members": {
+                "vCPUHour": {
+                    "target": "smithy.api#Double",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The aggregated vCPU used per hour from the time the job starts executing until the job\n         is terminated.</p>"
+                    }
+                },
+                "memoryGBHour": {
+                    "target": "smithy.api#Double",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The aggregated memory used per hour from the time the job starts executing until the job\n         is terminated.</p>"
+                    }
+                },
+                "storageGBHour": {
+                    "target": "smithy.api#Double",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The aggregated storage used per hour from the time the job starts executing until the\n         job is terminated.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>The resource utilization for memory, storage, and vCPU for jobs.</p>"
             }
         },
         "com.amazonaws.emrserverless#S3MonitoringConfiguration": {
@@ -2888,7 +3063,7 @@
                 "arn": {
                     "target": "com.amazonaws.emrserverless#JobArn",
                     "traits": {
-                        "smithy.api#documentation": "<p>The output lists the execution role ARN of the job run.</p>",
+                        "smithy.api#documentation": "<p>This output displays the ARN of the job run..</p>",
                         "smithy.api#required": {}
                     }
                 }
@@ -3039,7 +3214,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Assigns tags to resources. A tag is a label that you assign to an AWS resource. Each tag\n         consists of a key and an optional value, both of which you define. Tags enable you to\n         categorize your AWS resources by attributes such as purpose, owner, or environment. When\n         you have many resources of the same type, you can quickly identify a specific resource\n         based on the tags you've assigned to it. </p>",
+                "smithy.api#documentation": "<p>Assigns tags to resources. A tag is a label that you assign to an Amazon Web Services\n         resource. Each tag consists of a key and an optional value, both of which you define. Tags\n         enable you to categorize your Amazon Web Services resources by attributes such as purpose,\n         owner, or environment. When you have many resources of the same type, you can quickly\n         identify a specific resource based on the tags you've assigned to it. </p>",
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/tags/{resourceArn}"
@@ -3242,13 +3417,31 @@
                 "imageConfiguration": {
                     "target": "com.amazonaws.emrserverless#ImageConfigurationInput",
                     "traits": {
-                        "smithy.api#documentation": "<p>The image configuration to be used for all worker types. You can either set this parameter or <code>imageConfiguration</code> \n         for each worker type in <code>WorkerTypeSpecificationInput</code>.</p>"
+                        "smithy.api#documentation": "<p>The image configuration to be used for all worker types. You can either set this\n         parameter or <code>imageConfiguration</code> for each worker type in\n            <code>WorkerTypeSpecificationInput</code>.</p>"
                     }
                 },
                 "workerTypeSpecifications": {
                     "target": "com.amazonaws.emrserverless#WorkerTypeSpecificationInputMap",
                     "traits": {
-                        "smithy.api#documentation": "<p>The key-value pairs that specify worker type to <code>WorkerTypeSpecificationInput</code>. This parameter must contain all valid \n         worker types for a Spark or Hive application. Valid worker types include <code>Driver</code> and <code>Executor</code> for \n         Spark applications and <code>HiveDriver</code> and <code>TezTask</code> for Hive applications. You can either set \n         image details in this parameter for each worker type, or in <code>imageConfiguration</code> for all worker types.</p>"
+                        "smithy.api#documentation": "<p>The key-value pairs that specify worker type to\n            <code>WorkerTypeSpecificationInput</code>. This parameter must contain all valid worker\n         types for a Spark or Hive application. Valid worker types include <code>Driver</code> and\n            <code>Executor</code> for Spark applications and <code>HiveDriver</code> and\n            <code>TezTask</code> for Hive applications. You can either set image details in this\n         parameter for each worker type, or in <code>imageConfiguration</code> for all worker\n         types.</p>"
+                    }
+                },
+                "releaseLabel": {
+                    "target": "com.amazonaws.emrserverless#ReleaseLabel",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The Amazon EMR release label for the application. You can change the release\n         label to use a different release of Amazon EMR.</p>"
+                    }
+                },
+                "runtimeConfiguration": {
+                    "target": "com.amazonaws.emrserverless#ConfigurationList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The <a href=\"https://docs.aws.amazon.com/emr-serverless/latest/APIReference/API_Configuration.html\">Configuration</a> \n         specifications to use when updating an application. Each configuration consists of a classification and properties.\n      This configuration is applied across all the job runs submitted under the application.</p>"
+                    }
+                },
+                "monitoringConfiguration": {
+                    "target": "com.amazonaws.emrserverless#MonitoringConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The configuration setting for monitoring.</p>"
                     }
                 }
             }
@@ -3295,7 +3488,7 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The input fails to satisfy the constraints specified by an AWS service.</p>",
+                "smithy.api#documentation": "<p>The input fails to satisfy the constraints specified by an Amazon Web Services\n         service.</p>",
                 "smithy.api#error": "client",
                 "smithy.api#httpError": 400
             }
@@ -3387,6 +3580,7 @@
         "com.amazonaws.emrserverless#WorkerTypeString": {
             "type": "string",
             "traits": {
+                "smithy.api#documentation": "Worker type for an analytics framework.",
                 "smithy.api#length": {
                     "min": 1,
                     "max": 50

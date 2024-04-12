@@ -3,6 +3,7 @@ package software.amazon.smithy.aws.swift.codegen.customization.route53
 import software.amazon.smithy.aws.swift.codegen.restxml.AWSRestXMLHttpResponseBindingErrorGenerator
 import software.amazon.smithy.model.Model
 import software.amazon.smithy.model.shapes.ServiceShape
+import software.amazon.smithy.swift.codegen.SmithyXMLTypes
 import software.amazon.smithy.swift.codegen.SwiftDelegator
 import software.amazon.smithy.swift.codegen.SwiftDependency
 import software.amazon.smithy.swift.codegen.SwiftSettings
@@ -27,14 +28,11 @@ class Route53InvalidBatchErrorIntegration : SwiftIntegration {
     private val httpResponseBindingErrorGenerator = SectionWriter { writer, previousCode ->
         val operationErrorName = writer.getContext("operationErrorName") as String
         if (operationErrorName == "ChangeResourceRecordSetsOutputError") {
-            writer.openBlock("if let customBatchError = CustomInvalidBatchError.makeFromHttpResponse(httpResponse) {", "}") {
-                writer.openBlock("let invalidChangeBatchError = InvalidChangeBatch(", ")") {
+            writer.openBlock("if let customBatchError = try await CustomInvalidBatchError.makeFromHttpResponse(httpResponse) {", "}") {
+                writer.openBlock("return InvalidChangeBatch(", ")") {
                     writer.write("customError: customBatchError,")
-                    writer.write("headers: httpResponse.headers,")
-                    writer.write("statusCode: httpResponse.statusCode")
+                    writer.write("httpResponse: httpResponse")
                 }
-                writer.write("self = .invalidChangeBatch(invalidChangeBatchError)")
-                writer.write("return")
             }
         }
         writer.write(previousCode)
@@ -49,41 +47,60 @@ class Route53InvalidBatchErrorIntegration : SwiftIntegration {
     }
 
     private fun renderCustomInvalidBatchError(writer: SwiftWriter) {
-        writer.openBlock("struct CustomInvalidBatchError: Decodable {", "}") {
-            writer.openBlock("struct Message: Decodable {", "}") {
-                writer.write("let message: String")
-                writer.openBlock("enum CodingKeys: String, CodingKey {", "}") {
-                    writer.write("case message = \"Message\"")
+        writer.openBlock("struct CustomInvalidBatchError {", "}") {
+            writer.write("")
+            writer.openBlock("struct Message {", "}") {
+                writer.write("var message: String?")
+                writer.write("")
+                writer.write("init() {}")
+                writer.write("")
+                writer.openBlock(
+                    "static func readingClosure(from reader: \$N) throws -> Message? {",
+                    "}",
+                    SmithyXMLTypes.Reader,
+                ) {
+                    writer.write("guard reader.content != nil else { return nil }")
+                    writer.write("var value = Message()")
+                    writer.write("value.message = try reader[\"Message\"].readIfPresent()")
+                    writer.write("return value")
                 }
             }
-            writer.write("let requestId: String")
-            writer.write("let messages: [String]?")
-            writer.openBlock("enum CodingKeys: String, CodingKey {", "}") {
-                writer.write("case messages = \"Messages\"")
-                writer.write("case requestId = \"RequestId\"")
+            writer.write("")
+            writer.write("var requestID: String?")
+            writer.write("var message: String?")
+            writer.write("var messages: [String]?")
+            writer.write("")
+            writer.write("init() {}")
+            writer.write("")
+            writer.openBlock(
+                "static func readingClosure(from reader: \$N) throws -> CustomInvalidBatchError? {",
+                "}",
+                SmithyXMLTypes.Reader,
+            ) {
+                writer.write("guard reader.content != nil else { return nil }")
+                writer.write("var value = CustomInvalidBatchError()")
+                writer.write("value.requestID = try reader[\"RequestId\"].readIfPresent()")
+                writer.write("value.message = try reader[\"Message\"].readIfPresent()")
+                writer.write("value.messages = try reader[\"Messages\"].readListIfPresent(memberReadingClosure: Message.readingClosure(from:), memberNodeInfo: \"Message\", isFlattened: false)?.compactMap(\\.message)")
+                writer.write("return value")
             }
-            writer.openBlock("init(from decoder: Decoder) throws {", "}") {
-                writer.write("let container = try decoder.container(keyedBy: CodingKeys.self)")
-                writer.write("self.requestId = try container.decode(String.self, forKey: .requestId)")
-                writer.write("let messages = try container.decodeIfPresent([Message].self, forKey: .messages)")
-                writer.write("self.messages = messages?.map(\\.message)")
-            }
-            writer.openBlock("static func makeFromHttpResponse(_ httpResponse: ClientRuntime.HttpResponse) -> CustomInvalidBatchError? {", "}") {
-                writer.openBlock("guard let data = httpResponse.body.toBytes()?.getData() else {", "}") {
-                    writer.write("return nil")
-                }
-                writer.write("return try? XMLDecoder().decode(CustomInvalidBatchError.self, from: data)")
+            writer.write("")
+            writer.openBlock("static func makeFromHttpResponse(_ httpResponse: ClientRuntime.HttpResponse) async throws -> CustomInvalidBatchError? {", "}") {
+                writer.write("guard let data = try await httpResponse.body.readData() else { return nil }")
+                writer.write("let reader = try \$N.from(data: data)", SmithyXMLTypes.Reader)
+                writer.write("return try Self.readingClosure(from: reader)")
             }
         }
     }
 
     private fun renderInvalidChangeBatch(writer: SwiftWriter) {
+        writer.write("")
         writer.openBlock("extension InvalidChangeBatch {", "}") {
-            writer.openBlock("init(customError: CustomInvalidBatchError, headers: Headers?, statusCode: HttpStatusCode?) {", "}") {
+            writer.openBlock("init(customError: CustomInvalidBatchError, httpResponse: ClientRuntime.HttpResponse) {", "}") {
                 writer.write("self.init(messages: customError.messages)")
-                writer.write("self._requestID = customError.requestId")
-                writer.write("self._headers = headers")
-                writer.write("self._statusCode = statusCode")
+                writer.write("self.message = customError.message")
+                writer.write("self.requestID = customError.requestID")
+                writer.write("self.httpResponse = httpResponse")
             }
         }
     }

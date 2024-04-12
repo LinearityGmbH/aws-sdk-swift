@@ -531,6 +531,23 @@
                 "smithy.api#documentation": "<p>The details of an Amazon Chime SDK Voice Connector call.</p>"
             }
         },
+        "com.amazonaws.chimesdkvoice#CallLegType": {
+            "type": "enum",
+            "members": {
+                "CALLER": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Caller"
+                    }
+                },
+                "CALLEE": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Callee"
+                    }
+                }
+            }
+        },
         "com.amazonaws.chimesdkvoice#CallingName": {
             "type": "string",
             "traits": {
@@ -998,7 +1015,6 @@
                                     ]
                                 }
                             ],
-                            "type": "tree",
                             "rules": [
                                 {
                                     "conditions": [
@@ -1017,7 +1033,6 @@
                                 },
                                 {
                                     "conditions": [],
-                                    "type": "tree",
                                     "rules": [
                                         {
                                             "conditions": [
@@ -1045,13 +1060,14 @@
                                             },
                                             "type": "endpoint"
                                         }
-                                    ]
+                                    ],
+                                    "type": "tree"
                                 }
-                            ]
+                            ],
+                            "type": "tree"
                         },
                         {
                             "conditions": [],
-                            "type": "tree",
                             "rules": [
                                 {
                                     "conditions": [
@@ -1064,7 +1080,6 @@
                                             ]
                                         }
                                     ],
-                                    "type": "tree",
                                     "rules": [
                                         {
                                             "conditions": [
@@ -1078,7 +1093,6 @@
                                                     "assign": "PartitionResult"
                                                 }
                                             ],
-                                            "type": "tree",
                                             "rules": [
                                                 {
                                                     "conditions": [
@@ -1101,7 +1115,6 @@
                                                             ]
                                                         }
                                                     ],
-                                                    "type": "tree",
                                                     "rules": [
                                                         {
                                                             "conditions": [
@@ -1136,11 +1149,9 @@
                                                                     ]
                                                                 }
                                                             ],
-                                                            "type": "tree",
                                                             "rules": [
                                                                 {
                                                                     "conditions": [],
-                                                                    "type": "tree",
                                                                     "rules": [
                                                                         {
                                                                             "conditions": [],
@@ -1151,16 +1162,19 @@
                                                                             },
                                                                             "type": "endpoint"
                                                                         }
-                                                                    ]
+                                                                    ],
+                                                                    "type": "tree"
                                                                 }
-                                                            ]
+                                                            ],
+                                                            "type": "tree"
                                                         },
                                                         {
                                                             "conditions": [],
                                                             "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
                                                             "type": "error"
                                                         }
-                                                    ]
+                                                    ],
+                                                    "type": "tree"
                                                 },
                                                 {
                                                     "conditions": [
@@ -1174,14 +1188,12 @@
                                                             ]
                                                         }
                                                     ],
-                                                    "type": "tree",
                                                     "rules": [
                                                         {
                                                             "conditions": [
                                                                 {
                                                                     "fn": "booleanEquals",
                                                                     "argv": [
-                                                                        true,
                                                                         {
                                                                             "fn": "getAttr",
                                                                             "argv": [
@@ -1190,15 +1202,14 @@
                                                                                 },
                                                                                 "supportsFIPS"
                                                                             ]
-                                                                        }
+                                                                        },
+                                                                        true
                                                                     ]
                                                                 }
                                                             ],
-                                                            "type": "tree",
                                                             "rules": [
                                                                 {
                                                                     "conditions": [],
-                                                                    "type": "tree",
                                                                     "rules": [
                                                                         {
                                                                             "conditions": [],
@@ -1209,16 +1220,19 @@
                                                                             },
                                                                             "type": "endpoint"
                                                                         }
-                                                                    ]
+                                                                    ],
+                                                                    "type": "tree"
                                                                 }
-                                                            ]
+                                                            ],
+                                                            "type": "tree"
                                                         },
                                                         {
                                                             "conditions": [],
                                                             "error": "FIPS is enabled but this partition does not support FIPS",
                                                             "type": "error"
                                                         }
-                                                    ]
+                                                    ],
+                                                    "type": "tree"
                                                 },
                                                 {
                                                     "conditions": [
@@ -1232,7 +1246,6 @@
                                                             ]
                                                         }
                                                     ],
-                                                    "type": "tree",
                                                     "rules": [
                                                         {
                                                             "conditions": [
@@ -1252,11 +1265,9 @@
                                                                     ]
                                                                 }
                                                             ],
-                                                            "type": "tree",
                                                             "rules": [
                                                                 {
                                                                     "conditions": [],
-                                                                    "type": "tree",
                                                                     "rules": [
                                                                         {
                                                                             "conditions": [],
@@ -1267,20 +1278,22 @@
                                                                             },
                                                                             "type": "endpoint"
                                                                         }
-                                                                    ]
+                                                                    ],
+                                                                    "type": "tree"
                                                                 }
-                                                            ]
+                                                            ],
+                                                            "type": "tree"
                                                         },
                                                         {
                                                             "conditions": [],
                                                             "error": "DualStack is enabled but this partition does not support DualStack",
                                                             "type": "error"
                                                         }
-                                                    ]
+                                                    ],
+                                                    "type": "tree"
                                                 },
                                                 {
                                                     "conditions": [],
-                                                    "type": "tree",
                                                     "rules": [
                                                         {
                                                             "conditions": [],
@@ -1291,175 +1304,27 @@
                                                             },
                                                             "type": "endpoint"
                                                         }
-                                                    ]
+                                                    ],
+                                                    "type": "tree"
                                                 }
-                                            ]
+                                            ],
+                                            "type": "tree"
                                         }
-                                    ]
+                                    ],
+                                    "type": "tree"
                                 },
                                 {
                                     "conditions": [],
                                     "error": "Invalid Configuration: Missing Region",
                                     "type": "error"
                                 }
-                            ]
+                            ],
+                            "type": "tree"
                         }
                     ]
                 },
                 "smithy.rules#endpointTests": {
                     "testCases": [
-                        {
-                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack enabled",
-                            "expect": {
-                                "endpoint": {
-                                    "url": "https://voice-chime-fips.us-gov-east-1.api.aws"
-                                }
-                            },
-                            "params": {
-                                "UseDualStack": true,
-                                "Region": "us-gov-east-1",
-                                "UseFIPS": true
-                            }
-                        },
-                        {
-                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack disabled",
-                            "expect": {
-                                "endpoint": {
-                                    "url": "https://voice-chime-fips.us-gov-east-1.amazonaws.com"
-                                }
-                            },
-                            "params": {
-                                "UseDualStack": false,
-                                "Region": "us-gov-east-1",
-                                "UseFIPS": true
-                            }
-                        },
-                        {
-                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack enabled",
-                            "expect": {
-                                "endpoint": {
-                                    "url": "https://voice-chime.us-gov-east-1.api.aws"
-                                }
-                            },
-                            "params": {
-                                "UseDualStack": true,
-                                "Region": "us-gov-east-1",
-                                "UseFIPS": false
-                            }
-                        },
-                        {
-                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack disabled",
-                            "expect": {
-                                "endpoint": {
-                                    "url": "https://voice-chime.us-gov-east-1.amazonaws.com"
-                                }
-                            },
-                            "params": {
-                                "UseDualStack": false,
-                                "Region": "us-gov-east-1",
-                                "UseFIPS": false
-                            }
-                        },
-                        {
-                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack enabled",
-                            "expect": {
-                                "endpoint": {
-                                    "url": "https://voice-chime-fips.cn-north-1.api.amazonwebservices.com.cn"
-                                }
-                            },
-                            "params": {
-                                "UseDualStack": true,
-                                "Region": "cn-north-1",
-                                "UseFIPS": true
-                            }
-                        },
-                        {
-                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack disabled",
-                            "expect": {
-                                "endpoint": {
-                                    "url": "https://voice-chime-fips.cn-north-1.amazonaws.com.cn"
-                                }
-                            },
-                            "params": {
-                                "UseDualStack": false,
-                                "Region": "cn-north-1",
-                                "UseFIPS": true
-                            }
-                        },
-                        {
-                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack enabled",
-                            "expect": {
-                                "endpoint": {
-                                    "url": "https://voice-chime.cn-north-1.api.amazonwebservices.com.cn"
-                                }
-                            },
-                            "params": {
-                                "UseDualStack": true,
-                                "Region": "cn-north-1",
-                                "UseFIPS": false
-                            }
-                        },
-                        {
-                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack disabled",
-                            "expect": {
-                                "endpoint": {
-                                    "url": "https://voice-chime.cn-north-1.amazonaws.com.cn"
-                                }
-                            },
-                            "params": {
-                                "UseDualStack": false,
-                                "Region": "cn-north-1",
-                                "UseFIPS": false
-                            }
-                        },
-                        {
-                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack enabled",
-                            "expect": {
-                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
-                            },
-                            "params": {
-                                "UseDualStack": true,
-                                "Region": "us-iso-east-1",
-                                "UseFIPS": true
-                            }
-                        },
-                        {
-                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack disabled",
-                            "expect": {
-                                "endpoint": {
-                                    "url": "https://voice-chime-fips.us-iso-east-1.c2s.ic.gov"
-                                }
-                            },
-                            "params": {
-                                "UseDualStack": false,
-                                "Region": "us-iso-east-1",
-                                "UseFIPS": true
-                            }
-                        },
-                        {
-                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack enabled",
-                            "expect": {
-                                "error": "DualStack is enabled but this partition does not support DualStack"
-                            },
-                            "params": {
-                                "UseDualStack": true,
-                                "Region": "us-iso-east-1",
-                                "UseFIPS": false
-                            }
-                        },
-                        {
-                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack disabled",
-                            "expect": {
-                                "endpoint": {
-                                    "url": "https://voice-chime.us-iso-east-1.c2s.ic.gov"
-                                }
-                            },
-                            "params": {
-                                "UseDualStack": false,
-                                "Region": "us-iso-east-1",
-                                "UseFIPS": false
-                            }
-                        },
                         {
                             "documentation": "For region us-east-1 with FIPS enabled and DualStack enabled",
                             "expect": {
@@ -1468,9 +1333,9 @@
                                 }
                             },
                             "params": {
-                                "UseDualStack": true,
                                 "Region": "us-east-1",
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1481,9 +1346,9 @@
                                 }
                             },
                             "params": {
-                                "UseDualStack": false,
                                 "Region": "us-east-1",
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1494,9 +1359,9 @@
                                 }
                             },
                             "params": {
-                                "UseDualStack": true,
                                 "Region": "us-east-1",
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1507,9 +1372,161 @@
                                 }
                             },
                             "params": {
-                                "UseDualStack": false,
                                 "Region": "us-east-1",
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://voice-chime-fips.cn-north-1.api.amazonwebservices.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://voice-chime-fips.cn-north-1.amazonaws.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://voice-chime.cn-north-1.api.amazonwebservices.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://voice-chime.cn-north-1.amazonaws.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://voice-chime-fips.us-gov-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://voice-chime-fips.us-gov-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://voice-chime.us-gov-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://voice-chime.us-gov-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://voice-chime-fips.us-iso-east-1.c2s.ic.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://voice-chime.us-iso-east-1.c2s.ic.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1518,9 +1535,9 @@
                                 "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
                             },
                             "params": {
-                                "UseDualStack": true,
                                 "Region": "us-isob-east-1",
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1531,9 +1548,9 @@
                                 }
                             },
                             "params": {
-                                "UseDualStack": false,
                                 "Region": "us-isob-east-1",
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1542,9 +1559,9 @@
                                 "error": "DualStack is enabled but this partition does not support DualStack"
                             },
                             "params": {
-                                "UseDualStack": true,
                                 "Region": "us-isob-east-1",
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1555,22 +1572,35 @@
                                 }
                             },
                             "params": {
-                                "UseDualStack": false,
                                 "Region": "us-isob-east-1",
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
-                            "documentation": "For custom endpoint with fips disabled and dualstack disabled",
+                            "documentation": "For custom endpoint with region set and fips disabled and dualstack disabled",
                             "expect": {
                                 "endpoint": {
                                     "url": "https://example.com"
                                 }
                             },
                             "params": {
-                                "UseDualStack": false,
                                 "Region": "us-east-1",
                                 "UseFIPS": false,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with region not set and fips disabled and dualstack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://example.com"
+                                }
+                            },
+                            "params": {
+                                "UseFIPS": false,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -1580,9 +1610,9 @@
                                 "error": "Invalid Configuration: FIPS and custom endpoint are not supported"
                             },
                             "params": {
-                                "UseDualStack": false,
                                 "Region": "us-east-1",
                                 "UseFIPS": true,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -1592,10 +1622,16 @@
                                 "error": "Invalid Configuration: Dualstack and custom endpoint are not supported"
                             },
                             "params": {
-                                "UseDualStack": true,
                                 "Region": "us-east-1",
                                 "UseFIPS": false,
+                                "UseDualStack": true,
                                 "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "Missing region",
+                            "expect": {
+                                "error": "Invalid Configuration: Missing Region"
                             }
                         }
                     ],
@@ -1719,6 +1755,12 @@
                     "traits": {
                         "smithy.api#documentation": "<p>List of phone numbers, in E.164 format.</p>",
                         "smithy.api#required": {}
+                    }
+                },
+                "Name": {
+                    "target": "com.amazonaws.chimesdkvoice#PhoneNumberName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Specifies the name assigned to one or more phone numbers.</p>"
                     }
                 }
             },
@@ -2022,6 +2064,12 @@
                         "smithy.api#documentation": "<p>List of endpoints (Lambda ARNs) specified for the SIP media application.</p>",
                         "smithy.api#required": {}
                     }
+                },
+                "Tags": {
+                    "target": "com.amazonaws.chimesdkvoice#TagList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The tags assigned to the SIP media application.</p>"
+                    }
                 }
             },
             "traits": {
@@ -2285,6 +2333,12 @@
                     "traits": {
                         "smithy.api#documentation": "<p>Enables or disables encryption for the Voice Connector.</p>",
                         "smithy.api#required": {}
+                    }
+                },
+                "Tags": {
+                    "target": "com.amazonaws.chimesdkvoice#TagList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The tags assigned to the Voice Connector.</p>"
                     }
                 }
             },
@@ -3710,7 +3764,7 @@
                 "Country": {
                     "target": "com.amazonaws.chimesdkvoice#Country",
                     "traits": {
-                        "smithy.api#documentation": "<p>The country. </p>",
+                        "smithy.api#documentation": "<p>The country.</p>",
                         "smithy.api#required": {}
                     }
                 },
@@ -6418,7 +6472,7 @@
                 "EnableSIPLogs": {
                     "target": "com.amazonaws.chimesdkvoice#Boolean",
                     "traits": {
-                        "smithy.api#documentation": "<p>Boolean that enables sending SIP message logs to Amazon CloudWatch logs.</p>"
+                        "smithy.api#documentation": "<p>Boolean that enables sending SIP message logs to Amazon CloudWatch.</p>"
                     }
                 },
                 "EnableMediaMetricLogs": {
@@ -6829,6 +6883,12 @@
                     "traits": {
                         "smithy.api#documentation": "<p>The phone number's order ID.</p>"
                     }
+                },
+                "Name": {
+                    "target": "com.amazonaws.chimesdkvoice#PhoneNumberName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The name of the phone number.</p>"
+                    }
                 }
             },
             "traits": {
@@ -7005,6 +7065,17 @@
                     "min": 1,
                     "max": 500
                 }
+            }
+        },
+        "com.amazonaws.chimesdkvoice#PhoneNumberName": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 256
+                },
+                "smithy.api#pattern": "^$|^[a-zA-Z0-9\\,\\.\\_\\-]+(\\s+[a-zA-Z0-9\\,\\.\\_\\-]+)*$",
+                "smithy.api#sensitive": {}
             }
         },
         "com.amazonaws.chimesdkvoice#PhoneNumberOrder": {
@@ -8504,7 +8575,7 @@
                 "Endpoints": {
                     "target": "com.amazonaws.chimesdkvoice#SipMediaApplicationEndpointList",
                     "traits": {
-                        "smithy.api#documentation": "<p>List of endpoints for SIP media application. Currently, only one endpoint per \n         SIP media application is permitted.</p>"
+                        "smithy.api#documentation": "<p>List of endpoints for a SIP media application. Currently, only one endpoint per \n         SIP media application is permitted.</p>"
                     }
                 },
                 "CreatedTimestamp": {
@@ -8517,6 +8588,12 @@
                     "target": "com.amazonaws.chimesdkvoice#Iso8601Timestamp",
                     "traits": {
                         "smithy.api#documentation": "<p>The time at which the SIP media application was updated.</p>"
+                    }
+                },
+                "SipMediaApplicationArn": {
+                    "target": "com.amazonaws.chimesdkvoice#NonEmptyString",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The ARN of the SIP media application.</p>"
                     }
                 }
             },
@@ -8931,6 +9008,12 @@
                     "traits": {
                         "smithy.api#documentation": "<p>The unique identifier for the client request. Use a different token for different speaker search tasks.</p>"
                     }
+                },
+                "CallLeg": {
+                    "target": "com.amazonaws.chimesdkvoice#CallLegType",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Specifies which call leg to stream for speaker search.</p>"
+                    }
                 }
             },
             "traits": {
@@ -8998,7 +9081,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Starts a voice tone analysis task. For more information about voice tone analysis, see \n         <a href=\"https://docs.aws.amazon.com/chime-sdk/latest/dg/pstn-voice-analytics.html\">Using Amazon Chime SDK voice analytics</a> \n         in the <i>Amazon Chime SDK Developer Guide</i>.</p>\n         <important>\n            <p>Before starting any voice tone analysis tasks, you must provide all notices and obtain all consents from the speaker as required under applicable privacy and biometrics laws, and as required under the  \n         <a href=\"https://aws.amazon.com/service-terms/\">AWS service terms</a> for the Amazon Chime SDK.</p>\n         </important>",
+                "smithy.api#documentation": "<p>Starts a voice tone analysis task. For more information about voice tone analysis, see \n         <a href=\"https://docs.aws.amazon.com/chime-sdk/latest/dg/pstn-voice-analytics.html\">Using Amazon Chime SDK voice analytics</a> \n         in the <i>Amazon Chime SDK Developer Guide</i>.</p>\n         <important>\n            <p>Before starting any voice tone analysis tasks, you must provide all notices and obtain all consents from the speaker as required under applicable privacy and biometrics laws, and as required under the \n         <a href=\"https://aws.amazon.com/service-terms/\">AWS service terms</a> for the Amazon Chime SDK.</p>\n         </important>",
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/voice-connectors/{VoiceConnectorId}/voice-tone-analysis-tasks",
@@ -9699,6 +9782,12 @@
                     "traits": {
                         "smithy.api#documentation": "<p>The outbound calling name associated with the phone number.</p>"
                     }
+                },
+                "Name": {
+                    "target": "com.amazonaws.chimesdkvoice#PhoneNumberName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Specifies the name assigned to one or more phone numbers.</p>"
+                    }
                 }
             },
             "traits": {
@@ -9725,6 +9814,12 @@
                     "target": "com.amazonaws.chimesdkvoice#CallingName",
                     "traits": {
                         "smithy.api#documentation": "<p>The outbound calling name to update.</p>"
+                    }
+                },
+                "Name": {
+                    "target": "com.amazonaws.chimesdkvoice#PhoneNumberName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The name of the phone number.</p>"
                     }
                 }
             },

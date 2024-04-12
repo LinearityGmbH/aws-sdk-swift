@@ -3,43 +3,46 @@ import AWSClientRuntime
 import ClientRuntime
 
 extension AccessDeniedException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: AccessDeniedExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// You aren't authorized to perform the action. Use the Amazon Resource Name (ARN) of an authorized user or IAM role to perform the operation.
-public struct AccessDeniedException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct AccessDeniedException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "AccessDeniedException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -54,7 +57,7 @@ extension AccessDeniedExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -63,8 +66,441 @@ extension AccessDeniedExceptionBody: Swift.Decodable {
     }
 }
 
+extension TextractClientTypes.Adapter: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case pages = "Pages"
+        case version = "Version"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterId = self.adapterId {
+            try encodeContainer.encode(adapterId, forKey: .adapterId)
+        }
+        if let pages = pages {
+            var pagesContainer = encodeContainer.nestedUnkeyedContainer(forKey: .pages)
+            for adapterpage0 in pages {
+                try pagesContainer.encode(adapterpage0)
+            }
+        }
+        if let version = self.version {
+            try encodeContainer.encode(version, forKey: .version)
+        }
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let pagesContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .pages)
+        var pagesDecoded0:[Swift.String]? = nil
+        if let pagesContainer = pagesContainer {
+            pagesDecoded0 = [Swift.String]()
+            for string0 in pagesContainer {
+                if let string0 = string0 {
+                    pagesDecoded0?.append(string0)
+                }
+            }
+        }
+        pages = pagesDecoded0
+        let versionDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .version)
+        version = versionDecoded
+    }
+}
+
+extension TextractClientTypes {
+    /// An adapter selected for use when analyzing documents. Contains an adapter ID and a version number. Contains information on pages selected for analysis when analyzing documents asychronously.
+    public struct Adapter: Swift.Equatable {
+        /// A unique identifier for the adapter resource.
+        /// This member is required.
+        public var adapterId: Swift.String?
+        /// Pages is a parameter that the user inputs to specify which pages to apply an adapter to. The following is a list of rules for using this parameter.
+        ///
+        /// * If a page is not specified, it is set to ["1"] by default.
+        ///
+        /// * The following characters are allowed in the parameter's string: 0 1 2 3 4 5 6 7 8 9 - *. No whitespace is allowed.
+        ///
+        /// * When using * to indicate all pages, it must be the only element in the list.
+        ///
+        /// * You can use page intervals, such as ["1-3", "1-1", "4-*"]. Where * indicates last page of document.
+        ///
+        /// * Specified pages must be greater than 0 and less than or equal to the number of pages in the document.
+        public var pages: [Swift.String]?
+        /// A string that identifies the version of the adapter.
+        /// This member is required.
+        public var version: Swift.String?
+
+        public init(
+            adapterId: Swift.String? = nil,
+            pages: [Swift.String]? = nil,
+            version: Swift.String? = nil
+        )
+        {
+            self.adapterId = adapterId
+            self.pages = pages
+            self.version = version
+        }
+    }
+
+}
+
+extension TextractClientTypes.AdapterOverview: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterName = "AdapterName"
+        case creationTime = "CreationTime"
+        case featureTypes = "FeatureTypes"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterId = self.adapterId {
+            try encodeContainer.encode(adapterId, forKey: .adapterId)
+        }
+        if let adapterName = self.adapterName {
+            try encodeContainer.encode(adapterName, forKey: .adapterName)
+        }
+        if let creationTime = self.creationTime {
+            try encodeContainer.encodeTimestamp(creationTime, format: .epochSeconds, forKey: .creationTime)
+        }
+        if let featureTypes = featureTypes {
+            var featureTypesContainer = encodeContainer.nestedUnkeyedContainer(forKey: .featureTypes)
+            for featuretype0 in featureTypes {
+                try featureTypesContainer.encode(featuretype0.rawValue)
+            }
+        }
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let adapterNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterName)
+        adapterName = adapterNameDecoded
+        let creationTimeDecoded = try containerValues.decodeTimestampIfPresent(.epochSeconds, forKey: .creationTime)
+        creationTime = creationTimeDecoded
+        let featureTypesContainer = try containerValues.decodeIfPresent([TextractClientTypes.FeatureType?].self, forKey: .featureTypes)
+        var featureTypesDecoded0:[TextractClientTypes.FeatureType]? = nil
+        if let featureTypesContainer = featureTypesContainer {
+            featureTypesDecoded0 = [TextractClientTypes.FeatureType]()
+            for enum0 in featureTypesContainer {
+                if let enum0 = enum0 {
+                    featureTypesDecoded0?.append(enum0)
+                }
+            }
+        }
+        featureTypes = featureTypesDecoded0
+    }
+}
+
+extension TextractClientTypes {
+    /// Contains information on the adapter, including the adapter ID, Name, Creation time, and feature types.
+    public struct AdapterOverview: Swift.Equatable {
+        /// A unique identifier for the adapter resource.
+        public var adapterId: Swift.String?
+        /// A string naming the adapter resource.
+        public var adapterName: Swift.String?
+        /// The date and time that the adapter was created.
+        public var creationTime: ClientRuntime.Date?
+        /// The feature types that the adapter is operating on.
+        public var featureTypes: [TextractClientTypes.FeatureType]?
+
+        public init(
+            adapterId: Swift.String? = nil,
+            adapterName: Swift.String? = nil,
+            creationTime: ClientRuntime.Date? = nil,
+            featureTypes: [TextractClientTypes.FeatureType]? = nil
+        )
+        {
+            self.adapterId = adapterId
+            self.adapterName = adapterName
+            self.creationTime = creationTime
+            self.featureTypes = featureTypes
+        }
+    }
+
+}
+
+extension TextractClientTypes.AdapterVersionDatasetConfig: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case manifestS3Object = "ManifestS3Object"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let manifestS3Object = self.manifestS3Object {
+            try encodeContainer.encode(manifestS3Object, forKey: .manifestS3Object)
+        }
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let manifestS3ObjectDecoded = try containerValues.decodeIfPresent(TextractClientTypes.S3Object.self, forKey: .manifestS3Object)
+        manifestS3Object = manifestS3ObjectDecoded
+    }
+}
+
+extension TextractClientTypes {
+    /// The dataset configuration options for a given version of an adapter. Can include an Amazon S3 bucket if specified.
+    public struct AdapterVersionDatasetConfig: Swift.Equatable {
+        /// The S3 bucket name and file name that identifies the document. The AWS Region for the S3 bucket that contains the document must match the Region that you use for Amazon Textract operations. For Amazon Textract to process a file in an S3 bucket, the user must have permission to access the S3 bucket and file.
+        public var manifestS3Object: TextractClientTypes.S3Object?
+
+        public init(
+            manifestS3Object: TextractClientTypes.S3Object? = nil
+        )
+        {
+            self.manifestS3Object = manifestS3Object
+        }
+    }
+
+}
+
+extension TextractClientTypes.AdapterVersionEvaluationMetric: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterVersion = "AdapterVersion"
+        case baseline = "Baseline"
+        case featureType = "FeatureType"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterVersion = self.adapterVersion {
+            try encodeContainer.encode(adapterVersion, forKey: .adapterVersion)
+        }
+        if let baseline = self.baseline {
+            try encodeContainer.encode(baseline, forKey: .baseline)
+        }
+        if let featureType = self.featureType {
+            try encodeContainer.encode(featureType.rawValue, forKey: .featureType)
+        }
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let baselineDecoded = try containerValues.decodeIfPresent(TextractClientTypes.EvaluationMetric.self, forKey: .baseline)
+        baseline = baselineDecoded
+        let adapterVersionDecoded = try containerValues.decodeIfPresent(TextractClientTypes.EvaluationMetric.self, forKey: .adapterVersion)
+        adapterVersion = adapterVersionDecoded
+        let featureTypeDecoded = try containerValues.decodeIfPresent(TextractClientTypes.FeatureType.self, forKey: .featureType)
+        featureType = featureTypeDecoded
+    }
+}
+
+extension TextractClientTypes {
+    /// Contains information on the metrics used to evalute the peformance of a given adapter version. Includes data for baseline model performance and individual adapter version perfromance.
+    public struct AdapterVersionEvaluationMetric: Swift.Equatable {
+        /// The F1 score, precision, and recall metrics for the baseline model.
+        public var adapterVersion: TextractClientTypes.EvaluationMetric?
+        /// The F1 score, precision, and recall metrics for the baseline model.
+        public var baseline: TextractClientTypes.EvaluationMetric?
+        /// Indicates the feature type being analyzed by a given adapter version.
+        public var featureType: TextractClientTypes.FeatureType?
+
+        public init(
+            adapterVersion: TextractClientTypes.EvaluationMetric? = nil,
+            baseline: TextractClientTypes.EvaluationMetric? = nil,
+            featureType: TextractClientTypes.FeatureType? = nil
+        )
+        {
+            self.adapterVersion = adapterVersion
+            self.baseline = baseline
+            self.featureType = featureType
+        }
+    }
+
+}
+
+extension TextractClientTypes.AdapterVersionOverview: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterVersion = "AdapterVersion"
+        case creationTime = "CreationTime"
+        case featureTypes = "FeatureTypes"
+        case status = "Status"
+        case statusMessage = "StatusMessage"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterId = self.adapterId {
+            try encodeContainer.encode(adapterId, forKey: .adapterId)
+        }
+        if let adapterVersion = self.adapterVersion {
+            try encodeContainer.encode(adapterVersion, forKey: .adapterVersion)
+        }
+        if let creationTime = self.creationTime {
+            try encodeContainer.encodeTimestamp(creationTime, format: .epochSeconds, forKey: .creationTime)
+        }
+        if let featureTypes = featureTypes {
+            var featureTypesContainer = encodeContainer.nestedUnkeyedContainer(forKey: .featureTypes)
+            for featuretype0 in featureTypes {
+                try featureTypesContainer.encode(featuretype0.rawValue)
+            }
+        }
+        if let status = self.status {
+            try encodeContainer.encode(status.rawValue, forKey: .status)
+        }
+        if let statusMessage = self.statusMessage {
+            try encodeContainer.encode(statusMessage, forKey: .statusMessage)
+        }
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let adapterVersionDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterVersion)
+        adapterVersion = adapterVersionDecoded
+        let creationTimeDecoded = try containerValues.decodeTimestampIfPresent(.epochSeconds, forKey: .creationTime)
+        creationTime = creationTimeDecoded
+        let featureTypesContainer = try containerValues.decodeIfPresent([TextractClientTypes.FeatureType?].self, forKey: .featureTypes)
+        var featureTypesDecoded0:[TextractClientTypes.FeatureType]? = nil
+        if let featureTypesContainer = featureTypesContainer {
+            featureTypesDecoded0 = [TextractClientTypes.FeatureType]()
+            for enum0 in featureTypesContainer {
+                if let enum0 = enum0 {
+                    featureTypesDecoded0?.append(enum0)
+                }
+            }
+        }
+        featureTypes = featureTypesDecoded0
+        let statusDecoded = try containerValues.decodeIfPresent(TextractClientTypes.AdapterVersionStatus.self, forKey: .status)
+        status = statusDecoded
+        let statusMessageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .statusMessage)
+        statusMessage = statusMessageDecoded
+    }
+}
+
+extension TextractClientTypes {
+    /// Summary info for an adapter version. Contains information on the AdapterId, AdapterVersion, CreationTime, FeatureTypes, and Status.
+    public struct AdapterVersionOverview: Swift.Equatable {
+        /// A unique identifier for the adapter associated with a given adapter version.
+        public var adapterId: Swift.String?
+        /// An identified for a given adapter version.
+        public var adapterVersion: Swift.String?
+        /// The date and time that a given adapter version was created.
+        public var creationTime: ClientRuntime.Date?
+        /// The feature types that the adapter version is operating on.
+        public var featureTypes: [TextractClientTypes.FeatureType]?
+        /// Contains information on the status of a given adapter version.
+        public var status: TextractClientTypes.AdapterVersionStatus?
+        /// A message explaining the status of a given adapter vesion.
+        public var statusMessage: Swift.String?
+
+        public init(
+            adapterId: Swift.String? = nil,
+            adapterVersion: Swift.String? = nil,
+            creationTime: ClientRuntime.Date? = nil,
+            featureTypes: [TextractClientTypes.FeatureType]? = nil,
+            status: TextractClientTypes.AdapterVersionStatus? = nil,
+            statusMessage: Swift.String? = nil
+        )
+        {
+            self.adapterId = adapterId
+            self.adapterVersion = adapterVersion
+            self.creationTime = creationTime
+            self.featureTypes = featureTypes
+            self.status = status
+            self.statusMessage = statusMessage
+        }
+    }
+
+}
+
+extension TextractClientTypes {
+    public enum AdapterVersionStatus: Swift.Equatable, Swift.RawRepresentable, Swift.CaseIterable, Swift.Codable, Swift.Hashable {
+        case active
+        case atRisk
+        case creationError
+        case creationInProgress
+        case deprecated
+        case sdkUnknown(Swift.String)
+
+        public static var allCases: [AdapterVersionStatus] {
+            return [
+                .active,
+                .atRisk,
+                .creationError,
+                .creationInProgress,
+                .deprecated,
+                .sdkUnknown("")
+            ]
+        }
+        public init?(rawValue: Swift.String) {
+            let value = Self.allCases.first(where: { $0.rawValue == rawValue })
+            self = value ?? Self.sdkUnknown(rawValue)
+        }
+        public var rawValue: Swift.String {
+            switch self {
+            case .active: return "ACTIVE"
+            case .atRisk: return "AT_RISK"
+            case .creationError: return "CREATION_ERROR"
+            case .creationInProgress: return "CREATION_IN_PROGRESS"
+            case .deprecated: return "DEPRECATED"
+            case let .sdkUnknown(s): return s
+            }
+        }
+        public init(from decoder: Swift.Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(RawValue.self)
+            self = AdapterVersionStatus(rawValue: rawValue) ?? AdapterVersionStatus.sdkUnknown(rawValue)
+        }
+    }
+}
+
+extension TextractClientTypes.AdaptersConfig: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapters = "Adapters"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapters = adapters {
+            var adaptersContainer = encodeContainer.nestedUnkeyedContainer(forKey: .adapters)
+            for adapter0 in adapters {
+                try adaptersContainer.encode(adapter0)
+            }
+        }
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adaptersContainer = try containerValues.decodeIfPresent([TextractClientTypes.Adapter?].self, forKey: .adapters)
+        var adaptersDecoded0:[TextractClientTypes.Adapter]? = nil
+        if let adaptersContainer = adaptersContainer {
+            adaptersDecoded0 = [TextractClientTypes.Adapter]()
+            for structure0 in adaptersContainer {
+                if let structure0 = structure0 {
+                    adaptersDecoded0?.append(structure0)
+                }
+            }
+        }
+        adapters = adaptersDecoded0
+    }
+}
+
+extension TextractClientTypes {
+    /// Contains information about adapters used when analyzing a document, with each adapter specified using an AdapterId and version
+    public struct AdaptersConfig: Swift.Equatable {
+        /// A list of adapters to be used when analyzing the specified document.
+        /// This member is required.
+        public var adapters: [TextractClientTypes.Adapter]?
+
+        public init(
+            adapters: [TextractClientTypes.Adapter]? = nil
+        )
+        {
+            self.adapters = adapters
+        }
+    }
+
+}
+
 extension AnalyzeDocumentInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adaptersConfig = "AdaptersConfig"
         case document = "Document"
         case featureTypes = "FeatureTypes"
         case humanLoopConfig = "HumanLoopConfig"
@@ -73,6 +509,9 @@ extension AnalyzeDocumentInput: Swift.Encodable {
 
     public func encode(to encoder: Swift.Encoder) throws {
         var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adaptersConfig = self.adaptersConfig {
+            try encodeContainer.encode(adaptersConfig, forKey: .adaptersConfig)
+        }
         if let document = self.document {
             try encodeContainer.encode(document, forKey: .document)
         }
@@ -91,17 +530,20 @@ extension AnalyzeDocumentInput: Swift.Encodable {
     }
 }
 
-extension AnalyzeDocumentInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension AnalyzeDocumentInput {
+
+    static func urlPathProvider(_ value: AnalyzeDocumentInput) -> Swift.String? {
         return "/"
     }
 }
 
 public struct AnalyzeDocumentInput: Swift.Equatable {
+    /// Specifies the adapter to be used when analyzing a document.
+    public var adaptersConfig: TextractClientTypes.AdaptersConfig?
     /// The input document as base64-encoded bytes or an Amazon S3 object. If you use the AWS CLI to call Amazon Textract operations, you can't pass image bytes. The document must be an image in JPEG, PNG, PDF, or TIFF format. If you're using an AWS SDK to call Amazon Textract, you might not need to base64-encode image bytes that are passed using the Bytes field.
     /// This member is required.
     public var document: TextractClientTypes.Document?
-    /// A list of the types of analysis to perform. Add TABLES to the list to return information about the tables that are detected in the input document. Add FORMS to return detected form data. Add SIGNATURES to return the locations of detected signatures. To perform both forms and table analysis, add TABLES and FORMS to FeatureTypes. To detect signatures within form data and table data, add SIGNATURES to either TABLES or FORMS. All lines and words detected in the document are included in the response (including text that isn't related to the value of FeatureTypes).
+    /// A list of the types of analysis to perform. Add TABLES to the list to return information about the tables that are detected in the input document. Add FORMS to return detected form data. Add SIGNATURES to return the locations of detected signatures. Add LAYOUT to the list to return information about the layout of the document. All lines and words detected in the document are included in the response (including text that isn't related to the value of FeatureTypes).
     /// This member is required.
     public var featureTypes: [TextractClientTypes.FeatureType]?
     /// Sets the configuration for the human in the loop workflow for analyzing documents.
@@ -109,13 +551,15 @@ public struct AnalyzeDocumentInput: Swift.Equatable {
     /// Contains Queries and the alias for those Queries, as determined by the input.
     public var queriesConfig: TextractClientTypes.QueriesConfig?
 
-    public init (
+    public init(
+        adaptersConfig: TextractClientTypes.AdaptersConfig? = nil,
         document: TextractClientTypes.Document? = nil,
         featureTypes: [TextractClientTypes.FeatureType]? = nil,
         humanLoopConfig: TextractClientTypes.HumanLoopConfig? = nil,
         queriesConfig: TextractClientTypes.QueriesConfig? = nil
     )
     {
+        self.adaptersConfig = adaptersConfig
         self.document = document
         self.featureTypes = featureTypes
         self.humanLoopConfig = humanLoopConfig
@@ -128,17 +572,19 @@ struct AnalyzeDocumentInputBody: Swift.Equatable {
     let featureTypes: [TextractClientTypes.FeatureType]?
     let humanLoopConfig: TextractClientTypes.HumanLoopConfig?
     let queriesConfig: TextractClientTypes.QueriesConfig?
+    let adaptersConfig: TextractClientTypes.AdaptersConfig?
 }
 
 extension AnalyzeDocumentInputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adaptersConfig = "AdaptersConfig"
         case document = "Document"
         case featureTypes = "FeatureTypes"
         case humanLoopConfig = "HumanLoopConfig"
         case queriesConfig = "QueriesConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentDecoded = try containerValues.decodeIfPresent(TextractClientTypes.Document.self, forKey: .document)
         document = documentDecoded
@@ -157,55 +603,16 @@ extension AnalyzeDocumentInputBody: Swift.Decodable {
         humanLoopConfig = humanLoopConfigDecoded
         let queriesConfigDecoded = try containerValues.decodeIfPresent(TextractClientTypes.QueriesConfig.self, forKey: .queriesConfig)
         queriesConfig = queriesConfigDecoded
+        let adaptersConfigDecoded = try containerValues.decodeIfPresent(TextractClientTypes.AdaptersConfig.self, forKey: .adaptersConfig)
+        adaptersConfig = adaptersConfigDecoded
     }
 }
 
-extension AnalyzeDocumentOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension AnalyzeDocumentOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "BadDocumentException" : self = .badDocumentException(try BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "DocumentTooLargeException" : self = .documentTooLargeException(try DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "HumanLoopQuotaExceededException" : self = .humanLoopQuotaExceededException(try HumanLoopQuotaExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedDocumentException" : self = .unsupportedDocumentException(try UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum AnalyzeDocumentOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case badDocumentException(BadDocumentException)
-    case documentTooLargeException(DocumentTooLargeException)
-    case humanLoopQuotaExceededException(HumanLoopQuotaExceededException)
-    case internalServerError(InternalServerError)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unsupportedDocumentException(UnsupportedDocumentException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension AnalyzeDocumentOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension AnalyzeDocumentOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: AnalyzeDocumentOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: AnalyzeDocumentOutputBody = try responseDecoder.decode(responseBody: data)
             self.analyzeDocumentModelVersion = output.analyzeDocumentModelVersion
             self.blocks = output.blocks
             self.documentMetadata = output.documentMetadata
@@ -219,7 +626,7 @@ extension AnalyzeDocumentOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct AnalyzeDocumentOutputResponse: Swift.Equatable {
+public struct AnalyzeDocumentOutput: Swift.Equatable {
     /// The version of the model used to analyze the document.
     public var analyzeDocumentModelVersion: Swift.String?
     /// The items that are detected and analyzed by AnalyzeDocument.
@@ -229,7 +636,7 @@ public struct AnalyzeDocumentOutputResponse: Swift.Equatable {
     /// Shows the results of the human in the loop evaluation.
     public var humanLoopActivationOutput: TextractClientTypes.HumanLoopActivationOutput?
 
-    public init (
+    public init(
         analyzeDocumentModelVersion: Swift.String? = nil,
         blocks: [TextractClientTypes.Block]? = nil,
         documentMetadata: TextractClientTypes.DocumentMetadata? = nil,
@@ -243,14 +650,14 @@ public struct AnalyzeDocumentOutputResponse: Swift.Equatable {
     }
 }
 
-struct AnalyzeDocumentOutputResponseBody: Swift.Equatable {
+struct AnalyzeDocumentOutputBody: Swift.Equatable {
     let documentMetadata: TextractClientTypes.DocumentMetadata?
     let blocks: [TextractClientTypes.Block]?
     let humanLoopActivationOutput: TextractClientTypes.HumanLoopActivationOutput?
     let analyzeDocumentModelVersion: Swift.String?
 }
 
-extension AnalyzeDocumentOutputResponseBody: Swift.Decodable {
+extension AnalyzeDocumentOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case analyzeDocumentModelVersion = "AnalyzeDocumentModelVersion"
         case blocks = "Blocks"
@@ -258,7 +665,7 @@ extension AnalyzeDocumentOutputResponseBody: Swift.Decodable {
         case humanLoopActivationOutput = "HumanLoopActivationOutput"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentMetadataDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentMetadata.self, forKey: .documentMetadata)
         documentMetadata = documentMetadataDecoded
@@ -280,6 +687,26 @@ extension AnalyzeDocumentOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum AnalyzeDocumentOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "BadDocumentException": return try await BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "DocumentTooLargeException": return try await DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "HumanLoopQuotaExceededException": return try await HumanLoopQuotaExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedDocumentException": return try await UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension AnalyzeExpenseInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case document = "Document"
@@ -293,8 +720,9 @@ extension AnalyzeExpenseInput: Swift.Encodable {
     }
 }
 
-extension AnalyzeExpenseInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension AnalyzeExpenseInput {
+
+    static func urlPathProvider(_ value: AnalyzeExpenseInput) -> Swift.String? {
         return "/"
     }
 }
@@ -304,7 +732,7 @@ public struct AnalyzeExpenseInput: Swift.Equatable {
     /// This member is required.
     public var document: TextractClientTypes.Document?
 
-    public init (
+    public init(
         document: TextractClientTypes.Document? = nil
     )
     {
@@ -321,57 +749,18 @@ extension AnalyzeExpenseInputBody: Swift.Decodable {
         case document = "Document"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentDecoded = try containerValues.decodeIfPresent(TextractClientTypes.Document.self, forKey: .document)
         document = documentDecoded
     }
 }
 
-extension AnalyzeExpenseOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension AnalyzeExpenseOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "BadDocumentException" : self = .badDocumentException(try BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "DocumentTooLargeException" : self = .documentTooLargeException(try DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedDocumentException" : self = .unsupportedDocumentException(try UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum AnalyzeExpenseOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case badDocumentException(BadDocumentException)
-    case documentTooLargeException(DocumentTooLargeException)
-    case internalServerError(InternalServerError)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unsupportedDocumentException(UnsupportedDocumentException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension AnalyzeExpenseOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension AnalyzeExpenseOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: AnalyzeExpenseOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: AnalyzeExpenseOutputBody = try responseDecoder.decode(responseBody: data)
             self.documentMetadata = output.documentMetadata
             self.expenseDocuments = output.expenseDocuments
         } else {
@@ -381,13 +770,13 @@ extension AnalyzeExpenseOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct AnalyzeExpenseOutputResponse: Swift.Equatable {
+public struct AnalyzeExpenseOutput: Swift.Equatable {
     /// Information about the input document.
     public var documentMetadata: TextractClientTypes.DocumentMetadata?
     /// The expenses detected by Amazon Textract.
     public var expenseDocuments: [TextractClientTypes.ExpenseDocument]?
 
-    public init (
+    public init(
         documentMetadata: TextractClientTypes.DocumentMetadata? = nil,
         expenseDocuments: [TextractClientTypes.ExpenseDocument]? = nil
     )
@@ -397,18 +786,18 @@ public struct AnalyzeExpenseOutputResponse: Swift.Equatable {
     }
 }
 
-struct AnalyzeExpenseOutputResponseBody: Swift.Equatable {
+struct AnalyzeExpenseOutputBody: Swift.Equatable {
     let documentMetadata: TextractClientTypes.DocumentMetadata?
     let expenseDocuments: [TextractClientTypes.ExpenseDocument]?
 }
 
-extension AnalyzeExpenseOutputResponseBody: Swift.Decodable {
+extension AnalyzeExpenseOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case documentMetadata = "DocumentMetadata"
         case expenseDocuments = "ExpenseDocuments"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentMetadataDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentMetadata.self, forKey: .documentMetadata)
         documentMetadata = documentMetadataDecoded
@@ -423,6 +812,25 @@ extension AnalyzeExpenseOutputResponseBody: Swift.Decodable {
             }
         }
         expenseDocuments = expenseDocumentsDecoded0
+    }
+}
+
+enum AnalyzeExpenseOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "BadDocumentException": return try await BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "DocumentTooLargeException": return try await DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedDocumentException": return try await UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -446,7 +854,7 @@ extension TextractClientTypes.AnalyzeIDDetections: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -468,7 +876,7 @@ extension TextractClientTypes {
         /// This member is required.
         public var text: Swift.String?
 
-        public init (
+        public init(
             confidence: Swift.Float? = nil,
             normalizedValue: TextractClientTypes.NormalizedValue? = nil,
             text: Swift.String? = nil
@@ -498,8 +906,9 @@ extension AnalyzeIDInput: Swift.Encodable {
     }
 }
 
-extension AnalyzeIDInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension AnalyzeIDInput {
+
+    static func urlPathProvider(_ value: AnalyzeIDInput) -> Swift.String? {
         return "/"
     }
 }
@@ -509,7 +918,7 @@ public struct AnalyzeIDInput: Swift.Equatable {
     /// This member is required.
     public var documentPages: [TextractClientTypes.Document]?
 
-    public init (
+    public init(
         documentPages: [TextractClientTypes.Document]? = nil
     )
     {
@@ -526,7 +935,7 @@ extension AnalyzeIDInputBody: Swift.Decodable {
         case documentPages = "DocumentPages"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentPagesContainer = try containerValues.decodeIfPresent([TextractClientTypes.Document?].self, forKey: .documentPages)
         var documentPagesDecoded0:[TextractClientTypes.Document]? = nil
@@ -542,50 +951,11 @@ extension AnalyzeIDInputBody: Swift.Decodable {
     }
 }
 
-extension AnalyzeIDOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension AnalyzeIDOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "BadDocumentException" : self = .badDocumentException(try BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "DocumentTooLargeException" : self = .documentTooLargeException(try DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedDocumentException" : self = .unsupportedDocumentException(try UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum AnalyzeIDOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case badDocumentException(BadDocumentException)
-    case documentTooLargeException(DocumentTooLargeException)
-    case internalServerError(InternalServerError)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unsupportedDocumentException(UnsupportedDocumentException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension AnalyzeIDOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension AnalyzeIDOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: AnalyzeIDOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: AnalyzeIDOutputBody = try responseDecoder.decode(responseBody: data)
             self.analyzeIDModelVersion = output.analyzeIDModelVersion
             self.documentMetadata = output.documentMetadata
             self.identityDocuments = output.identityDocuments
@@ -597,7 +967,7 @@ extension AnalyzeIDOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct AnalyzeIDOutputResponse: Swift.Equatable {
+public struct AnalyzeIDOutput: Swift.Equatable {
     /// The version of the AnalyzeIdentity API being used to process documents.
     public var analyzeIDModelVersion: Swift.String?
     /// Information about the input document.
@@ -605,7 +975,7 @@ public struct AnalyzeIDOutputResponse: Swift.Equatable {
     /// The list of documents processed by AnalyzeID. Includes a number denoting their place in the list and the response structure for the document.
     public var identityDocuments: [TextractClientTypes.IdentityDocument]?
 
-    public init (
+    public init(
         analyzeIDModelVersion: Swift.String? = nil,
         documentMetadata: TextractClientTypes.DocumentMetadata? = nil,
         identityDocuments: [TextractClientTypes.IdentityDocument]? = nil
@@ -617,20 +987,20 @@ public struct AnalyzeIDOutputResponse: Swift.Equatable {
     }
 }
 
-struct AnalyzeIDOutputResponseBody: Swift.Equatable {
+struct AnalyzeIDOutputBody: Swift.Equatable {
     let identityDocuments: [TextractClientTypes.IdentityDocument]?
     let documentMetadata: TextractClientTypes.DocumentMetadata?
     let analyzeIDModelVersion: Swift.String?
 }
 
-extension AnalyzeIDOutputResponseBody: Swift.Decodable {
+extension AnalyzeIDOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case analyzeIDModelVersion = "AnalyzeIDModelVersion"
         case documentMetadata = "DocumentMetadata"
         case identityDocuments = "IdentityDocuments"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityDocumentsContainer = try containerValues.decodeIfPresent([TextractClientTypes.IdentityDocument?].self, forKey: .identityDocuments)
         var identityDocumentsDecoded0:[TextractClientTypes.IdentityDocument]? = nil
@@ -650,44 +1020,98 @@ extension AnalyzeIDOutputResponseBody: Swift.Decodable {
     }
 }
 
-extension BadDocumentException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
-            let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: BadDocumentExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
-        } else {
-            self.code = nil
-            self.message = nil
+enum AnalyzeIDOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "BadDocumentException": return try await BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "DocumentTooLargeException": return try await DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedDocumentException": return try await UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+    }
+}
+
+extension TextractClientTypes {
+    public enum AutoUpdate: Swift.Equatable, Swift.RawRepresentable, Swift.CaseIterable, Swift.Codable, Swift.Hashable {
+        case disabled
+        case enabled
+        case sdkUnknown(Swift.String)
+
+        public static var allCases: [AutoUpdate] {
+            return [
+                .disabled,
+                .enabled,
+                .sdkUnknown("")
+            ]
+        }
+        public init?(rawValue: Swift.String) {
+            let value = Self.allCases.first(where: { $0.rawValue == rawValue })
+            self = value ?? Self.sdkUnknown(rawValue)
+        }
+        public var rawValue: Swift.String {
+            switch self {
+            case .disabled: return "DISABLED"
+            case .enabled: return "ENABLED"
+            case let .sdkUnknown(s): return s
+            }
+        }
+        public init(from decoder: Swift.Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(RawValue.self)
+            self = AutoUpdate(rawValue: rawValue) ?? AutoUpdate.sdkUnknown(rawValue)
+        }
+    }
+}
+
+extension BadDocumentException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: BadDocumentExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.code = output.code
+            self.properties.message = output.message
+        } else {
+            self.properties.code = nil
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Amazon Textract isn't able to read the document. For more information on the document limits in Amazon Textract, see [limits].
-public struct BadDocumentException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct BadDocumentException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "BadDocumentException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -702,7 +1126,7 @@ extension BadDocumentExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -785,7 +1209,7 @@ extension TextractClientTypes.Block: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let blockTypeDecoded = try containerValues.decodeIfPresent(TextractClientTypes.BlockType.self, forKey: .blockType)
         blockType = blockTypeDecoded
@@ -872,11 +1296,34 @@ extension TextractClientTypes {
         ///
         /// * SELECTION_ELEMENT - A selection element such as an option button (radio button) or a check box that's detected on a document page. Use the value of SelectionStatus to determine the status of the selection element.
         ///
-        /// * SIGNATURE - The location and confidene score of a signature detected on a document page. Can be returned as part of a Key-Value pair or a detected cell.
+        /// * SIGNATURE - The location and confidence score of a signature detected on a document page. Can be returned as part of a Key-Value pair or a detected cell.
         ///
         /// * QUERY - A question asked during the call of AnalyzeDocument. Contains an alias and an ID that attaches it to its answer.
         ///
         /// * QUERY_RESULT - A response to a question asked during the call of analyze document. Comes with an alias and ID for ease of locating in a response. Also contains location and confidence score.
+        ///
+        ///
+        /// The following BlockTypes are only returned for Amazon Textract Layout.
+        ///
+        /// * LAYOUT_TITLE - The main title of the document.
+        ///
+        /// * LAYOUT_HEADER - Text located in the top margin of the document.
+        ///
+        /// * LAYOUT_FOOTER - Text located in the bottom margin of the document.
+        ///
+        /// * LAYOUT_SECTION_HEADER - The titles of sections within a document.
+        ///
+        /// * LAYOUT_PAGE_NUMBER - The page number of the documents.
+        ///
+        /// * LAYOUT_LIST - Any information grouped together in list form.
+        ///
+        /// * LAYOUT_FIGURE - Indicates the location of an image in a document.
+        ///
+        /// * LAYOUT_TABLE - Indicates the location of a table in the document.
+        ///
+        /// * LAYOUT_KEY_VALUE - Indicates the location of form key-values in a document.
+        ///
+        /// * LAYOUT_TEXT - Text that is present typically as a part of paragraphs in documents.
         public var blockType: TextractClientTypes.BlockType?
         /// The column in which a table cell appears. The first column position is 1. ColumnIndex isn't returned by DetectDocumentText and GetDocumentTextDetection.
         public var columnIndex: Swift.Int?
@@ -914,7 +1361,7 @@ extension TextractClientTypes {
         public var geometry: TextractClientTypes.Geometry?
         /// The identifier for the recognized text. The identifier is only unique for a single operation.
         public var id: Swift.String?
-        /// The page on which a block was detected. Page is returned by synchronous and asynchronous operations. Page values greater than 1 are only returned for multipage documents that are in PDF or TIFF format. A scanned image (JPEG/PNG) provided to an asynchronous operation, even if it contains multiple document pages, is considered a single-page document. This means that for scanned images the value of Page is always 1. Synchronous operations will also return a Page value of 1 because every input document is considered to be a single-page document.
+        /// The page on which a block was detected. Page is returned by synchronous and asynchronous operations. Page values greater than 1 are only returned for multipage documents that are in PDF or TIFF format. A scanned image (JPEG/PNG) provided to an asynchronous operation, even if it contains multiple document pages, is considered a single-page document. This means that for scanned images the value of Page is always 1.
         public var page: Swift.Int?
         ///
         public var query: TextractClientTypes.Query?
@@ -931,7 +1378,7 @@ extension TextractClientTypes {
         /// The kind of text that Amazon Textract has detected. Can check for handwritten text and printed text.
         public var textType: TextractClientTypes.TextType?
 
-        public init (
+        public init(
             blockType: TextractClientTypes.BlockType? = nil,
             columnIndex: Swift.Int? = nil,
             columnSpan: Swift.Int? = nil,
@@ -973,6 +1420,16 @@ extension TextractClientTypes {
     public enum BlockType: Swift.Equatable, Swift.RawRepresentable, Swift.CaseIterable, Swift.Codable, Swift.Hashable {
         case cell
         case keyValueSet
+        case layoutFigure
+        case layoutFooter
+        case layoutHeader
+        case layoutKeyValue
+        case layoutList
+        case layoutPageNumber
+        case layoutSectionHeader
+        case layoutTable
+        case layoutText
+        case layoutTitle
         case line
         case mergedCell
         case page
@@ -991,6 +1448,16 @@ extension TextractClientTypes {
             return [
                 .cell,
                 .keyValueSet,
+                .layoutFigure,
+                .layoutFooter,
+                .layoutHeader,
+                .layoutKeyValue,
+                .layoutList,
+                .layoutPageNumber,
+                .layoutSectionHeader,
+                .layoutTable,
+                .layoutText,
+                .layoutTitle,
                 .line,
                 .mergedCell,
                 .page,
@@ -1014,6 +1481,16 @@ extension TextractClientTypes {
             switch self {
             case .cell: return "CELL"
             case .keyValueSet: return "KEY_VALUE_SET"
+            case .layoutFigure: return "LAYOUT_FIGURE"
+            case .layoutFooter: return "LAYOUT_FOOTER"
+            case .layoutHeader: return "LAYOUT_HEADER"
+            case .layoutKeyValue: return "LAYOUT_KEY_VALUE"
+            case .layoutList: return "LAYOUT_LIST"
+            case .layoutPageNumber: return "LAYOUT_PAGE_NUMBER"
+            case .layoutSectionHeader: return "LAYOUT_SECTION_HEADER"
+            case .layoutTable: return "LAYOUT_TABLE"
+            case .layoutText: return "LAYOUT_TEXT"
+            case .layoutTitle: return "LAYOUT_TITLE"
             case .line: return "LINE"
             case .mergedCell: return "MERGED_CELL"
             case .page: return "PAGE"
@@ -1061,7 +1538,7 @@ extension TextractClientTypes.BoundingBox: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let widthDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .width) ?? 0.0
         width = widthDecoded
@@ -1086,7 +1563,7 @@ extension TextractClientTypes {
         /// The width of the bounding box as a ratio of the overall document page width.
         public var width: Swift.Float
 
-        public init (
+        public init(
             height: Swift.Float = 0.0,
             `left`: Swift.Float = 0.0,
             top: Swift.Float = 0.0,
@@ -1100,6 +1577,70 @@ extension TextractClientTypes {
         }
     }
 
+}
+
+extension ConflictException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: ConflictExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.code = output.code
+            self.properties.message = output.message
+        } else {
+            self.properties.code = nil
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
+    }
+}
+
+/// Updating or deleting a resource can cause an inconsistent state.
+public struct ConflictException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
+
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ConflictException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
+        code: Swift.String? = nil,
+        message: Swift.String? = nil
+    )
+    {
+        self.properties.code = code
+        self.properties.message = message
+    }
+}
+
+struct ConflictExceptionBody: Swift.Equatable {
+    let message: Swift.String?
+    let code: Swift.String?
+}
+
+extension ConflictExceptionBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case code = "Code"
+        case message = "Message"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
+        message = messageDecoded
+        let codeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .code)
+        code = codeDecoded
+    }
 }
 
 extension TextractClientTypes {
@@ -1134,6 +1675,563 @@ extension TextractClientTypes {
     }
 }
 
+extension CreateAdapterInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterName = "AdapterName"
+        case autoUpdate = "AutoUpdate"
+        case clientRequestToken = "ClientRequestToken"
+        case description = "Description"
+        case featureTypes = "FeatureTypes"
+        case tags = "Tags"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterName = self.adapterName {
+            try encodeContainer.encode(adapterName, forKey: .adapterName)
+        }
+        if let autoUpdate = self.autoUpdate {
+            try encodeContainer.encode(autoUpdate.rawValue, forKey: .autoUpdate)
+        }
+        if let clientRequestToken = self.clientRequestToken {
+            try encodeContainer.encode(clientRequestToken, forKey: .clientRequestToken)
+        }
+        if let description = self.description {
+            try encodeContainer.encode(description, forKey: .description)
+        }
+        if let featureTypes = featureTypes {
+            var featureTypesContainer = encodeContainer.nestedUnkeyedContainer(forKey: .featureTypes)
+            for featuretype0 in featureTypes {
+                try featureTypesContainer.encode(featuretype0.rawValue)
+            }
+        }
+        if let tags = tags {
+            var tagsContainer = encodeContainer.nestedContainer(keyedBy: ClientRuntime.Key.self, forKey: .tags)
+            for (dictKey0, tagMap0) in tags {
+                try tagsContainer.encode(tagMap0, forKey: ClientRuntime.Key(stringValue: dictKey0))
+            }
+        }
+    }
+}
+
+extension CreateAdapterInput {
+
+    static func urlPathProvider(_ value: CreateAdapterInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct CreateAdapterInput: Swift.Equatable {
+    /// The name to be assigned to the adapter being created.
+    /// This member is required.
+    public var adapterName: Swift.String?
+    /// Controls whether or not the adapter should automatically update.
+    public var autoUpdate: TextractClientTypes.AutoUpdate?
+    /// Idempotent token is used to recognize the request. If the same token is used with multiple CreateAdapter requests, the same session is returned. This token is employed to avoid unintentionally creating the same session multiple times.
+    public var clientRequestToken: Swift.String?
+    /// The description to be assigned to the adapter being created.
+    public var description: Swift.String?
+    /// The type of feature that the adapter is being trained on. Currrenly, supported feature types are: QUERIES
+    /// This member is required.
+    public var featureTypes: [TextractClientTypes.FeatureType]?
+    /// A list of tags to be added to the adapter.
+    public var tags: [Swift.String:Swift.String]?
+
+    public init(
+        adapterName: Swift.String? = nil,
+        autoUpdate: TextractClientTypes.AutoUpdate? = nil,
+        clientRequestToken: Swift.String? = nil,
+        description: Swift.String? = nil,
+        featureTypes: [TextractClientTypes.FeatureType]? = nil,
+        tags: [Swift.String:Swift.String]? = nil
+    )
+    {
+        self.adapterName = adapterName
+        self.autoUpdate = autoUpdate
+        self.clientRequestToken = clientRequestToken
+        self.description = description
+        self.featureTypes = featureTypes
+        self.tags = tags
+    }
+}
+
+struct CreateAdapterInputBody: Swift.Equatable {
+    let adapterName: Swift.String?
+    let clientRequestToken: Swift.String?
+    let description: Swift.String?
+    let featureTypes: [TextractClientTypes.FeatureType]?
+    let autoUpdate: TextractClientTypes.AutoUpdate?
+    let tags: [Swift.String:Swift.String]?
+}
+
+extension CreateAdapterInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterName = "AdapterName"
+        case autoUpdate = "AutoUpdate"
+        case clientRequestToken = "ClientRequestToken"
+        case description = "Description"
+        case featureTypes = "FeatureTypes"
+        case tags = "Tags"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterName)
+        adapterName = adapterNameDecoded
+        let clientRequestTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .clientRequestToken)
+        clientRequestToken = clientRequestTokenDecoded
+        let descriptionDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .description)
+        description = descriptionDecoded
+        let featureTypesContainer = try containerValues.decodeIfPresent([TextractClientTypes.FeatureType?].self, forKey: .featureTypes)
+        var featureTypesDecoded0:[TextractClientTypes.FeatureType]? = nil
+        if let featureTypesContainer = featureTypesContainer {
+            featureTypesDecoded0 = [TextractClientTypes.FeatureType]()
+            for enum0 in featureTypesContainer {
+                if let enum0 = enum0 {
+                    featureTypesDecoded0?.append(enum0)
+                }
+            }
+        }
+        featureTypes = featureTypesDecoded0
+        let autoUpdateDecoded = try containerValues.decodeIfPresent(TextractClientTypes.AutoUpdate.self, forKey: .autoUpdate)
+        autoUpdate = autoUpdateDecoded
+        let tagsContainer = try containerValues.decodeIfPresent([Swift.String: Swift.String?].self, forKey: .tags)
+        var tagsDecoded0: [Swift.String:Swift.String]? = nil
+        if let tagsContainer = tagsContainer {
+            tagsDecoded0 = [Swift.String:Swift.String]()
+            for (key0, tagvalue0) in tagsContainer {
+                if let tagvalue0 = tagvalue0 {
+                    tagsDecoded0?[key0] = tagvalue0
+                }
+            }
+        }
+        tags = tagsDecoded0
+    }
+}
+
+extension CreateAdapterOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: CreateAdapterOutputBody = try responseDecoder.decode(responseBody: data)
+            self.adapterId = output.adapterId
+        } else {
+            self.adapterId = nil
+        }
+    }
+}
+
+public struct CreateAdapterOutput: Swift.Equatable {
+    /// A string containing the unique ID for the adapter that has been created.
+    public var adapterId: Swift.String?
+
+    public init(
+        adapterId: Swift.String? = nil
+    )
+    {
+        self.adapterId = adapterId
+    }
+}
+
+struct CreateAdapterOutputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+}
+
+extension CreateAdapterOutputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+    }
+}
+
+enum CreateAdapterOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ConflictException": return try await ConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "IdempotentParameterMismatchException": return try await IdempotentParameterMismatchException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LimitExceededException": return try await LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceQuotaExceededException": return try await ServiceQuotaExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
+extension CreateAdapterVersionInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case clientRequestToken = "ClientRequestToken"
+        case datasetConfig = "DatasetConfig"
+        case kmsKeyId = "KMSKeyId"
+        case outputConfig = "OutputConfig"
+        case tags = "Tags"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterId = self.adapterId {
+            try encodeContainer.encode(adapterId, forKey: .adapterId)
+        }
+        if let clientRequestToken = self.clientRequestToken {
+            try encodeContainer.encode(clientRequestToken, forKey: .clientRequestToken)
+        }
+        if let datasetConfig = self.datasetConfig {
+            try encodeContainer.encode(datasetConfig, forKey: .datasetConfig)
+        }
+        if let kmsKeyId = self.kmsKeyId {
+            try encodeContainer.encode(kmsKeyId, forKey: .kmsKeyId)
+        }
+        if let outputConfig = self.outputConfig {
+            try encodeContainer.encode(outputConfig, forKey: .outputConfig)
+        }
+        if let tags = tags {
+            var tagsContainer = encodeContainer.nestedContainer(keyedBy: ClientRuntime.Key.self, forKey: .tags)
+            for (dictKey0, tagMap0) in tags {
+                try tagsContainer.encode(tagMap0, forKey: ClientRuntime.Key(stringValue: dictKey0))
+            }
+        }
+    }
+}
+
+extension CreateAdapterVersionInput {
+
+    static func urlPathProvider(_ value: CreateAdapterVersionInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct CreateAdapterVersionInput: Swift.Equatable {
+    /// A string containing a unique ID for the adapter that will receive a new version.
+    /// This member is required.
+    public var adapterId: Swift.String?
+    /// Idempotent token is used to recognize the request. If the same token is used with multiple CreateAdapterVersion requests, the same session is returned. This token is employed to avoid unintentionally creating the same session multiple times.
+    public var clientRequestToken: Swift.String?
+    /// Specifies a dataset used to train a new adapter version. Takes a ManifestS3Object as the value.
+    /// This member is required.
+    public var datasetConfig: TextractClientTypes.AdapterVersionDatasetConfig?
+    /// The identifier for your AWS Key Management Service key (AWS KMS key). Used to encrypt your documents.
+    public var kmsKeyId: Swift.String?
+    /// Sets whether or not your output will go to a user created bucket. Used to set the name of the bucket, and the prefix on the output file. OutputConfig is an optional parameter which lets you adjust where your output will be placed. By default, Amazon Textract will store the results internally and can only be accessed by the Get API operations. With OutputConfig enabled, you can set the name of the bucket the output will be sent to the file prefix of the results where you can download your results. Additionally, you can set the KMSKeyID parameter to a customer master key (CMK) to encrypt your output. Without this parameter set Amazon Textract will encrypt server-side using the AWS managed CMK for Amazon S3. Decryption of Customer Content is necessary for processing of the documents by Amazon Textract. If your account is opted out under an AI services opt out policy then all unencrypted Customer Content is immediately and permanently deleted after the Customer Content has been processed by the service. No copy of of the output is retained by Amazon Textract. For information about how to opt out, see [ Managing AI services opt-out policy. ](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_ai-opt-out.html) For more information on data privacy, see the [Data Privacy FAQ](https://aws.amazon.com/compliance/data-privacy-faq/).
+    /// This member is required.
+    public var outputConfig: TextractClientTypes.OutputConfig?
+    /// A set of tags (key-value pairs) that you want to attach to the adapter version.
+    public var tags: [Swift.String:Swift.String]?
+
+    public init(
+        adapterId: Swift.String? = nil,
+        clientRequestToken: Swift.String? = nil,
+        datasetConfig: TextractClientTypes.AdapterVersionDatasetConfig? = nil,
+        kmsKeyId: Swift.String? = nil,
+        outputConfig: TextractClientTypes.OutputConfig? = nil,
+        tags: [Swift.String:Swift.String]? = nil
+    )
+    {
+        self.adapterId = adapterId
+        self.clientRequestToken = clientRequestToken
+        self.datasetConfig = datasetConfig
+        self.kmsKeyId = kmsKeyId
+        self.outputConfig = outputConfig
+        self.tags = tags
+    }
+}
+
+struct CreateAdapterVersionInputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+    let clientRequestToken: Swift.String?
+    let datasetConfig: TextractClientTypes.AdapterVersionDatasetConfig?
+    let kmsKeyId: Swift.String?
+    let outputConfig: TextractClientTypes.OutputConfig?
+    let tags: [Swift.String:Swift.String]?
+}
+
+extension CreateAdapterVersionInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case clientRequestToken = "ClientRequestToken"
+        case datasetConfig = "DatasetConfig"
+        case kmsKeyId = "KMSKeyId"
+        case outputConfig = "OutputConfig"
+        case tags = "Tags"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let clientRequestTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .clientRequestToken)
+        clientRequestToken = clientRequestTokenDecoded
+        let datasetConfigDecoded = try containerValues.decodeIfPresent(TextractClientTypes.AdapterVersionDatasetConfig.self, forKey: .datasetConfig)
+        datasetConfig = datasetConfigDecoded
+        let kmsKeyIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .kmsKeyId)
+        kmsKeyId = kmsKeyIdDecoded
+        let outputConfigDecoded = try containerValues.decodeIfPresent(TextractClientTypes.OutputConfig.self, forKey: .outputConfig)
+        outputConfig = outputConfigDecoded
+        let tagsContainer = try containerValues.decodeIfPresent([Swift.String: Swift.String?].self, forKey: .tags)
+        var tagsDecoded0: [Swift.String:Swift.String]? = nil
+        if let tagsContainer = tagsContainer {
+            tagsDecoded0 = [Swift.String:Swift.String]()
+            for (key0, tagvalue0) in tagsContainer {
+                if let tagvalue0 = tagvalue0 {
+                    tagsDecoded0?[key0] = tagvalue0
+                }
+            }
+        }
+        tags = tagsDecoded0
+    }
+}
+
+extension CreateAdapterVersionOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: CreateAdapterVersionOutputBody = try responseDecoder.decode(responseBody: data)
+            self.adapterId = output.adapterId
+            self.adapterVersion = output.adapterVersion
+        } else {
+            self.adapterId = nil
+            self.adapterVersion = nil
+        }
+    }
+}
+
+public struct CreateAdapterVersionOutput: Swift.Equatable {
+    /// A string containing the unique ID for the adapter that has received a new version.
+    public var adapterId: Swift.String?
+    /// A string describing the new version of the adapter.
+    public var adapterVersion: Swift.String?
+
+    public init(
+        adapterId: Swift.String? = nil,
+        adapterVersion: Swift.String? = nil
+    )
+    {
+        self.adapterId = adapterId
+        self.adapterVersion = adapterVersion
+    }
+}
+
+struct CreateAdapterVersionOutputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+    let adapterVersion: Swift.String?
+}
+
+extension CreateAdapterVersionOutputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterVersion = "AdapterVersion"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let adapterVersionDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterVersion)
+        adapterVersion = adapterVersionDecoded
+    }
+}
+
+enum CreateAdapterVersionOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ConflictException": return try await ConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "IdempotentParameterMismatchException": return try await IdempotentParameterMismatchException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidKMSKeyException": return try await InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LimitExceededException": return try await LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceQuotaExceededException": return try await ServiceQuotaExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
+extension DeleteAdapterInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterId = self.adapterId {
+            try encodeContainer.encode(adapterId, forKey: .adapterId)
+        }
+    }
+}
+
+extension DeleteAdapterInput {
+
+    static func urlPathProvider(_ value: DeleteAdapterInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct DeleteAdapterInput: Swift.Equatable {
+    /// A string containing a unique ID for the adapter to be deleted.
+    /// This member is required.
+    public var adapterId: Swift.String?
+
+    public init(
+        adapterId: Swift.String? = nil
+    )
+    {
+        self.adapterId = adapterId
+    }
+}
+
+struct DeleteAdapterInputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+}
+
+extension DeleteAdapterInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+    }
+}
+
+extension DeleteAdapterOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+    }
+}
+
+public struct DeleteAdapterOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum DeleteAdapterOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ConflictException": return try await ConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
+extension DeleteAdapterVersionInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterVersion = "AdapterVersion"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterId = self.adapterId {
+            try encodeContainer.encode(adapterId, forKey: .adapterId)
+        }
+        if let adapterVersion = self.adapterVersion {
+            try encodeContainer.encode(adapterVersion, forKey: .adapterVersion)
+        }
+    }
+}
+
+extension DeleteAdapterVersionInput {
+
+    static func urlPathProvider(_ value: DeleteAdapterVersionInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct DeleteAdapterVersionInput: Swift.Equatable {
+    /// A string containing a unique ID for the adapter version that will be deleted.
+    /// This member is required.
+    public var adapterId: Swift.String?
+    /// Specifies the adapter version to be deleted.
+    /// This member is required.
+    public var adapterVersion: Swift.String?
+
+    public init(
+        adapterId: Swift.String? = nil,
+        adapterVersion: Swift.String? = nil
+    )
+    {
+        self.adapterId = adapterId
+        self.adapterVersion = adapterVersion
+    }
+}
+
+struct DeleteAdapterVersionInputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+    let adapterVersion: Swift.String?
+}
+
+extension DeleteAdapterVersionInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterVersion = "AdapterVersion"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let adapterVersionDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterVersion)
+        adapterVersion = adapterVersionDecoded
+    }
+}
+
+extension DeleteAdapterVersionOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+    }
+}
+
+public struct DeleteAdapterVersionOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum DeleteAdapterVersionOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ConflictException": return try await ConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension DetectDocumentTextInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case document = "Document"
@@ -1147,8 +2245,9 @@ extension DetectDocumentTextInput: Swift.Encodable {
     }
 }
 
-extension DetectDocumentTextInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DetectDocumentTextInput {
+
+    static func urlPathProvider(_ value: DetectDocumentTextInput) -> Swift.String? {
         return "/"
     }
 }
@@ -1158,7 +2257,7 @@ public struct DetectDocumentTextInput: Swift.Equatable {
     /// This member is required.
     public var document: TextractClientTypes.Document?
 
-    public init (
+    public init(
         document: TextractClientTypes.Document? = nil
     )
     {
@@ -1175,57 +2274,18 @@ extension DetectDocumentTextInputBody: Swift.Decodable {
         case document = "Document"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentDecoded = try containerValues.decodeIfPresent(TextractClientTypes.Document.self, forKey: .document)
         document = documentDecoded
     }
 }
 
-extension DetectDocumentTextOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DetectDocumentTextOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "BadDocumentException" : self = .badDocumentException(try BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "DocumentTooLargeException" : self = .documentTooLargeException(try DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedDocumentException" : self = .unsupportedDocumentException(try UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DetectDocumentTextOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case badDocumentException(BadDocumentException)
-    case documentTooLargeException(DocumentTooLargeException)
-    case internalServerError(InternalServerError)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unsupportedDocumentException(UnsupportedDocumentException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DetectDocumentTextOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DetectDocumentTextOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DetectDocumentTextOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DetectDocumentTextOutputBody = try responseDecoder.decode(responseBody: data)
             self.blocks = output.blocks
             self.detectDocumentTextModelVersion = output.detectDocumentTextModelVersion
             self.documentMetadata = output.documentMetadata
@@ -1237,7 +2297,7 @@ extension DetectDocumentTextOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct DetectDocumentTextOutputResponse: Swift.Equatable {
+public struct DetectDocumentTextOutput: Swift.Equatable {
     /// An array of Block objects that contain the text that's detected in the document.
     public var blocks: [TextractClientTypes.Block]?
     ///
@@ -1245,7 +2305,7 @@ public struct DetectDocumentTextOutputResponse: Swift.Equatable {
     /// Metadata about the document. It contains the number of pages that are detected in the document.
     public var documentMetadata: TextractClientTypes.DocumentMetadata?
 
-    public init (
+    public init(
         blocks: [TextractClientTypes.Block]? = nil,
         detectDocumentTextModelVersion: Swift.String? = nil,
         documentMetadata: TextractClientTypes.DocumentMetadata? = nil
@@ -1257,20 +2317,20 @@ public struct DetectDocumentTextOutputResponse: Swift.Equatable {
     }
 }
 
-struct DetectDocumentTextOutputResponseBody: Swift.Equatable {
+struct DetectDocumentTextOutputBody: Swift.Equatable {
     let documentMetadata: TextractClientTypes.DocumentMetadata?
     let blocks: [TextractClientTypes.Block]?
     let detectDocumentTextModelVersion: Swift.String?
 }
 
-extension DetectDocumentTextOutputResponseBody: Swift.Decodable {
+extension DetectDocumentTextOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case blocks = "Blocks"
         case detectDocumentTextModelVersion = "DetectDocumentTextModelVersion"
         case documentMetadata = "DocumentMetadata"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentMetadataDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentMetadata.self, forKey: .documentMetadata)
         documentMetadata = documentMetadataDecoded
@@ -1290,6 +2350,25 @@ extension DetectDocumentTextOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum DetectDocumentTextOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "BadDocumentException": return try await BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "DocumentTooLargeException": return try await DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedDocumentException": return try await UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension TextractClientTypes.DetectedSignature: Swift.Codable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case page = "Page"
@@ -1302,7 +2381,7 @@ extension TextractClientTypes.DetectedSignature: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let pageDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .page)
         page = pageDecoded
@@ -1315,7 +2394,7 @@ extension TextractClientTypes {
         /// The page a detected signature was found on.
         public var page: Swift.Int?
 
-        public init (
+        public init(
             page: Swift.Int? = nil
         )
         {
@@ -1341,7 +2420,7 @@ extension TextractClientTypes.Document: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let bytesDecoded = try containerValues.decodeIfPresent(ClientRuntime.Data.self, forKey: .bytes)
         bytes = bytesDecoded
@@ -1358,7 +2437,7 @@ extension TextractClientTypes {
         /// Identifies an S3 object as the document source. The maximum size of a document that's stored in an S3 bucket is 5 MB.
         public var s3Object: TextractClientTypes.S3Object?
 
-        public init (
+        public init(
             bytes: ClientRuntime.Data? = nil,
             s3Object: TextractClientTypes.S3Object? = nil
         )
@@ -1403,7 +2482,7 @@ extension TextractClientTypes.DocumentGroup: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let typeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .type)
         type = typeDecoded
@@ -1455,7 +2534,7 @@ extension TextractClientTypes {
         /// A list of any expected signatures not found in a document group.
         public var undetectedSignatures: [TextractClientTypes.UndetectedSignature]?
 
-        public init (
+        public init(
             detectedSignatures: [TextractClientTypes.DetectedSignature]? = nil,
             splitDocuments: [TextractClientTypes.SplitDocument]? = nil,
             type: Swift.String? = nil,
@@ -1483,7 +2562,7 @@ extension TextractClientTypes.DocumentLocation: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3ObjectDecoded = try containerValues.decodeIfPresent(TextractClientTypes.S3Object.self, forKey: .s3Object)
         s3Object = s3ObjectDecoded
@@ -1496,7 +2575,7 @@ extension TextractClientTypes {
         /// The Amazon S3 bucket that contains the input document.
         public var s3Object: TextractClientTypes.S3Object?
 
-        public init (
+        public init(
             s3Object: TextractClientTypes.S3Object? = nil
         )
         {
@@ -1518,7 +2597,7 @@ extension TextractClientTypes.DocumentMetadata: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let pagesDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .pages)
         pages = pagesDecoded
@@ -1531,7 +2610,7 @@ extension TextractClientTypes {
         /// The number of pages that are detected in the document.
         public var pages: Swift.Int?
 
-        public init (
+        public init(
             pages: Swift.Int? = nil
         )
         {
@@ -1542,43 +2621,46 @@ extension TextractClientTypes {
 }
 
 extension DocumentTooLargeException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: DocumentTooLargeExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The document can't be processed because it's too large. The maximum document size for synchronous operations 10 MB. The maximum document size for asynchronous operations is 500 MB for PDF files.
-public struct DocumentTooLargeException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct DocumentTooLargeException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "DocumentTooLargeException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -1593,7 +2675,7 @@ extension DocumentTooLargeExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -1655,6 +2737,61 @@ extension TextractClientTypes {
     }
 }
 
+extension TextractClientTypes.EvaluationMetric: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case f1Score = "F1Score"
+        case precision = "Precision"
+        case recall = "Recall"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if f1Score != 0.0 {
+            try encodeContainer.encode(f1Score, forKey: .f1Score)
+        }
+        if precision != 0.0 {
+            try encodeContainer.encode(precision, forKey: .precision)
+        }
+        if recall != 0.0 {
+            try encodeContainer.encode(recall, forKey: .recall)
+        }
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let f1ScoreDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .f1Score) ?? 0.0
+        f1Score = f1ScoreDecoded
+        let precisionDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .precision) ?? 0.0
+        precision = precisionDecoded
+        let recallDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .recall) ?? 0.0
+        recall = recallDecoded
+    }
+}
+
+extension TextractClientTypes {
+    /// The evaluation metrics (F1 score, Precision, and Recall) for an adapter version.
+    public struct EvaluationMetric: Swift.Equatable {
+        /// The F1 score for an adapter version.
+        public var f1Score: Swift.Float
+        /// The Precision score for an adapter version.
+        public var precision: Swift.Float
+        /// The Recall score for an adapter version.
+        public var recall: Swift.Float
+
+        public init(
+            f1Score: Swift.Float = 0.0,
+            precision: Swift.Float = 0.0,
+            recall: Swift.Float = 0.0
+        )
+        {
+            self.f1Score = f1Score
+            self.precision = precision
+            self.recall = recall
+        }
+    }
+
+}
+
 extension TextractClientTypes.ExpenseCurrency: Swift.Codable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case code = "Code"
@@ -1671,7 +2808,7 @@ extension TextractClientTypes.ExpenseCurrency: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let codeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .code)
         code = codeDecoded
@@ -1712,7 +2849,7 @@ extension TextractClientTypes {
         /// Percentage confideence in the detected currency.
         public var confidence: Swift.Float?
 
-        public init (
+        public init(
             code: Swift.String? = nil,
             confidence: Swift.Float? = nil
         )
@@ -1744,7 +2881,7 @@ extension TextractClientTypes.ExpenseDetection: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -1765,7 +2902,7 @@ extension TextractClientTypes {
         /// The word or line of text recognized by Amazon Textract
         public var text: Swift.String?
 
-        public init (
+        public init(
             confidence: Swift.Float? = nil,
             geometry: TextractClientTypes.Geometry? = nil,
             text: Swift.String? = nil
@@ -1812,7 +2949,7 @@ extension TextractClientTypes.ExpenseDocument: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let expenseIndexDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .expenseIndex)
         expenseIndex = expenseIndexDecoded
@@ -1864,7 +3001,7 @@ extension TextractClientTypes {
         /// Any information found outside of a table by Amazon Textract.
         public var summaryFields: [TextractClientTypes.ExpenseField]?
 
-        public init (
+        public init(
             blocks: [TextractClientTypes.Block]? = nil,
             expenseIndex: Swift.Int? = nil,
             lineItemGroups: [TextractClientTypes.LineItemGroup]? = nil,
@@ -1915,7 +3052,7 @@ extension TextractClientTypes.ExpenseField: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let typeDecoded = try containerValues.decodeIfPresent(TextractClientTypes.ExpenseType.self, forKey: .type)
         type = typeDecoded
@@ -1957,7 +3094,7 @@ extension TextractClientTypes {
         /// The value of a detected element. Present in explicit and implicit elements.
         public var valueDetection: TextractClientTypes.ExpenseDetection?
 
-        public init (
+        public init(
             currency: TextractClientTypes.ExpenseCurrency? = nil,
             groupProperties: [TextractClientTypes.ExpenseGroupProperty]? = nil,
             labelDetection: TextractClientTypes.ExpenseDetection? = nil,
@@ -1996,7 +3133,7 @@ extension TextractClientTypes.ExpenseGroupProperty: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let typesContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .types)
         var typesDecoded0:[Swift.String]? = nil
@@ -2022,7 +3159,7 @@ extension TextractClientTypes {
         /// Informs you on whether the expense group is a name or an address.
         public var types: [Swift.String]?
 
-        public init (
+        public init(
             id: Swift.String? = nil,
             types: [Swift.String]? = nil
         )
@@ -2050,7 +3187,7 @@ extension TextractClientTypes.ExpenseType: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -2067,7 +3204,7 @@ extension TextractClientTypes {
         /// The word or line of text detected by Amazon Textract.
         public var text: Swift.String?
 
-        public init (
+        public init(
             confidence: Swift.Float? = nil,
             text: Swift.String? = nil
         )
@@ -2099,7 +3236,7 @@ extension TextractClientTypes.Extraction: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let lendingDocumentDecoded = try containerValues.decodeIfPresent(TextractClientTypes.LendingDocument.self, forKey: .lendingDocument)
         lendingDocument = lendingDocumentDecoded
@@ -2120,7 +3257,7 @@ extension TextractClientTypes {
         /// Holds the structured data returned by AnalyzeDocument for lending documents.
         public var lendingDocument: TextractClientTypes.LendingDocument?
 
-        public init (
+        public init(
             expenseDocument: TextractClientTypes.ExpenseDocument? = nil,
             identityDocument: TextractClientTypes.IdentityDocument? = nil,
             lendingDocument: TextractClientTypes.LendingDocument? = nil
@@ -2137,6 +3274,7 @@ extension TextractClientTypes {
 extension TextractClientTypes {
     public enum FeatureType: Swift.Equatable, Swift.RawRepresentable, Swift.CaseIterable, Swift.Codable, Swift.Hashable {
         case forms
+        case layout
         case queries
         case signatures
         case tables
@@ -2145,6 +3283,7 @@ extension TextractClientTypes {
         public static var allCases: [FeatureType] {
             return [
                 .forms,
+                .layout,
                 .queries,
                 .signatures,
                 .tables,
@@ -2158,6 +3297,7 @@ extension TextractClientTypes {
         public var rawValue: Swift.String {
             switch self {
             case .forms: return "FORMS"
+            case .layout: return "LAYOUT"
             case .queries: return "QUERIES"
             case .signatures: return "SIGNATURES"
             case .tables: return "TABLES"
@@ -2191,7 +3331,7 @@ extension TextractClientTypes.Geometry: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let boundingBoxDecoded = try containerValues.decodeIfPresent(TextractClientTypes.BoundingBox.self, forKey: .boundingBox)
         boundingBox = boundingBoxDecoded
@@ -2217,7 +3357,7 @@ extension TextractClientTypes {
         /// Within the bounding box, a fine-grained polygon around the recognized item.
         public var polygon: [TextractClientTypes.Point]?
 
-        public init (
+        public init(
             boundingBox: TextractClientTypes.BoundingBox? = nil,
             polygon: [TextractClientTypes.Point]? = nil
         )
@@ -2227,6 +3367,436 @@ extension TextractClientTypes {
         }
     }
 
+}
+
+extension GetAdapterInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterId = self.adapterId {
+            try encodeContainer.encode(adapterId, forKey: .adapterId)
+        }
+    }
+}
+
+extension GetAdapterInput {
+
+    static func urlPathProvider(_ value: GetAdapterInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct GetAdapterInput: Swift.Equatable {
+    /// A string containing a unique ID for the adapter.
+    /// This member is required.
+    public var adapterId: Swift.String?
+
+    public init(
+        adapterId: Swift.String? = nil
+    )
+    {
+        self.adapterId = adapterId
+    }
+}
+
+struct GetAdapterInputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+}
+
+extension GetAdapterInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+    }
+}
+
+extension GetAdapterOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: GetAdapterOutputBody = try responseDecoder.decode(responseBody: data)
+            self.adapterId = output.adapterId
+            self.adapterName = output.adapterName
+            self.autoUpdate = output.autoUpdate
+            self.creationTime = output.creationTime
+            self.description = output.description
+            self.featureTypes = output.featureTypes
+            self.tags = output.tags
+        } else {
+            self.adapterId = nil
+            self.adapterName = nil
+            self.autoUpdate = nil
+            self.creationTime = nil
+            self.description = nil
+            self.featureTypes = nil
+            self.tags = nil
+        }
+    }
+}
+
+public struct GetAdapterOutput: Swift.Equatable {
+    /// A string identifying the adapter that information has been retrieved for.
+    public var adapterId: Swift.String?
+    /// The name of the requested adapter.
+    public var adapterName: Swift.String?
+    /// Binary value indicating if the adapter is being automatically updated or not.
+    public var autoUpdate: TextractClientTypes.AutoUpdate?
+    /// The date and time the requested adapter was created at.
+    public var creationTime: ClientRuntime.Date?
+    /// The description for the requested adapter.
+    public var description: Swift.String?
+    /// List of the targeted feature types for the requested adapter.
+    public var featureTypes: [TextractClientTypes.FeatureType]?
+    /// A set of tags (key-value pairs) associated with the adapter that has been retrieved.
+    public var tags: [Swift.String:Swift.String]?
+
+    public init(
+        adapterId: Swift.String? = nil,
+        adapterName: Swift.String? = nil,
+        autoUpdate: TextractClientTypes.AutoUpdate? = nil,
+        creationTime: ClientRuntime.Date? = nil,
+        description: Swift.String? = nil,
+        featureTypes: [TextractClientTypes.FeatureType]? = nil,
+        tags: [Swift.String:Swift.String]? = nil
+    )
+    {
+        self.adapterId = adapterId
+        self.adapterName = adapterName
+        self.autoUpdate = autoUpdate
+        self.creationTime = creationTime
+        self.description = description
+        self.featureTypes = featureTypes
+        self.tags = tags
+    }
+}
+
+struct GetAdapterOutputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+    let adapterName: Swift.String?
+    let creationTime: ClientRuntime.Date?
+    let description: Swift.String?
+    let featureTypes: [TextractClientTypes.FeatureType]?
+    let autoUpdate: TextractClientTypes.AutoUpdate?
+    let tags: [Swift.String:Swift.String]?
+}
+
+extension GetAdapterOutputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterName = "AdapterName"
+        case autoUpdate = "AutoUpdate"
+        case creationTime = "CreationTime"
+        case description = "Description"
+        case featureTypes = "FeatureTypes"
+        case tags = "Tags"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let adapterNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterName)
+        adapterName = adapterNameDecoded
+        let creationTimeDecoded = try containerValues.decodeTimestampIfPresent(.epochSeconds, forKey: .creationTime)
+        creationTime = creationTimeDecoded
+        let descriptionDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .description)
+        description = descriptionDecoded
+        let featureTypesContainer = try containerValues.decodeIfPresent([TextractClientTypes.FeatureType?].self, forKey: .featureTypes)
+        var featureTypesDecoded0:[TextractClientTypes.FeatureType]? = nil
+        if let featureTypesContainer = featureTypesContainer {
+            featureTypesDecoded0 = [TextractClientTypes.FeatureType]()
+            for enum0 in featureTypesContainer {
+                if let enum0 = enum0 {
+                    featureTypesDecoded0?.append(enum0)
+                }
+            }
+        }
+        featureTypes = featureTypesDecoded0
+        let autoUpdateDecoded = try containerValues.decodeIfPresent(TextractClientTypes.AutoUpdate.self, forKey: .autoUpdate)
+        autoUpdate = autoUpdateDecoded
+        let tagsContainer = try containerValues.decodeIfPresent([Swift.String: Swift.String?].self, forKey: .tags)
+        var tagsDecoded0: [Swift.String:Swift.String]? = nil
+        if let tagsContainer = tagsContainer {
+            tagsDecoded0 = [Swift.String:Swift.String]()
+            for (key0, tagvalue0) in tagsContainer {
+                if let tagvalue0 = tagvalue0 {
+                    tagsDecoded0?[key0] = tagvalue0
+                }
+            }
+        }
+        tags = tagsDecoded0
+    }
+}
+
+enum GetAdapterOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
+extension GetAdapterVersionInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterVersion = "AdapterVersion"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterId = self.adapterId {
+            try encodeContainer.encode(adapterId, forKey: .adapterId)
+        }
+        if let adapterVersion = self.adapterVersion {
+            try encodeContainer.encode(adapterVersion, forKey: .adapterVersion)
+        }
+    }
+}
+
+extension GetAdapterVersionInput {
+
+    static func urlPathProvider(_ value: GetAdapterVersionInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct GetAdapterVersionInput: Swift.Equatable {
+    /// A string specifying a unique ID for the adapter version you want to retrieve information for.
+    /// This member is required.
+    public var adapterId: Swift.String?
+    /// A string specifying the adapter version you want to retrieve information for.
+    /// This member is required.
+    public var adapterVersion: Swift.String?
+
+    public init(
+        adapterId: Swift.String? = nil,
+        adapterVersion: Swift.String? = nil
+    )
+    {
+        self.adapterId = adapterId
+        self.adapterVersion = adapterVersion
+    }
+}
+
+struct GetAdapterVersionInputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+    let adapterVersion: Swift.String?
+}
+
+extension GetAdapterVersionInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterVersion = "AdapterVersion"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let adapterVersionDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterVersion)
+        adapterVersion = adapterVersionDecoded
+    }
+}
+
+extension GetAdapterVersionOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: GetAdapterVersionOutputBody = try responseDecoder.decode(responseBody: data)
+            self.adapterId = output.adapterId
+            self.adapterVersion = output.adapterVersion
+            self.creationTime = output.creationTime
+            self.datasetConfig = output.datasetConfig
+            self.evaluationMetrics = output.evaluationMetrics
+            self.featureTypes = output.featureTypes
+            self.kmsKeyId = output.kmsKeyId
+            self.outputConfig = output.outputConfig
+            self.status = output.status
+            self.statusMessage = output.statusMessage
+            self.tags = output.tags
+        } else {
+            self.adapterId = nil
+            self.adapterVersion = nil
+            self.creationTime = nil
+            self.datasetConfig = nil
+            self.evaluationMetrics = nil
+            self.featureTypes = nil
+            self.kmsKeyId = nil
+            self.outputConfig = nil
+            self.status = nil
+            self.statusMessage = nil
+            self.tags = nil
+        }
+    }
+}
+
+public struct GetAdapterVersionOutput: Swift.Equatable {
+    /// A string containing a unique ID for the adapter version being retrieved.
+    public var adapterId: Swift.String?
+    /// A string containing the adapter version that has been retrieved.
+    public var adapterVersion: Swift.String?
+    /// The time that the adapter version was created.
+    public var creationTime: ClientRuntime.Date?
+    /// Specifies a dataset used to train a new adapter version. Takes a ManifestS3Objec as the value.
+    public var datasetConfig: TextractClientTypes.AdapterVersionDatasetConfig?
+    /// The evaluation metrics (F1 score, Precision, and Recall) for the requested version, grouped by baseline metrics and adapter version.
+    public var evaluationMetrics: [TextractClientTypes.AdapterVersionEvaluationMetric]?
+    /// List of the targeted feature types for the requested adapter version.
+    public var featureTypes: [TextractClientTypes.FeatureType]?
+    /// The identifier for your AWS Key Management Service key (AWS KMS key). Used to encrypt your documents.
+    public var kmsKeyId: Swift.String?
+    /// Sets whether or not your output will go to a user created bucket. Used to set the name of the bucket, and the prefix on the output file. OutputConfig is an optional parameter which lets you adjust where your output will be placed. By default, Amazon Textract will store the results internally and can only be accessed by the Get API operations. With OutputConfig enabled, you can set the name of the bucket the output will be sent to the file prefix of the results where you can download your results. Additionally, you can set the KMSKeyID parameter to a customer master key (CMK) to encrypt your output. Without this parameter set Amazon Textract will encrypt server-side using the AWS managed CMK for Amazon S3. Decryption of Customer Content is necessary for processing of the documents by Amazon Textract. If your account is opted out under an AI services opt out policy then all unencrypted Customer Content is immediately and permanently deleted after the Customer Content has been processed by the service. No copy of of the output is retained by Amazon Textract. For information about how to opt out, see [ Managing AI services opt-out policy. ](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_ai-opt-out.html) For more information on data privacy, see the [Data Privacy FAQ](https://aws.amazon.com/compliance/data-privacy-faq/).
+    public var outputConfig: TextractClientTypes.OutputConfig?
+    /// The status of the adapter version that has been requested.
+    public var status: TextractClientTypes.AdapterVersionStatus?
+    /// A message that describes the status of the requested adapter version.
+    public var statusMessage: Swift.String?
+    /// A set of tags (key-value pairs) that are associated with the adapter version.
+    public var tags: [Swift.String:Swift.String]?
+
+    public init(
+        adapterId: Swift.String? = nil,
+        adapterVersion: Swift.String? = nil,
+        creationTime: ClientRuntime.Date? = nil,
+        datasetConfig: TextractClientTypes.AdapterVersionDatasetConfig? = nil,
+        evaluationMetrics: [TextractClientTypes.AdapterVersionEvaluationMetric]? = nil,
+        featureTypes: [TextractClientTypes.FeatureType]? = nil,
+        kmsKeyId: Swift.String? = nil,
+        outputConfig: TextractClientTypes.OutputConfig? = nil,
+        status: TextractClientTypes.AdapterVersionStatus? = nil,
+        statusMessage: Swift.String? = nil,
+        tags: [Swift.String:Swift.String]? = nil
+    )
+    {
+        self.adapterId = adapterId
+        self.adapterVersion = adapterVersion
+        self.creationTime = creationTime
+        self.datasetConfig = datasetConfig
+        self.evaluationMetrics = evaluationMetrics
+        self.featureTypes = featureTypes
+        self.kmsKeyId = kmsKeyId
+        self.outputConfig = outputConfig
+        self.status = status
+        self.statusMessage = statusMessage
+        self.tags = tags
+    }
+}
+
+struct GetAdapterVersionOutputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+    let adapterVersion: Swift.String?
+    let creationTime: ClientRuntime.Date?
+    let featureTypes: [TextractClientTypes.FeatureType]?
+    let status: TextractClientTypes.AdapterVersionStatus?
+    let statusMessage: Swift.String?
+    let datasetConfig: TextractClientTypes.AdapterVersionDatasetConfig?
+    let kmsKeyId: Swift.String?
+    let outputConfig: TextractClientTypes.OutputConfig?
+    let evaluationMetrics: [TextractClientTypes.AdapterVersionEvaluationMetric]?
+    let tags: [Swift.String:Swift.String]?
+}
+
+extension GetAdapterVersionOutputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterVersion = "AdapterVersion"
+        case creationTime = "CreationTime"
+        case datasetConfig = "DatasetConfig"
+        case evaluationMetrics = "EvaluationMetrics"
+        case featureTypes = "FeatureTypes"
+        case kmsKeyId = "KMSKeyId"
+        case outputConfig = "OutputConfig"
+        case status = "Status"
+        case statusMessage = "StatusMessage"
+        case tags = "Tags"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let adapterVersionDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterVersion)
+        adapterVersion = adapterVersionDecoded
+        let creationTimeDecoded = try containerValues.decodeTimestampIfPresent(.epochSeconds, forKey: .creationTime)
+        creationTime = creationTimeDecoded
+        let featureTypesContainer = try containerValues.decodeIfPresent([TextractClientTypes.FeatureType?].self, forKey: .featureTypes)
+        var featureTypesDecoded0:[TextractClientTypes.FeatureType]? = nil
+        if let featureTypesContainer = featureTypesContainer {
+            featureTypesDecoded0 = [TextractClientTypes.FeatureType]()
+            for enum0 in featureTypesContainer {
+                if let enum0 = enum0 {
+                    featureTypesDecoded0?.append(enum0)
+                }
+            }
+        }
+        featureTypes = featureTypesDecoded0
+        let statusDecoded = try containerValues.decodeIfPresent(TextractClientTypes.AdapterVersionStatus.self, forKey: .status)
+        status = statusDecoded
+        let statusMessageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .statusMessage)
+        statusMessage = statusMessageDecoded
+        let datasetConfigDecoded = try containerValues.decodeIfPresent(TextractClientTypes.AdapterVersionDatasetConfig.self, forKey: .datasetConfig)
+        datasetConfig = datasetConfigDecoded
+        let kmsKeyIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .kmsKeyId)
+        kmsKeyId = kmsKeyIdDecoded
+        let outputConfigDecoded = try containerValues.decodeIfPresent(TextractClientTypes.OutputConfig.self, forKey: .outputConfig)
+        outputConfig = outputConfigDecoded
+        let evaluationMetricsContainer = try containerValues.decodeIfPresent([TextractClientTypes.AdapterVersionEvaluationMetric?].self, forKey: .evaluationMetrics)
+        var evaluationMetricsDecoded0:[TextractClientTypes.AdapterVersionEvaluationMetric]? = nil
+        if let evaluationMetricsContainer = evaluationMetricsContainer {
+            evaluationMetricsDecoded0 = [TextractClientTypes.AdapterVersionEvaluationMetric]()
+            for structure0 in evaluationMetricsContainer {
+                if let structure0 = structure0 {
+                    evaluationMetricsDecoded0?.append(structure0)
+                }
+            }
+        }
+        evaluationMetrics = evaluationMetricsDecoded0
+        let tagsContainer = try containerValues.decodeIfPresent([Swift.String: Swift.String?].self, forKey: .tags)
+        var tagsDecoded0: [Swift.String:Swift.String]? = nil
+        if let tagsContainer = tagsContainer {
+            tagsDecoded0 = [Swift.String:Swift.String]()
+            for (key0, tagvalue0) in tagsContainer {
+                if let tagvalue0 = tagvalue0 {
+                    tagsDecoded0?[key0] = tagvalue0
+                }
+            }
+        }
+        tags = tagsDecoded0
+    }
+}
+
+enum GetAdapterVersionOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
 }
 
 extension GetDocumentAnalysisInput: Swift.Encodable {
@@ -2250,8 +3820,9 @@ extension GetDocumentAnalysisInput: Swift.Encodable {
     }
 }
 
-extension GetDocumentAnalysisInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension GetDocumentAnalysisInput {
+
+    static func urlPathProvider(_ value: GetDocumentAnalysisInput) -> Swift.String? {
         return "/"
     }
 }
@@ -2265,7 +3836,7 @@ public struct GetDocumentAnalysisInput: Swift.Equatable {
     /// If the previous response was incomplete (because there are more blocks to retrieve), Amazon Textract returns a pagination token in the response. You can use this pagination token to retrieve the next set of blocks.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -2290,7 +3861,7 @@ extension GetDocumentAnalysisInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -2301,48 +3872,11 @@ extension GetDocumentAnalysisInputBody: Swift.Decodable {
     }
 }
 
-extension GetDocumentAnalysisOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetDocumentAnalysisOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidJobIdException" : self = .invalidJobIdException(try InvalidJobIdException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidKMSKeyException" : self = .invalidKMSKeyException(try InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetDocumentAnalysisOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case internalServerError(InternalServerError)
-    case invalidJobIdException(InvalidJobIdException)
-    case invalidKMSKeyException(InvalidKMSKeyException)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetDocumentAnalysisOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetDocumentAnalysisOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetDocumentAnalysisOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetDocumentAnalysisOutputBody = try responseDecoder.decode(responseBody: data)
             self.analyzeDocumentModelVersion = output.analyzeDocumentModelVersion
             self.blocks = output.blocks
             self.documentMetadata = output.documentMetadata
@@ -2362,7 +3896,7 @@ extension GetDocumentAnalysisOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct GetDocumentAnalysisOutputResponse: Swift.Equatable {
+public struct GetDocumentAnalysisOutput: Swift.Equatable {
     ///
     public var analyzeDocumentModelVersion: Swift.String?
     /// The results of the text-analysis operation.
@@ -2378,7 +3912,7 @@ public struct GetDocumentAnalysisOutputResponse: Swift.Equatable {
     /// A list of warnings that occurred during the document-analysis operation.
     public var warnings: [TextractClientTypes.Warning]?
 
-    public init (
+    public init(
         analyzeDocumentModelVersion: Swift.String? = nil,
         blocks: [TextractClientTypes.Block]? = nil,
         documentMetadata: TextractClientTypes.DocumentMetadata? = nil,
@@ -2398,7 +3932,7 @@ public struct GetDocumentAnalysisOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetDocumentAnalysisOutputResponseBody: Swift.Equatable {
+struct GetDocumentAnalysisOutputBody: Swift.Equatable {
     let documentMetadata: TextractClientTypes.DocumentMetadata?
     let jobStatus: TextractClientTypes.JobStatus?
     let nextToken: Swift.String?
@@ -2408,7 +3942,7 @@ struct GetDocumentAnalysisOutputResponseBody: Swift.Equatable {
     let analyzeDocumentModelVersion: Swift.String?
 }
 
-extension GetDocumentAnalysisOutputResponseBody: Swift.Decodable {
+extension GetDocumentAnalysisOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case analyzeDocumentModelVersion = "AnalyzeDocumentModelVersion"
         case blocks = "Blocks"
@@ -2419,7 +3953,7 @@ extension GetDocumentAnalysisOutputResponseBody: Swift.Decodable {
         case warnings = "Warnings"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentMetadataDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentMetadata.self, forKey: .documentMetadata)
         documentMetadata = documentMetadataDecoded
@@ -2456,6 +3990,24 @@ extension GetDocumentAnalysisOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum GetDocumentAnalysisOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidJobIdException": return try await InvalidJobIdException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidKMSKeyException": return try await InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension GetDocumentTextDetectionInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
@@ -2477,8 +4029,9 @@ extension GetDocumentTextDetectionInput: Swift.Encodable {
     }
 }
 
-extension GetDocumentTextDetectionInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension GetDocumentTextDetectionInput {
+
+    static func urlPathProvider(_ value: GetDocumentTextDetectionInput) -> Swift.String? {
         return "/"
     }
 }
@@ -2492,7 +4045,7 @@ public struct GetDocumentTextDetectionInput: Swift.Equatable {
     /// If the previous response was incomplete (because there are more blocks to retrieve), Amazon Textract returns a pagination token in the response. You can use this pagination token to retrieve the next set of blocks.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -2517,7 +4070,7 @@ extension GetDocumentTextDetectionInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -2528,48 +4081,11 @@ extension GetDocumentTextDetectionInputBody: Swift.Decodable {
     }
 }
 
-extension GetDocumentTextDetectionOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetDocumentTextDetectionOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidJobIdException" : self = .invalidJobIdException(try InvalidJobIdException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidKMSKeyException" : self = .invalidKMSKeyException(try InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetDocumentTextDetectionOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case internalServerError(InternalServerError)
-    case invalidJobIdException(InvalidJobIdException)
-    case invalidKMSKeyException(InvalidKMSKeyException)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetDocumentTextDetectionOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetDocumentTextDetectionOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetDocumentTextDetectionOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetDocumentTextDetectionOutputBody = try responseDecoder.decode(responseBody: data)
             self.blocks = output.blocks
             self.detectDocumentTextModelVersion = output.detectDocumentTextModelVersion
             self.documentMetadata = output.documentMetadata
@@ -2589,7 +4105,7 @@ extension GetDocumentTextDetectionOutputResponse: ClientRuntime.HttpResponseBind
     }
 }
 
-public struct GetDocumentTextDetectionOutputResponse: Swift.Equatable {
+public struct GetDocumentTextDetectionOutput: Swift.Equatable {
     /// The results of the text-detection operation.
     public var blocks: [TextractClientTypes.Block]?
     ///
@@ -2605,7 +4121,7 @@ public struct GetDocumentTextDetectionOutputResponse: Swift.Equatable {
     /// A list of warnings that occurred during the text-detection operation for the document.
     public var warnings: [TextractClientTypes.Warning]?
 
-    public init (
+    public init(
         blocks: [TextractClientTypes.Block]? = nil,
         detectDocumentTextModelVersion: Swift.String? = nil,
         documentMetadata: TextractClientTypes.DocumentMetadata? = nil,
@@ -2625,7 +4141,7 @@ public struct GetDocumentTextDetectionOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetDocumentTextDetectionOutputResponseBody: Swift.Equatable {
+struct GetDocumentTextDetectionOutputBody: Swift.Equatable {
     let documentMetadata: TextractClientTypes.DocumentMetadata?
     let jobStatus: TextractClientTypes.JobStatus?
     let nextToken: Swift.String?
@@ -2635,7 +4151,7 @@ struct GetDocumentTextDetectionOutputResponseBody: Swift.Equatable {
     let detectDocumentTextModelVersion: Swift.String?
 }
 
-extension GetDocumentTextDetectionOutputResponseBody: Swift.Decodable {
+extension GetDocumentTextDetectionOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case blocks = "Blocks"
         case detectDocumentTextModelVersion = "DetectDocumentTextModelVersion"
@@ -2646,7 +4162,7 @@ extension GetDocumentTextDetectionOutputResponseBody: Swift.Decodable {
         case warnings = "Warnings"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentMetadataDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentMetadata.self, forKey: .documentMetadata)
         documentMetadata = documentMetadataDecoded
@@ -2683,6 +4199,24 @@ extension GetDocumentTextDetectionOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum GetDocumentTextDetectionOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidJobIdException": return try await InvalidJobIdException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidKMSKeyException": return try await InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension GetExpenseAnalysisInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
@@ -2704,8 +4238,9 @@ extension GetExpenseAnalysisInput: Swift.Encodable {
     }
 }
 
-extension GetExpenseAnalysisInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension GetExpenseAnalysisInput {
+
+    static func urlPathProvider(_ value: GetExpenseAnalysisInput) -> Swift.String? {
         return "/"
     }
 }
@@ -2719,7 +4254,7 @@ public struct GetExpenseAnalysisInput: Swift.Equatable {
     /// If the previous response was incomplete (because there are more blocks to retrieve), Amazon Textract returns a pagination token in the response. You can use this pagination token to retrieve the next set of blocks.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -2744,7 +4279,7 @@ extension GetExpenseAnalysisInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -2755,48 +4290,11 @@ extension GetExpenseAnalysisInputBody: Swift.Decodable {
     }
 }
 
-extension GetExpenseAnalysisOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetExpenseAnalysisOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidJobIdException" : self = .invalidJobIdException(try InvalidJobIdException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidKMSKeyException" : self = .invalidKMSKeyException(try InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetExpenseAnalysisOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case internalServerError(InternalServerError)
-    case invalidJobIdException(InvalidJobIdException)
-    case invalidKMSKeyException(InvalidKMSKeyException)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetExpenseAnalysisOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetExpenseAnalysisOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetExpenseAnalysisOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetExpenseAnalysisOutputBody = try responseDecoder.decode(responseBody: data)
             self.analyzeExpenseModelVersion = output.analyzeExpenseModelVersion
             self.documentMetadata = output.documentMetadata
             self.expenseDocuments = output.expenseDocuments
@@ -2816,7 +4314,7 @@ extension GetExpenseAnalysisOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct GetExpenseAnalysisOutputResponse: Swift.Equatable {
+public struct GetExpenseAnalysisOutput: Swift.Equatable {
     /// The current model version of AnalyzeExpense.
     public var analyzeExpenseModelVersion: Swift.String?
     /// Information about a document that Amazon Textract processed. DocumentMetadata is returned in every page of paginated responses from an Amazon Textract operation.
@@ -2832,7 +4330,7 @@ public struct GetExpenseAnalysisOutputResponse: Swift.Equatable {
     /// A list of warnings that occurred during the text-detection operation for the document.
     public var warnings: [TextractClientTypes.Warning]?
 
-    public init (
+    public init(
         analyzeExpenseModelVersion: Swift.String? = nil,
         documentMetadata: TextractClientTypes.DocumentMetadata? = nil,
         expenseDocuments: [TextractClientTypes.ExpenseDocument]? = nil,
@@ -2852,7 +4350,7 @@ public struct GetExpenseAnalysisOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetExpenseAnalysisOutputResponseBody: Swift.Equatable {
+struct GetExpenseAnalysisOutputBody: Swift.Equatable {
     let documentMetadata: TextractClientTypes.DocumentMetadata?
     let jobStatus: TextractClientTypes.JobStatus?
     let nextToken: Swift.String?
@@ -2862,7 +4360,7 @@ struct GetExpenseAnalysisOutputResponseBody: Swift.Equatable {
     let analyzeExpenseModelVersion: Swift.String?
 }
 
-extension GetExpenseAnalysisOutputResponseBody: Swift.Decodable {
+extension GetExpenseAnalysisOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case analyzeExpenseModelVersion = "AnalyzeExpenseModelVersion"
         case documentMetadata = "DocumentMetadata"
@@ -2873,7 +4371,7 @@ extension GetExpenseAnalysisOutputResponseBody: Swift.Decodable {
         case warnings = "Warnings"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentMetadataDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentMetadata.self, forKey: .documentMetadata)
         documentMetadata = documentMetadataDecoded
@@ -2910,6 +4408,24 @@ extension GetExpenseAnalysisOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum GetExpenseAnalysisOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidJobIdException": return try await InvalidJobIdException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidKMSKeyException": return try await InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension GetLendingAnalysisInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
@@ -2931,8 +4447,9 @@ extension GetLendingAnalysisInput: Swift.Encodable {
     }
 }
 
-extension GetLendingAnalysisInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension GetLendingAnalysisInput {
+
+    static func urlPathProvider(_ value: GetLendingAnalysisInput) -> Swift.String? {
         return "/"
     }
 }
@@ -2946,7 +4463,7 @@ public struct GetLendingAnalysisInput: Swift.Equatable {
     /// If the previous response was incomplete, Amazon Textract returns a pagination token in the response. You can use this pagination token to retrieve the next set of lending results.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -2971,7 +4488,7 @@ extension GetLendingAnalysisInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -2982,48 +4499,11 @@ extension GetLendingAnalysisInputBody: Swift.Decodable {
     }
 }
 
-extension GetLendingAnalysisOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetLendingAnalysisOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidJobIdException" : self = .invalidJobIdException(try InvalidJobIdException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidKMSKeyException" : self = .invalidKMSKeyException(try InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetLendingAnalysisOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case internalServerError(InternalServerError)
-    case invalidJobIdException(InvalidJobIdException)
-    case invalidKMSKeyException(InvalidKMSKeyException)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetLendingAnalysisOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetLendingAnalysisOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetLendingAnalysisOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetLendingAnalysisOutputBody = try responseDecoder.decode(responseBody: data)
             self.analyzeLendingModelVersion = output.analyzeLendingModelVersion
             self.documentMetadata = output.documentMetadata
             self.jobStatus = output.jobStatus
@@ -3043,7 +4523,7 @@ extension GetLendingAnalysisOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct GetLendingAnalysisOutputResponse: Swift.Equatable {
+public struct GetLendingAnalysisOutput: Swift.Equatable {
     /// The current model version of the Analyze Lending API.
     public var analyzeLendingModelVersion: Swift.String?
     /// Information about the input document.
@@ -3059,7 +4539,7 @@ public struct GetLendingAnalysisOutputResponse: Swift.Equatable {
     /// A list of warnings that occurred during the lending analysis operation.
     public var warnings: [TextractClientTypes.Warning]?
 
-    public init (
+    public init(
         analyzeLendingModelVersion: Swift.String? = nil,
         documentMetadata: TextractClientTypes.DocumentMetadata? = nil,
         jobStatus: TextractClientTypes.JobStatus? = nil,
@@ -3079,7 +4559,7 @@ public struct GetLendingAnalysisOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetLendingAnalysisOutputResponseBody: Swift.Equatable {
+struct GetLendingAnalysisOutputBody: Swift.Equatable {
     let documentMetadata: TextractClientTypes.DocumentMetadata?
     let jobStatus: TextractClientTypes.JobStatus?
     let nextToken: Swift.String?
@@ -3089,7 +4569,7 @@ struct GetLendingAnalysisOutputResponseBody: Swift.Equatable {
     let analyzeLendingModelVersion: Swift.String?
 }
 
-extension GetLendingAnalysisOutputResponseBody: Swift.Decodable {
+extension GetLendingAnalysisOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case analyzeLendingModelVersion = "AnalyzeLendingModelVersion"
         case documentMetadata = "DocumentMetadata"
@@ -3100,7 +4580,7 @@ extension GetLendingAnalysisOutputResponseBody: Swift.Decodable {
         case warnings = "Warnings"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentMetadataDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentMetadata.self, forKey: .documentMetadata)
         documentMetadata = documentMetadataDecoded
@@ -3137,6 +4617,24 @@ extension GetLendingAnalysisOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum GetLendingAnalysisOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidJobIdException": return try await InvalidJobIdException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidKMSKeyException": return try await InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension GetLendingAnalysisSummaryInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
@@ -3150,8 +4648,9 @@ extension GetLendingAnalysisSummaryInput: Swift.Encodable {
     }
 }
 
-extension GetLendingAnalysisSummaryInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension GetLendingAnalysisSummaryInput {
+
+    static func urlPathProvider(_ value: GetLendingAnalysisSummaryInput) -> Swift.String? {
         return "/"
     }
 }
@@ -3161,7 +4660,7 @@ public struct GetLendingAnalysisSummaryInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -3178,55 +4677,18 @@ extension GetLendingAnalysisSummaryInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension GetLendingAnalysisSummaryOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetLendingAnalysisSummaryOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidJobIdException" : self = .invalidJobIdException(try InvalidJobIdException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidKMSKeyException" : self = .invalidKMSKeyException(try InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetLendingAnalysisSummaryOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case internalServerError(InternalServerError)
-    case invalidJobIdException(InvalidJobIdException)
-    case invalidKMSKeyException(InvalidKMSKeyException)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetLendingAnalysisSummaryOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetLendingAnalysisSummaryOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetLendingAnalysisSummaryOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetLendingAnalysisSummaryOutputBody = try responseDecoder.decode(responseBody: data)
             self.analyzeLendingModelVersion = output.analyzeLendingModelVersion
             self.documentMetadata = output.documentMetadata
             self.jobStatus = output.jobStatus
@@ -3244,7 +4706,7 @@ extension GetLendingAnalysisSummaryOutputResponse: ClientRuntime.HttpResponseBin
     }
 }
 
-public struct GetLendingAnalysisSummaryOutputResponse: Swift.Equatable {
+public struct GetLendingAnalysisSummaryOutput: Swift.Equatable {
     /// The current model version of the Analyze Lending API.
     public var analyzeLendingModelVersion: Swift.String?
     /// Information about the input document.
@@ -3258,7 +4720,7 @@ public struct GetLendingAnalysisSummaryOutputResponse: Swift.Equatable {
     /// A list of warnings that occurred during the lending analysis operation.
     public var warnings: [TextractClientTypes.Warning]?
 
-    public init (
+    public init(
         analyzeLendingModelVersion: Swift.String? = nil,
         documentMetadata: TextractClientTypes.DocumentMetadata? = nil,
         jobStatus: TextractClientTypes.JobStatus? = nil,
@@ -3276,7 +4738,7 @@ public struct GetLendingAnalysisSummaryOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetLendingAnalysisSummaryOutputResponseBody: Swift.Equatable {
+struct GetLendingAnalysisSummaryOutputBody: Swift.Equatable {
     let documentMetadata: TextractClientTypes.DocumentMetadata?
     let jobStatus: TextractClientTypes.JobStatus?
     let summary: TextractClientTypes.LendingSummary?
@@ -3285,7 +4747,7 @@ struct GetLendingAnalysisSummaryOutputResponseBody: Swift.Equatable {
     let analyzeLendingModelVersion: Swift.String?
 }
 
-extension GetLendingAnalysisSummaryOutputResponseBody: Swift.Decodable {
+extension GetLendingAnalysisSummaryOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case analyzeLendingModelVersion = "AnalyzeLendingModelVersion"
         case documentMetadata = "DocumentMetadata"
@@ -3295,7 +4757,7 @@ extension GetLendingAnalysisSummaryOutputResponseBody: Swift.Decodable {
         case warnings = "Warnings"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentMetadataDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentMetadata.self, forKey: .documentMetadata)
         documentMetadata = documentMetadataDecoded
@@ -3318,6 +4780,24 @@ extension GetLendingAnalysisSummaryOutputResponseBody: Swift.Decodable {
         statusMessage = statusMessageDecoded
         let analyzeLendingModelVersionDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .analyzeLendingModelVersion)
         analyzeLendingModelVersion = analyzeLendingModelVersionDecoded
+    }
+}
+
+enum GetLendingAnalysisSummaryOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidJobIdException": return try await InvalidJobIdException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidKMSKeyException": return try await InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -3344,7 +4824,7 @@ extension TextractClientTypes.HumanLoopActivationOutput: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let humanLoopArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .humanLoopArn)
         humanLoopArn = humanLoopArnDecoded
@@ -3374,7 +4854,7 @@ extension TextractClientTypes {
         /// The Amazon Resource Name (ARN) of the HumanLoop created.
         public var humanLoopArn: Swift.String?
 
-        public init (
+        public init(
             humanLoopActivationConditionsEvaluationResults: Swift.String? = nil,
             humanLoopActivationReasons: [Swift.String]? = nil,
             humanLoopArn: Swift.String? = nil
@@ -3408,7 +4888,7 @@ extension TextractClientTypes.HumanLoopConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let humanLoopNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .humanLoopName)
         humanLoopName = humanLoopNameDecoded
@@ -3431,7 +4911,7 @@ extension TextractClientTypes {
         /// This member is required.
         public var humanLoopName: Swift.String?
 
-        public init (
+        public init(
             dataAttributes: TextractClientTypes.HumanLoopDataAttributes? = nil,
             flowDefinitionArn: Swift.String? = nil,
             humanLoopName: Swift.String? = nil
@@ -3460,7 +4940,7 @@ extension TextractClientTypes.HumanLoopDataAttributes: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let contentClassifiersContainer = try containerValues.decodeIfPresent([TextractClientTypes.ContentClassifier?].self, forKey: .contentClassifiers)
         var contentClassifiersDecoded0:[TextractClientTypes.ContentClassifier]? = nil
@@ -3482,7 +4962,7 @@ extension TextractClientTypes {
         /// Sets whether the input image is free of personally identifiable information or adult content.
         public var contentClassifiers: [TextractClientTypes.ContentClassifier]?
 
-        public init (
+        public init(
             contentClassifiers: [TextractClientTypes.ContentClassifier]? = nil
         )
         {
@@ -3493,49 +4973,52 @@ extension TextractClientTypes {
 }
 
 extension HumanLoopQuotaExceededException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: HumanLoopQuotaExceededExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
-            self.quotaCode = output.quotaCode
-            self.resourceType = output.resourceType
-            self.serviceCode = output.serviceCode
+            self.properties.code = output.code
+            self.properties.message = output.message
+            self.properties.quotaCode = output.quotaCode
+            self.properties.resourceType = output.resourceType
+            self.properties.serviceCode = output.serviceCode
         } else {
-            self.code = nil
-            self.message = nil
-            self.quotaCode = nil
-            self.resourceType = nil
-            self.serviceCode = nil
+            self.properties.code = nil
+            self.properties.message = nil
+            self.properties.quotaCode = nil
+            self.properties.resourceType = nil
+            self.properties.serviceCode = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Indicates you have exceeded the maximum number of active human in the loop workflows available
-public struct HumanLoopQuotaExceededException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
-    /// The quota code.
-    public var quotaCode: Swift.String?
-    /// The resource type.
-    public var resourceType: Swift.String?
-    /// The service code.
-    public var serviceCode: Swift.String?
+public struct HumanLoopQuotaExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+        /// The quota code.
+        public internal(set) var quotaCode: Swift.String? = nil
+        /// The resource type.
+        public internal(set) var resourceType: Swift.String? = nil
+        /// The service code.
+        public internal(set) var serviceCode: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "HumanLoopQuotaExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil,
         quotaCode: Swift.String? = nil,
@@ -3543,11 +5026,11 @@ public struct HumanLoopQuotaExceededException: AWSClientRuntime.AWSHttpServiceEr
         serviceCode: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
-        self.quotaCode = quotaCode
-        self.resourceType = resourceType
-        self.serviceCode = serviceCode
+        self.properties.code = code
+        self.properties.message = message
+        self.properties.quotaCode = quotaCode
+        self.properties.resourceType = resourceType
+        self.properties.serviceCode = serviceCode
     }
 }
 
@@ -3568,7 +5051,7 @@ extension HumanLoopQuotaExceededExceptionBody: Swift.Decodable {
         case serviceCode = "ServiceCode"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourceTypeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceType)
         resourceType = resourceTypeDecoded
@@ -3584,43 +5067,46 @@ extension HumanLoopQuotaExceededExceptionBody: Swift.Decodable {
 }
 
 extension IdempotentParameterMismatchException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: IdempotentParameterMismatchExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// A ClientRequestToken input parameter was reused with an operation, but at least one of the other input parameters is different from the previous call to the operation.
-public struct IdempotentParameterMismatchException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct IdempotentParameterMismatchException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "IdempotentParameterMismatchException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -3635,7 +5121,7 @@ extension IdempotentParameterMismatchExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -3670,7 +5156,7 @@ extension TextractClientTypes.IdentityDocument: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentIndexDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .documentIndex)
         documentIndex = documentIndexDecoded
@@ -3709,7 +5195,7 @@ extension TextractClientTypes {
         /// The structure used to record information extracted from identity documents. Contains both normalized field and value of the extracted text.
         public var identityDocumentFields: [TextractClientTypes.IdentityDocumentField]?
 
-        public init (
+        public init(
             blocks: [TextractClientTypes.Block]? = nil,
             documentIndex: Swift.Int? = nil,
             identityDocumentFields: [TextractClientTypes.IdentityDocumentField]? = nil
@@ -3739,7 +5225,7 @@ extension TextractClientTypes.IdentityDocumentField: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let typeDecoded = try containerValues.decodeIfPresent(TextractClientTypes.AnalyzeIDDetections.self, forKey: .type)
         type = typeDecoded
@@ -3756,7 +5242,7 @@ extension TextractClientTypes {
         /// Used to contain the information detected by an AnalyzeID operation.
         public var valueDetection: TextractClientTypes.AnalyzeIDDetections?
 
-        public init (
+        public init(
             type: TextractClientTypes.AnalyzeIDDetections? = nil,
             valueDetection: TextractClientTypes.AnalyzeIDDetections? = nil
         )
@@ -3769,43 +5255,46 @@ extension TextractClientTypes {
 }
 
 extension InternalServerError {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InternalServerErrorBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Amazon Textract experienced a service issue. Try your call again.
-public struct InternalServerError: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .server
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct InternalServerError: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InternalServerError" }
+    public static var fault: ErrorFault { .server }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -3820,7 +5309,7 @@ extension InternalServerErrorBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -3830,43 +5319,46 @@ extension InternalServerErrorBody: Swift.Decodable {
 }
 
 extension InvalidJobIdException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidJobIdExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// An invalid job identifier was passed to an asynchronous analysis operation.
-public struct InvalidJobIdException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct InvalidJobIdException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidJobIdException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -3881,7 +5373,7 @@ extension InvalidJobIdExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -3891,43 +5383,46 @@ extension InvalidJobIdExceptionBody: Swift.Decodable {
 }
 
 extension InvalidKMSKeyException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidKMSKeyExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Indicates you do not have decrypt permissions with the KMS key entered, or the KMS key was entered incorrectly.
-public struct InvalidKMSKeyException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct InvalidKMSKeyException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidKMSKeyException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -3942,7 +5437,7 @@ extension InvalidKMSKeyExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -3952,43 +5447,46 @@ extension InvalidKMSKeyExceptionBody: Swift.Decodable {
 }
 
 extension InvalidParameterException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidParameterExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// An input parameter violated a constraint. For example, in synchronous operations, an InvalidParameterException exception occurs when neither of the S3Object or Bytes values are supplied in the Document request parameter. Validate your parameter before calling the API operation again.
-public struct InvalidParameterException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct InvalidParameterException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidParameterException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -4003,7 +5501,7 @@ extension InvalidParameterExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -4013,43 +5511,46 @@ extension InvalidParameterExceptionBody: Swift.Decodable {
 }
 
 extension InvalidS3ObjectException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidS3ObjectExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Amazon Textract is unable to access the S3 object that's specified in the request. for more information, [Configure Access to Amazon S3](https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-access-control.html) For troubleshooting information, see [Troubleshooting Amazon S3](https://docs.aws.amazon.com/AmazonS3/latest/dev/troubleshooting.html)
-public struct InvalidS3ObjectException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct InvalidS3ObjectException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidS3ObjectException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -4064,7 +5565,7 @@ extension InvalidS3ObjectExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -4135,7 +5636,7 @@ extension TextractClientTypes.LendingDetection: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -4160,7 +5661,7 @@ extension TextractClientTypes {
         /// The text extracted for a detected value in a lending document.
         public var text: Swift.String?
 
-        public init (
+        public init(
             confidence: Swift.Float? = nil,
             geometry: TextractClientTypes.Geometry? = nil,
             selectionStatus: TextractClientTypes.SelectionStatus? = nil,
@@ -4198,7 +5699,7 @@ extension TextractClientTypes.LendingDocument: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let lendingFieldsContainer = try containerValues.decodeIfPresent([TextractClientTypes.LendingField?].self, forKey: .lendingFields)
         var lendingFieldsDecoded0:[TextractClientTypes.LendingField]? = nil
@@ -4233,7 +5734,7 @@ extension TextractClientTypes {
         /// A list of signatures detected in a lending document.
         public var signatureDetections: [TextractClientTypes.SignatureDetection]?
 
-        public init (
+        public init(
             lendingFields: [TextractClientTypes.LendingField]? = nil,
             signatureDetections: [TextractClientTypes.SignatureDetection]? = nil
         )
@@ -4268,7 +5769,7 @@ extension TextractClientTypes.LendingField: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let typeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .type)
         type = typeDecoded
@@ -4298,7 +5799,7 @@ extension TextractClientTypes {
         /// An array of LendingDetection objects.
         public var valueDetections: [TextractClientTypes.LendingDetection]?
 
-        public init (
+        public init(
             keyDetection: TextractClientTypes.LendingDetection? = nil,
             type: Swift.String? = nil,
             valueDetections: [TextractClientTypes.LendingDetection]? = nil
@@ -4335,7 +5836,7 @@ extension TextractClientTypes.LendingResult: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let pageDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .page)
         page = pageDecoded
@@ -4365,7 +5866,7 @@ extension TextractClientTypes {
         /// The classifier result for a given page.
         public var pageClassification: TextractClientTypes.PageClassification?
 
-        public init (
+        public init(
             extractions: [TextractClientTypes.Extraction]? = nil,
             page: Swift.Int? = nil,
             pageClassification: TextractClientTypes.PageClassification? = nil
@@ -4401,7 +5902,7 @@ extension TextractClientTypes.LendingSummary: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentGroupsContainer = try containerValues.decodeIfPresent([TextractClientTypes.DocumentGroup?].self, forKey: .documentGroups)
         var documentGroupsDecoded0:[TextractClientTypes.DocumentGroup]? = nil
@@ -4436,7 +5937,7 @@ extension TextractClientTypes {
         /// UndetectedDocumentTypes.
         public var undetectedDocumentTypes: [Swift.String]?
 
-        public init (
+        public init(
             documentGroups: [TextractClientTypes.DocumentGroup]? = nil,
             undetectedDocumentTypes: [Swift.String]? = nil
         )
@@ -4449,43 +5950,46 @@ extension TextractClientTypes {
 }
 
 extension LimitExceededException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: LimitExceededExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// An Amazon Textract service limit was exceeded. For example, if you start too many asynchronous jobs concurrently, calls to start operations (StartDocumentTextDetection, for example) raise a LimitExceededException exception (HTTP status code: 400) until the number of concurrently running jobs is below the Amazon Textract service limit.
-public struct LimitExceededException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct LimitExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "LimitExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -4500,7 +6004,7 @@ extension LimitExceededExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -4524,7 +6028,7 @@ extension TextractClientTypes.LineItemFields: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let lineItemExpenseFieldsContainer = try containerValues.decodeIfPresent([TextractClientTypes.ExpenseField?].self, forKey: .lineItemExpenseFields)
         var lineItemExpenseFieldsDecoded0:[TextractClientTypes.ExpenseField]? = nil
@@ -4546,7 +6050,7 @@ extension TextractClientTypes {
         /// ExpenseFields used to show information from detected lines on a table.
         public var lineItemExpenseFields: [TextractClientTypes.ExpenseField]?
 
-        public init (
+        public init(
             lineItemExpenseFields: [TextractClientTypes.ExpenseField]? = nil
         )
         {
@@ -4575,7 +6079,7 @@ extension TextractClientTypes.LineItemGroup: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let lineItemGroupIndexDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .lineItemGroupIndex)
         lineItemGroupIndex = lineItemGroupIndexDecoded
@@ -4601,7 +6105,7 @@ extension TextractClientTypes {
         /// The breakdown of information on a particular line of a table.
         public var lineItems: [TextractClientTypes.LineItemFields]?
 
-        public init (
+        public init(
             lineItemGroupIndex: Swift.Int? = nil,
             lineItems: [TextractClientTypes.LineItemFields]? = nil
         )
@@ -4611,6 +6115,452 @@ extension TextractClientTypes {
         }
     }
 
+}
+
+extension ListAdapterVersionsInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case afterCreationTime = "AfterCreationTime"
+        case beforeCreationTime = "BeforeCreationTime"
+        case maxResults = "MaxResults"
+        case nextToken = "NextToken"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterId = self.adapterId {
+            try encodeContainer.encode(adapterId, forKey: .adapterId)
+        }
+        if let afterCreationTime = self.afterCreationTime {
+            try encodeContainer.encodeTimestamp(afterCreationTime, format: .epochSeconds, forKey: .afterCreationTime)
+        }
+        if let beforeCreationTime = self.beforeCreationTime {
+            try encodeContainer.encodeTimestamp(beforeCreationTime, format: .epochSeconds, forKey: .beforeCreationTime)
+        }
+        if let maxResults = self.maxResults {
+            try encodeContainer.encode(maxResults, forKey: .maxResults)
+        }
+        if let nextToken = self.nextToken {
+            try encodeContainer.encode(nextToken, forKey: .nextToken)
+        }
+    }
+}
+
+extension ListAdapterVersionsInput {
+
+    static func urlPathProvider(_ value: ListAdapterVersionsInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct ListAdapterVersionsInput: Swift.Equatable {
+    /// A string containing a unique ID for the adapter to match for when listing adapter versions.
+    public var adapterId: Swift.String?
+    /// Specifies the lower bound for the ListAdapterVersions operation. Ensures ListAdapterVersions returns only adapter versions created after the specified creation time.
+    public var afterCreationTime: ClientRuntime.Date?
+    /// Specifies the upper bound for the ListAdapterVersions operation. Ensures ListAdapterVersions returns only adapter versions created after the specified creation time.
+    public var beforeCreationTime: ClientRuntime.Date?
+    /// The maximum number of results to return when listing adapter versions.
+    public var maxResults: Swift.Int?
+    /// Identifies the next page of results to return when listing adapter versions.
+    public var nextToken: Swift.String?
+
+    public init(
+        adapterId: Swift.String? = nil,
+        afterCreationTime: ClientRuntime.Date? = nil,
+        beforeCreationTime: ClientRuntime.Date? = nil,
+        maxResults: Swift.Int? = nil,
+        nextToken: Swift.String? = nil
+    )
+    {
+        self.adapterId = adapterId
+        self.afterCreationTime = afterCreationTime
+        self.beforeCreationTime = beforeCreationTime
+        self.maxResults = maxResults
+        self.nextToken = nextToken
+    }
+}
+
+struct ListAdapterVersionsInputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+    let afterCreationTime: ClientRuntime.Date?
+    let beforeCreationTime: ClientRuntime.Date?
+    let maxResults: Swift.Int?
+    let nextToken: Swift.String?
+}
+
+extension ListAdapterVersionsInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case afterCreationTime = "AfterCreationTime"
+        case beforeCreationTime = "BeforeCreationTime"
+        case maxResults = "MaxResults"
+        case nextToken = "NextToken"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let afterCreationTimeDecoded = try containerValues.decodeTimestampIfPresent(.epochSeconds, forKey: .afterCreationTime)
+        afterCreationTime = afterCreationTimeDecoded
+        let beforeCreationTimeDecoded = try containerValues.decodeTimestampIfPresent(.epochSeconds, forKey: .beforeCreationTime)
+        beforeCreationTime = beforeCreationTimeDecoded
+        let maxResultsDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .maxResults)
+        maxResults = maxResultsDecoded
+        let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
+        nextToken = nextTokenDecoded
+    }
+}
+
+extension ListAdapterVersionsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: ListAdapterVersionsOutputBody = try responseDecoder.decode(responseBody: data)
+            self.adapterVersions = output.adapterVersions
+            self.nextToken = output.nextToken
+        } else {
+            self.adapterVersions = nil
+            self.nextToken = nil
+        }
+    }
+}
+
+public struct ListAdapterVersionsOutput: Swift.Equatable {
+    /// Adapter versions that match the filtering criteria specified when calling ListAdapters.
+    public var adapterVersions: [TextractClientTypes.AdapterVersionOverview]?
+    /// Identifies the next page of results to return when listing adapter versions.
+    public var nextToken: Swift.String?
+
+    public init(
+        adapterVersions: [TextractClientTypes.AdapterVersionOverview]? = nil,
+        nextToken: Swift.String? = nil
+    )
+    {
+        self.adapterVersions = adapterVersions
+        self.nextToken = nextToken
+    }
+}
+
+struct ListAdapterVersionsOutputBody: Swift.Equatable {
+    let adapterVersions: [TextractClientTypes.AdapterVersionOverview]?
+    let nextToken: Swift.String?
+}
+
+extension ListAdapterVersionsOutputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterVersions = "AdapterVersions"
+        case nextToken = "NextToken"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterVersionsContainer = try containerValues.decodeIfPresent([TextractClientTypes.AdapterVersionOverview?].self, forKey: .adapterVersions)
+        var adapterVersionsDecoded0:[TextractClientTypes.AdapterVersionOverview]? = nil
+        if let adapterVersionsContainer = adapterVersionsContainer {
+            adapterVersionsDecoded0 = [TextractClientTypes.AdapterVersionOverview]()
+            for structure0 in adapterVersionsContainer {
+                if let structure0 = structure0 {
+                    adapterVersionsDecoded0?.append(structure0)
+                }
+            }
+        }
+        adapterVersions = adapterVersionsDecoded0
+        let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
+        nextToken = nextTokenDecoded
+    }
+}
+
+enum ListAdapterVersionsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
+extension ListAdaptersInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case afterCreationTime = "AfterCreationTime"
+        case beforeCreationTime = "BeforeCreationTime"
+        case maxResults = "MaxResults"
+        case nextToken = "NextToken"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let afterCreationTime = self.afterCreationTime {
+            try encodeContainer.encodeTimestamp(afterCreationTime, format: .epochSeconds, forKey: .afterCreationTime)
+        }
+        if let beforeCreationTime = self.beforeCreationTime {
+            try encodeContainer.encodeTimestamp(beforeCreationTime, format: .epochSeconds, forKey: .beforeCreationTime)
+        }
+        if let maxResults = self.maxResults {
+            try encodeContainer.encode(maxResults, forKey: .maxResults)
+        }
+        if let nextToken = self.nextToken {
+            try encodeContainer.encode(nextToken, forKey: .nextToken)
+        }
+    }
+}
+
+extension ListAdaptersInput {
+
+    static func urlPathProvider(_ value: ListAdaptersInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct ListAdaptersInput: Swift.Equatable {
+    /// Specifies the lower bound for the ListAdapters operation. Ensures ListAdapters returns only adapters created after the specified creation time.
+    public var afterCreationTime: ClientRuntime.Date?
+    /// Specifies the upper bound for the ListAdapters operation. Ensures ListAdapters returns only adapters created before the specified creation time.
+    public var beforeCreationTime: ClientRuntime.Date?
+    /// The maximum number of results to return when listing adapters.
+    public var maxResults: Swift.Int?
+    /// Identifies the next page of results to return when listing adapters.
+    public var nextToken: Swift.String?
+
+    public init(
+        afterCreationTime: ClientRuntime.Date? = nil,
+        beforeCreationTime: ClientRuntime.Date? = nil,
+        maxResults: Swift.Int? = nil,
+        nextToken: Swift.String? = nil
+    )
+    {
+        self.afterCreationTime = afterCreationTime
+        self.beforeCreationTime = beforeCreationTime
+        self.maxResults = maxResults
+        self.nextToken = nextToken
+    }
+}
+
+struct ListAdaptersInputBody: Swift.Equatable {
+    let afterCreationTime: ClientRuntime.Date?
+    let beforeCreationTime: ClientRuntime.Date?
+    let maxResults: Swift.Int?
+    let nextToken: Swift.String?
+}
+
+extension ListAdaptersInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case afterCreationTime = "AfterCreationTime"
+        case beforeCreationTime = "BeforeCreationTime"
+        case maxResults = "MaxResults"
+        case nextToken = "NextToken"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let afterCreationTimeDecoded = try containerValues.decodeTimestampIfPresent(.epochSeconds, forKey: .afterCreationTime)
+        afterCreationTime = afterCreationTimeDecoded
+        let beforeCreationTimeDecoded = try containerValues.decodeTimestampIfPresent(.epochSeconds, forKey: .beforeCreationTime)
+        beforeCreationTime = beforeCreationTimeDecoded
+        let maxResultsDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .maxResults)
+        maxResults = maxResultsDecoded
+        let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
+        nextToken = nextTokenDecoded
+    }
+}
+
+extension ListAdaptersOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: ListAdaptersOutputBody = try responseDecoder.decode(responseBody: data)
+            self.adapters = output.adapters
+            self.nextToken = output.nextToken
+        } else {
+            self.adapters = nil
+            self.nextToken = nil
+        }
+    }
+}
+
+public struct ListAdaptersOutput: Swift.Equatable {
+    /// A list of adapters that matches the filtering criteria specified when calling ListAdapters.
+    public var adapters: [TextractClientTypes.AdapterOverview]?
+    /// Identifies the next page of results to return when listing adapters.
+    public var nextToken: Swift.String?
+
+    public init(
+        adapters: [TextractClientTypes.AdapterOverview]? = nil,
+        nextToken: Swift.String? = nil
+    )
+    {
+        self.adapters = adapters
+        self.nextToken = nextToken
+    }
+}
+
+struct ListAdaptersOutputBody: Swift.Equatable {
+    let adapters: [TextractClientTypes.AdapterOverview]?
+    let nextToken: Swift.String?
+}
+
+extension ListAdaptersOutputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapters = "Adapters"
+        case nextToken = "NextToken"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adaptersContainer = try containerValues.decodeIfPresent([TextractClientTypes.AdapterOverview?].self, forKey: .adapters)
+        var adaptersDecoded0:[TextractClientTypes.AdapterOverview]? = nil
+        if let adaptersContainer = adaptersContainer {
+            adaptersDecoded0 = [TextractClientTypes.AdapterOverview]()
+            for structure0 in adaptersContainer {
+                if let structure0 = structure0 {
+                    adaptersDecoded0?.append(structure0)
+                }
+            }
+        }
+        adapters = adaptersDecoded0
+        let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
+        nextToken = nextTokenDecoded
+    }
+}
+
+enum ListAdaptersOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
+extension ListTagsForResourceInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case resourceARN = "ResourceARN"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let resourceARN = self.resourceARN {
+            try encodeContainer.encode(resourceARN, forKey: .resourceARN)
+        }
+    }
+}
+
+extension ListTagsForResourceInput {
+
+    static func urlPathProvider(_ value: ListTagsForResourceInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct ListTagsForResourceInput: Swift.Equatable {
+    /// The Amazon Resource Name (ARN) that specifies the resource to list tags for.
+    /// This member is required.
+    public var resourceARN: Swift.String?
+
+    public init(
+        resourceARN: Swift.String? = nil
+    )
+    {
+        self.resourceARN = resourceARN
+    }
+}
+
+struct ListTagsForResourceInputBody: Swift.Equatable {
+    let resourceARN: Swift.String?
+}
+
+extension ListTagsForResourceInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case resourceARN = "ResourceARN"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let resourceARNDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceARN)
+        resourceARN = resourceARNDecoded
+    }
+}
+
+extension ListTagsForResourceOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: ListTagsForResourceOutputBody = try responseDecoder.decode(responseBody: data)
+            self.tags = output.tags
+        } else {
+            self.tags = nil
+        }
+    }
+}
+
+public struct ListTagsForResourceOutput: Swift.Equatable {
+    /// A set of tags (key-value pairs) that are part of the requested resource.
+    public var tags: [Swift.String:Swift.String]?
+
+    public init(
+        tags: [Swift.String:Swift.String]? = nil
+    )
+    {
+        self.tags = tags
+    }
+}
+
+struct ListTagsForResourceOutputBody: Swift.Equatable {
+    let tags: [Swift.String:Swift.String]?
+}
+
+extension ListTagsForResourceOutputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case tags = "Tags"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let tagsContainer = try containerValues.decodeIfPresent([Swift.String: Swift.String?].self, forKey: .tags)
+        var tagsDecoded0: [Swift.String:Swift.String]? = nil
+        if let tagsContainer = tagsContainer {
+            tagsDecoded0 = [Swift.String:Swift.String]()
+            for (key0, tagvalue0) in tagsContainer {
+                if let tagvalue0 = tagvalue0 {
+                    tagsDecoded0?[key0] = tagvalue0
+                }
+            }
+        }
+        tags = tagsDecoded0
+    }
+}
+
+enum ListTagsForResourceOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
 }
 
 extension TextractClientTypes.NormalizedValue: Swift.Codable {
@@ -4629,7 +6579,7 @@ extension TextractClientTypes.NormalizedValue: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let valueDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .value)
         value = valueDecoded
@@ -4646,7 +6596,7 @@ extension TextractClientTypes {
         /// The normalized type of the value detected. In this case, DATE.
         public var valueType: TextractClientTypes.ValueType?
 
-        public init (
+        public init(
             value: Swift.String? = nil,
             valueType: TextractClientTypes.ValueType? = nil
         )
@@ -4674,7 +6624,7 @@ extension TextractClientTypes.NotificationChannel: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let snsTopicArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .snsTopicArn)
         snsTopicArn = snsTopicArnDecoded
@@ -4693,7 +6643,7 @@ extension TextractClientTypes {
         /// This member is required.
         public var snsTopicArn: Swift.String?
 
-        public init (
+        public init(
             roleArn: Swift.String? = nil,
             snsTopicArn: Swift.String? = nil
         )
@@ -4721,7 +6671,7 @@ extension TextractClientTypes.OutputConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3BucketDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Bucket)
         s3Bucket = s3BucketDecoded
@@ -4739,7 +6689,7 @@ extension TextractClientTypes {
         /// The prefix of the object key that the output will be saved to. When not enabled, the prefix will be “textract_output".
         public var s3Prefix: Swift.String?
 
-        public init (
+        public init(
             s3Bucket: Swift.String? = nil,
             s3Prefix: Swift.String? = nil
         )
@@ -4773,7 +6723,7 @@ extension TextractClientTypes.PageClassification: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let pageTypeContainer = try containerValues.decodeIfPresent([TextractClientTypes.Prediction?].self, forKey: .pageType)
         var pageTypeDecoded0:[TextractClientTypes.Prediction]? = nil
@@ -4810,7 +6760,7 @@ extension TextractClientTypes {
         /// This member is required.
         public var pageType: [TextractClientTypes.Prediction]?
 
-        public init (
+        public init(
             pageNumber: [TextractClientTypes.Prediction]? = nil,
             pageType: [TextractClientTypes.Prediction]? = nil
         )
@@ -4838,7 +6788,7 @@ extension TextractClientTypes.Point: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let xDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .x) ?? 0.0
         x = xDecoded
@@ -4855,7 +6805,7 @@ extension TextractClientTypes {
         /// The value of the Y coordinate for a point on a Polygon.
         public var y: Swift.Float
 
-        public init (
+        public init(
             x: Swift.Float = 0.0,
             y: Swift.Float = 0.0
         )
@@ -4883,7 +6833,7 @@ extension TextractClientTypes.Prediction: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let valueDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .value)
         value = valueDecoded
@@ -4900,7 +6850,7 @@ extension TextractClientTypes {
         /// The predicted value of a detected object.
         public var value: Swift.String?
 
-        public init (
+        public init(
             confidence: Swift.Float? = nil,
             value: Swift.String? = nil
         )
@@ -4913,43 +6863,46 @@ extension TextractClientTypes {
 }
 
 extension ProvisionedThroughputExceededException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: ProvisionedThroughputExceededExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The number of requests exceeded your throughput limit. If you want to increase this limit, contact Amazon Textract.
-public struct ProvisionedThroughputExceededException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct ProvisionedThroughputExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ProvisionedThroughputExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -4964,7 +6917,7 @@ extension ProvisionedThroughputExceededExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -4988,7 +6941,7 @@ extension TextractClientTypes.QueriesConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let queriesContainer = try containerValues.decodeIfPresent([TextractClientTypes.Query?].self, forKey: .queries)
         var queriesDecoded0:[TextractClientTypes.Query]? = nil
@@ -5011,7 +6964,7 @@ extension TextractClientTypes {
         /// This member is required.
         public var queries: [TextractClientTypes.Query]?
 
-        public init (
+        public init(
             queries: [TextractClientTypes.Query]? = nil
         )
         {
@@ -5044,7 +6997,7 @@ extension TextractClientTypes.Query: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -5085,7 +7038,7 @@ extension TextractClientTypes {
         /// This member is required.
         public var text: Swift.String?
 
-        public init (
+        public init(
             alias: Swift.String? = nil,
             pages: [Swift.String]? = nil,
             text: Swift.String? = nil
@@ -5118,7 +7071,7 @@ extension TextractClientTypes.Relationship: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let typeDecoded = try containerValues.decodeIfPresent(TextractClientTypes.RelationshipType.self, forKey: .type)
         type = typeDecoded
@@ -5158,7 +7111,7 @@ extension TextractClientTypes {
         /// * TABLE_FOOTER - A list of IDs that identify the TABLE_FOOTER block types in a table.
         public var type: TextractClientTypes.RelationshipType?
 
-        public init (
+        public init(
             ids: [Swift.String]? = nil,
             type: TextractClientTypes.RelationshipType? = nil
         )
@@ -5223,6 +7176,70 @@ extension TextractClientTypes {
     }
 }
 
+extension ResourceNotFoundException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: ResourceNotFoundExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.code = output.code
+            self.properties.message = output.message
+        } else {
+            self.properties.code = nil
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
+    }
+}
+
+/// Returned when an operation tried to access a nonexistent resource.
+public struct ResourceNotFoundException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
+
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ResourceNotFoundException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
+        code: Swift.String? = nil,
+        message: Swift.String? = nil
+    )
+    {
+        self.properties.code = code
+        self.properties.message = message
+    }
+}
+
+struct ResourceNotFoundExceptionBody: Swift.Equatable {
+    let message: Swift.String?
+    let code: Swift.String?
+}
+
+extension ResourceNotFoundExceptionBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case code = "Code"
+        case message = "Message"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
+        message = messageDecoded
+        let codeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .code)
+        code = codeDecoded
+    }
+}
+
 extension TextractClientTypes.S3Object: Swift.Codable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case bucket = "Bucket"
@@ -5243,7 +7260,7 @@ extension TextractClientTypes.S3Object: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let bucketDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .bucket)
         bucket = bucketDecoded
@@ -5264,7 +7281,7 @@ extension TextractClientTypes {
         /// If the bucket has versioning enabled, you can specify the object version.
         public var version: Swift.String?
 
-        public init (
+        public init(
             bucket: Swift.String? = nil,
             name: Swift.String? = nil,
             version: Swift.String? = nil
@@ -5310,6 +7327,70 @@ extension TextractClientTypes {
     }
 }
 
+extension ServiceQuotaExceededException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: ServiceQuotaExceededExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.code = output.code
+            self.properties.message = output.message
+        } else {
+            self.properties.code = nil
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
+    }
+}
+
+/// Returned when a request cannot be completed as it would exceed a maximum service quota.
+public struct ServiceQuotaExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
+
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ServiceQuotaExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
+        code: Swift.String? = nil,
+        message: Swift.String? = nil
+    )
+    {
+        self.properties.code = code
+        self.properties.message = message
+    }
+}
+
+struct ServiceQuotaExceededExceptionBody: Swift.Equatable {
+    let message: Swift.String?
+    let code: Swift.String?
+}
+
+extension ServiceQuotaExceededExceptionBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case code = "Code"
+        case message = "Message"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
+        message = messageDecoded
+        let codeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .code)
+        code = codeDecoded
+    }
+}
+
 extension TextractClientTypes.SignatureDetection: Swift.Codable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case confidence = "Confidence"
@@ -5326,7 +7407,7 @@ extension TextractClientTypes.SignatureDetection: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let confidenceDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .confidence)
         confidence = confidenceDecoded
@@ -5343,7 +7424,7 @@ extension TextractClientTypes {
         /// Information about where the following items are located on a document page: detected page, text, key-value pairs, tables, table cells, and selection elements.
         public var geometry: TextractClientTypes.Geometry?
 
-        public init (
+        public init(
             confidence: Swift.Float? = nil,
             geometry: TextractClientTypes.Geometry? = nil
         )
@@ -5374,7 +7455,7 @@ extension TextractClientTypes.SplitDocument: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let indexDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .index)
         index = indexDecoded
@@ -5400,7 +7481,7 @@ extension TextractClientTypes {
         /// An array of page numbers for a for a given document, ordered by logical boundary.
         public var pages: [Swift.Int]?
 
-        public init (
+        public init(
             index: Swift.Int? = nil,
             pages: [Swift.Int]? = nil
         )
@@ -5414,6 +7495,7 @@ extension TextractClientTypes {
 
 extension StartDocumentAnalysisInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adaptersConfig = "AdaptersConfig"
         case clientRequestToken = "ClientRequestToken"
         case documentLocation = "DocumentLocation"
         case featureTypes = "FeatureTypes"
@@ -5426,6 +7508,9 @@ extension StartDocumentAnalysisInput: Swift.Encodable {
 
     public func encode(to encoder: Swift.Encoder) throws {
         var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adaptersConfig = self.adaptersConfig {
+            try encodeContainer.encode(adaptersConfig, forKey: .adaptersConfig)
+        }
         if let clientRequestToken = self.clientRequestToken {
             try encodeContainer.encode(clientRequestToken, forKey: .clientRequestToken)
         }
@@ -5456,13 +7541,16 @@ extension StartDocumentAnalysisInput: Swift.Encodable {
     }
 }
 
-extension StartDocumentAnalysisInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartDocumentAnalysisInput {
+
+    static func urlPathProvider(_ value: StartDocumentAnalysisInput) -> Swift.String? {
         return "/"
     }
 }
 
 public struct StartDocumentAnalysisInput: Swift.Equatable {
+    /// Specifies the adapter to be used when analyzing a document.
+    public var adaptersConfig: TextractClientTypes.AdaptersConfig?
     /// The idempotent token that you use to identify the start request. If you use the same token with multiple StartDocumentAnalysis requests, the same JobId is returned. Use ClientRequestToken to prevent the same job from being accidentally started more than once. For more information, see [Calling Amazon Textract Asynchronous Operations](https://docs.aws.amazon.com/textract/latest/dg/api-async.html).
     public var clientRequestToken: Swift.String?
     /// The location of the document to be processed.
@@ -5482,7 +7570,8 @@ public struct StartDocumentAnalysisInput: Swift.Equatable {
     ///
     public var queriesConfig: TextractClientTypes.QueriesConfig?
 
-    public init (
+    public init(
+        adaptersConfig: TextractClientTypes.AdaptersConfig? = nil,
         clientRequestToken: Swift.String? = nil,
         documentLocation: TextractClientTypes.DocumentLocation? = nil,
         featureTypes: [TextractClientTypes.FeatureType]? = nil,
@@ -5493,6 +7582,7 @@ public struct StartDocumentAnalysisInput: Swift.Equatable {
         queriesConfig: TextractClientTypes.QueriesConfig? = nil
     )
     {
+        self.adaptersConfig = adaptersConfig
         self.clientRequestToken = clientRequestToken
         self.documentLocation = documentLocation
         self.featureTypes = featureTypes
@@ -5513,10 +7603,12 @@ struct StartDocumentAnalysisInputBody: Swift.Equatable {
     let outputConfig: TextractClientTypes.OutputConfig?
     let kmsKeyId: Swift.String?
     let queriesConfig: TextractClientTypes.QueriesConfig?
+    let adaptersConfig: TextractClientTypes.AdaptersConfig?
 }
 
 extension StartDocumentAnalysisInputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adaptersConfig = "AdaptersConfig"
         case clientRequestToken = "ClientRequestToken"
         case documentLocation = "DocumentLocation"
         case featureTypes = "FeatureTypes"
@@ -5527,7 +7619,7 @@ extension StartDocumentAnalysisInputBody: Swift.Decodable {
         case queriesConfig = "QueriesConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentLocationDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentLocation.self, forKey: .documentLocation)
         documentLocation = documentLocationDecoded
@@ -5554,59 +7646,16 @@ extension StartDocumentAnalysisInputBody: Swift.Decodable {
         kmsKeyId = kmsKeyIdDecoded
         let queriesConfigDecoded = try containerValues.decodeIfPresent(TextractClientTypes.QueriesConfig.self, forKey: .queriesConfig)
         queriesConfig = queriesConfigDecoded
+        let adaptersConfigDecoded = try containerValues.decodeIfPresent(TextractClientTypes.AdaptersConfig.self, forKey: .adaptersConfig)
+        adaptersConfig = adaptersConfigDecoded
     }
 }
 
-extension StartDocumentAnalysisOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartDocumentAnalysisOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "BadDocumentException" : self = .badDocumentException(try BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "DocumentTooLargeException" : self = .documentTooLargeException(try DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "IdempotentParameterMismatchException" : self = .idempotentParameterMismatchException(try IdempotentParameterMismatchException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidKMSKeyException" : self = .invalidKMSKeyException(try InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LimitExceededException" : self = .limitExceededException(try LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedDocumentException" : self = .unsupportedDocumentException(try UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartDocumentAnalysisOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case badDocumentException(BadDocumentException)
-    case documentTooLargeException(DocumentTooLargeException)
-    case idempotentParameterMismatchException(IdempotentParameterMismatchException)
-    case internalServerError(InternalServerError)
-    case invalidKMSKeyException(InvalidKMSKeyException)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case limitExceededException(LimitExceededException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unsupportedDocumentException(UnsupportedDocumentException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartDocumentAnalysisOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartDocumentAnalysisOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartDocumentAnalysisOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartDocumentAnalysisOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobId = output.jobId
         } else {
             self.jobId = nil
@@ -5614,11 +7663,11 @@ extension StartDocumentAnalysisOutputResponse: ClientRuntime.HttpResponseBinding
     }
 }
 
-public struct StartDocumentAnalysisOutputResponse: Swift.Equatable {
+public struct StartDocumentAnalysisOutput: Swift.Equatable {
     /// The identifier for the document text detection job. Use JobId to identify the job in a subsequent call to GetDocumentAnalysis. A JobId value is only valid for 7 days.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -5626,19 +7675,41 @@ public struct StartDocumentAnalysisOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartDocumentAnalysisOutputResponseBody: Swift.Equatable {
+struct StartDocumentAnalysisOutputBody: Swift.Equatable {
     let jobId: Swift.String?
 }
 
-extension StartDocumentAnalysisOutputResponseBody: Swift.Decodable {
+extension StartDocumentAnalysisOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
+    }
+}
+
+enum StartDocumentAnalysisOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "BadDocumentException": return try await BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "DocumentTooLargeException": return try await DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "IdempotentParameterMismatchException": return try await IdempotentParameterMismatchException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidKMSKeyException": return try await InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LimitExceededException": return try await LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedDocumentException": return try await UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -5675,8 +7746,9 @@ extension StartDocumentTextDetectionInput: Swift.Encodable {
     }
 }
 
-extension StartDocumentTextDetectionInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartDocumentTextDetectionInput {
+
+    static func urlPathProvider(_ value: StartDocumentTextDetectionInput) -> Swift.String? {
         return "/"
     }
 }
@@ -5696,7 +7768,7 @@ public struct StartDocumentTextDetectionInput: Swift.Equatable {
     /// Sets if the output will go to a customer defined bucket. By default Amazon Textract will save the results internally to be accessed with the GetDocumentTextDetection operation.
     public var outputConfig: TextractClientTypes.OutputConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         documentLocation: TextractClientTypes.DocumentLocation? = nil,
         jobTag: Swift.String? = nil,
@@ -5733,7 +7805,7 @@ extension StartDocumentTextDetectionInputBody: Swift.Decodable {
         case outputConfig = "OutputConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentLocationDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentLocation.self, forKey: .documentLocation)
         documentLocation = documentLocationDecoded
@@ -5750,56 +7822,11 @@ extension StartDocumentTextDetectionInputBody: Swift.Decodable {
     }
 }
 
-extension StartDocumentTextDetectionOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartDocumentTextDetectionOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "BadDocumentException" : self = .badDocumentException(try BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "DocumentTooLargeException" : self = .documentTooLargeException(try DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "IdempotentParameterMismatchException" : self = .idempotentParameterMismatchException(try IdempotentParameterMismatchException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidKMSKeyException" : self = .invalidKMSKeyException(try InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LimitExceededException" : self = .limitExceededException(try LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedDocumentException" : self = .unsupportedDocumentException(try UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartDocumentTextDetectionOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case badDocumentException(BadDocumentException)
-    case documentTooLargeException(DocumentTooLargeException)
-    case idempotentParameterMismatchException(IdempotentParameterMismatchException)
-    case internalServerError(InternalServerError)
-    case invalidKMSKeyException(InvalidKMSKeyException)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case limitExceededException(LimitExceededException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unsupportedDocumentException(UnsupportedDocumentException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartDocumentTextDetectionOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartDocumentTextDetectionOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartDocumentTextDetectionOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartDocumentTextDetectionOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobId = output.jobId
         } else {
             self.jobId = nil
@@ -5807,11 +7834,11 @@ extension StartDocumentTextDetectionOutputResponse: ClientRuntime.HttpResponseBi
     }
 }
 
-public struct StartDocumentTextDetectionOutputResponse: Swift.Equatable {
+public struct StartDocumentTextDetectionOutput: Swift.Equatable {
     /// The identifier of the text detection job for the document. Use JobId to identify the job in a subsequent call to GetDocumentTextDetection. A JobId value is only valid for 7 days.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -5819,19 +7846,41 @@ public struct StartDocumentTextDetectionOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartDocumentTextDetectionOutputResponseBody: Swift.Equatable {
+struct StartDocumentTextDetectionOutputBody: Swift.Equatable {
     let jobId: Swift.String?
 }
 
-extension StartDocumentTextDetectionOutputResponseBody: Swift.Decodable {
+extension StartDocumentTextDetectionOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
+    }
+}
+
+enum StartDocumentTextDetectionOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "BadDocumentException": return try await BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "DocumentTooLargeException": return try await DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "IdempotentParameterMismatchException": return try await IdempotentParameterMismatchException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidKMSKeyException": return try await InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LimitExceededException": return try await LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedDocumentException": return try await UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -5868,8 +7917,9 @@ extension StartExpenseAnalysisInput: Swift.Encodable {
     }
 }
 
-extension StartExpenseAnalysisInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartExpenseAnalysisInput {
+
+    static func urlPathProvider(_ value: StartExpenseAnalysisInput) -> Swift.String? {
         return "/"
     }
 }
@@ -5889,7 +7939,7 @@ public struct StartExpenseAnalysisInput: Swift.Equatable {
     /// Sets if the output will go to a customer defined bucket. By default, Amazon Textract will save the results internally to be accessed by the GetExpenseAnalysis operation.
     public var outputConfig: TextractClientTypes.OutputConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         documentLocation: TextractClientTypes.DocumentLocation? = nil,
         jobTag: Swift.String? = nil,
@@ -5926,7 +7976,7 @@ extension StartExpenseAnalysisInputBody: Swift.Decodable {
         case outputConfig = "OutputConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentLocationDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentLocation.self, forKey: .documentLocation)
         documentLocation = documentLocationDecoded
@@ -5943,56 +7993,11 @@ extension StartExpenseAnalysisInputBody: Swift.Decodable {
     }
 }
 
-extension StartExpenseAnalysisOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartExpenseAnalysisOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "BadDocumentException" : self = .badDocumentException(try BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "DocumentTooLargeException" : self = .documentTooLargeException(try DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "IdempotentParameterMismatchException" : self = .idempotentParameterMismatchException(try IdempotentParameterMismatchException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidKMSKeyException" : self = .invalidKMSKeyException(try InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LimitExceededException" : self = .limitExceededException(try LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedDocumentException" : self = .unsupportedDocumentException(try UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartExpenseAnalysisOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case badDocumentException(BadDocumentException)
-    case documentTooLargeException(DocumentTooLargeException)
-    case idempotentParameterMismatchException(IdempotentParameterMismatchException)
-    case internalServerError(InternalServerError)
-    case invalidKMSKeyException(InvalidKMSKeyException)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case limitExceededException(LimitExceededException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unsupportedDocumentException(UnsupportedDocumentException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartExpenseAnalysisOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartExpenseAnalysisOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartExpenseAnalysisOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartExpenseAnalysisOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobId = output.jobId
         } else {
             self.jobId = nil
@@ -6000,11 +8005,11 @@ extension StartExpenseAnalysisOutputResponse: ClientRuntime.HttpResponseBinding 
     }
 }
 
-public struct StartExpenseAnalysisOutputResponse: Swift.Equatable {
+public struct StartExpenseAnalysisOutput: Swift.Equatable {
     /// A unique identifier for the text detection job. The JobId is returned from StartExpenseAnalysis. A JobId value is only valid for 7 days.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -6012,19 +8017,41 @@ public struct StartExpenseAnalysisOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartExpenseAnalysisOutputResponseBody: Swift.Equatable {
+struct StartExpenseAnalysisOutputBody: Swift.Equatable {
     let jobId: Swift.String?
 }
 
-extension StartExpenseAnalysisOutputResponseBody: Swift.Decodable {
+extension StartExpenseAnalysisOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
+    }
+}
+
+enum StartExpenseAnalysisOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "BadDocumentException": return try await BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "DocumentTooLargeException": return try await DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "IdempotentParameterMismatchException": return try await IdempotentParameterMismatchException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidKMSKeyException": return try await InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LimitExceededException": return try await LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedDocumentException": return try await UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -6061,8 +8088,9 @@ extension StartLendingAnalysisInput: Swift.Encodable {
     }
 }
 
-extension StartLendingAnalysisInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartLendingAnalysisInput {
+
+    static func urlPathProvider(_ value: StartLendingAnalysisInput) -> Swift.String? {
         return "/"
     }
 }
@@ -6082,7 +8110,7 @@ public struct StartLendingAnalysisInput: Swift.Equatable {
     /// Sets whether or not your output will go to a user created bucket. Used to set the name of the bucket, and the prefix on the output file. OutputConfig is an optional parameter which lets you adjust where your output will be placed. By default, Amazon Textract will store the results internally and can only be accessed by the Get API operations. With OutputConfig enabled, you can set the name of the bucket the output will be sent to the file prefix of the results where you can download your results. Additionally, you can set the KMSKeyID parameter to a customer master key (CMK) to encrypt your output. Without this parameter set Amazon Textract will encrypt server-side using the AWS managed CMK for Amazon S3. Decryption of Customer Content is necessary for processing of the documents by Amazon Textract. If your account is opted out under an AI services opt out policy then all unencrypted Customer Content is immediately and permanently deleted after the Customer Content has been processed by the service. No copy of of the output is retained by Amazon Textract. For information about how to opt out, see [ Managing AI services opt-out policy. ](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_ai-opt-out.html) For more information on data privacy, see the [Data Privacy FAQ](https://aws.amazon.com/compliance/data-privacy-faq/).
     public var outputConfig: TextractClientTypes.OutputConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         documentLocation: TextractClientTypes.DocumentLocation? = nil,
         jobTag: Swift.String? = nil,
@@ -6119,7 +8147,7 @@ extension StartLendingAnalysisInputBody: Swift.Decodable {
         case outputConfig = "OutputConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentLocationDecoded = try containerValues.decodeIfPresent(TextractClientTypes.DocumentLocation.self, forKey: .documentLocation)
         documentLocation = documentLocationDecoded
@@ -6136,56 +8164,11 @@ extension StartLendingAnalysisInputBody: Swift.Decodable {
     }
 }
 
-extension StartLendingAnalysisOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartLendingAnalysisOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "AccessDeniedException" : self = .accessDeniedException(try AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "BadDocumentException" : self = .badDocumentException(try BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "DocumentTooLargeException" : self = .documentTooLargeException(try DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "IdempotentParameterMismatchException" : self = .idempotentParameterMismatchException(try IdempotentParameterMismatchException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerError" : self = .internalServerError(try InternalServerError(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidKMSKeyException" : self = .invalidKMSKeyException(try InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3ObjectException" : self = .invalidS3ObjectException(try InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LimitExceededException" : self = .limitExceededException(try LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ProvisionedThroughputExceededException" : self = .provisionedThroughputExceededException(try ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ThrottlingException" : self = .throttlingException(try ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedDocumentException" : self = .unsupportedDocumentException(try UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartLendingAnalysisOutputError: Swift.Error, Swift.Equatable {
-    case accessDeniedException(AccessDeniedException)
-    case badDocumentException(BadDocumentException)
-    case documentTooLargeException(DocumentTooLargeException)
-    case idempotentParameterMismatchException(IdempotentParameterMismatchException)
-    case internalServerError(InternalServerError)
-    case invalidKMSKeyException(InvalidKMSKeyException)
-    case invalidParameterException(InvalidParameterException)
-    case invalidS3ObjectException(InvalidS3ObjectException)
-    case limitExceededException(LimitExceededException)
-    case provisionedThroughputExceededException(ProvisionedThroughputExceededException)
-    case throttlingException(ThrottlingException)
-    case unsupportedDocumentException(UnsupportedDocumentException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartLendingAnalysisOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartLendingAnalysisOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartLendingAnalysisOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartLendingAnalysisOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobId = output.jobId
         } else {
             self.jobId = nil
@@ -6193,11 +8176,11 @@ extension StartLendingAnalysisOutputResponse: ClientRuntime.HttpResponseBinding 
     }
 }
 
-public struct StartLendingAnalysisOutputResponse: Swift.Equatable {
+public struct StartLendingAnalysisOutput: Swift.Equatable {
     /// A unique identifier for the lending or text-detection job. The JobId is returned from StartLendingAnalysis. A JobId value is only valid for 7 days.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -6205,19 +8188,143 @@ public struct StartLendingAnalysisOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartLendingAnalysisOutputResponseBody: Swift.Equatable {
+struct StartLendingAnalysisOutputBody: Swift.Equatable {
     let jobId: Swift.String?
 }
 
-extension StartLendingAnalysisOutputResponseBody: Swift.Decodable {
+extension StartLendingAnalysisOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
+    }
+}
+
+enum StartLendingAnalysisOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "BadDocumentException": return try await BadDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "DocumentTooLargeException": return try await DocumentTooLargeException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "IdempotentParameterMismatchException": return try await IdempotentParameterMismatchException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidKMSKeyException": return try await InvalidKMSKeyException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3ObjectException": return try await InvalidS3ObjectException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LimitExceededException": return try await LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedDocumentException": return try await UnsupportedDocumentException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
+extension TagResourceInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case resourceARN = "ResourceARN"
+        case tags = "Tags"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let resourceARN = self.resourceARN {
+            try encodeContainer.encode(resourceARN, forKey: .resourceARN)
+        }
+        if let tags = tags {
+            var tagsContainer = encodeContainer.nestedContainer(keyedBy: ClientRuntime.Key.self, forKey: .tags)
+            for (dictKey0, tagMap0) in tags {
+                try tagsContainer.encode(tagMap0, forKey: ClientRuntime.Key(stringValue: dictKey0))
+            }
+        }
+    }
+}
+
+extension TagResourceInput {
+
+    static func urlPathProvider(_ value: TagResourceInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct TagResourceInput: Swift.Equatable {
+    /// The Amazon Resource Name (ARN) that specifies the resource to be tagged.
+    /// This member is required.
+    public var resourceARN: Swift.String?
+    /// A set of tags (key-value pairs) that you want to assign to the resource.
+    /// This member is required.
+    public var tags: [Swift.String:Swift.String]?
+
+    public init(
+        resourceARN: Swift.String? = nil,
+        tags: [Swift.String:Swift.String]? = nil
+    )
+    {
+        self.resourceARN = resourceARN
+        self.tags = tags
+    }
+}
+
+struct TagResourceInputBody: Swift.Equatable {
+    let resourceARN: Swift.String?
+    let tags: [Swift.String:Swift.String]?
+}
+
+extension TagResourceInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case resourceARN = "ResourceARN"
+        case tags = "Tags"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let resourceARNDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceARN)
+        resourceARN = resourceARNDecoded
+        let tagsContainer = try containerValues.decodeIfPresent([Swift.String: Swift.String?].self, forKey: .tags)
+        var tagsDecoded0: [Swift.String:Swift.String]? = nil
+        if let tagsContainer = tagsContainer {
+            tagsDecoded0 = [Swift.String:Swift.String]()
+            for (key0, tagvalue0) in tagsContainer {
+                if let tagvalue0 = tagvalue0 {
+                    tagsDecoded0?[key0] = tagvalue0
+                }
+            }
+        }
+        tags = tagsDecoded0
+    }
+}
+
+extension TagResourceOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+    }
+}
+
+public struct TagResourceOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum TagResourceOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceQuotaExceededException": return try await ServiceQuotaExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -6253,44 +8360,49 @@ extension TextractClientTypes {
     }
 }
 
+public enum TextractClientTypes {}
+
 extension ThrottlingException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: ThrottlingExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Amazon Textract is temporarily unable to process the request. Try your call again.
-public struct ThrottlingException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .server
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct ThrottlingException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ThrottlingException" }
+    public static var fault: ErrorFault { .server }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -6305,7 +8417,7 @@ extension ThrottlingExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -6326,7 +8438,7 @@ extension TextractClientTypes.UndetectedSignature: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let pageDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .page)
         page = pageDecoded
@@ -6339,7 +8451,7 @@ extension TextractClientTypes {
         /// The page where a signature was expected but not found.
         public var page: Swift.Int?
 
-        public init (
+        public init(
             page: Swift.Int? = nil
         )
         {
@@ -6350,43 +8462,46 @@ extension TextractClientTypes {
 }
 
 extension UnsupportedDocumentException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: UnsupportedDocumentExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.code = output.code
-            self.message = output.message
+            self.properties.code = output.code
+            self.properties.message = output.message
         } else {
-            self.code = nil
-            self.message = nil
+            self.properties.code = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The format of the input document isn't supported. Documents for operations can be in PNG, JPEG, PDF, or TIFF format.
-public struct UnsupportedDocumentException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var code: Swift.String?
-    public var message: Swift.String?
+public struct UnsupportedDocumentException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "UnsupportedDocumentException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         code: Swift.String? = nil,
         message: Swift.String? = nil
     )
     {
-        self.code = code
-        self.message = message
+        self.properties.code = code
+        self.properties.message = message
     }
 }
 
@@ -6401,7 +8516,374 @@ extension UnsupportedDocumentExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
+        message = messageDecoded
+        let codeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .code)
+        code = codeDecoded
+    }
+}
+
+extension UntagResourceInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case resourceARN = "ResourceARN"
+        case tagKeys = "TagKeys"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let resourceARN = self.resourceARN {
+            try encodeContainer.encode(resourceARN, forKey: .resourceARN)
+        }
+        if let tagKeys = tagKeys {
+            var tagKeysContainer = encodeContainer.nestedUnkeyedContainer(forKey: .tagKeys)
+            for tagkey0 in tagKeys {
+                try tagKeysContainer.encode(tagkey0)
+            }
+        }
+    }
+}
+
+extension UntagResourceInput {
+
+    static func urlPathProvider(_ value: UntagResourceInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct UntagResourceInput: Swift.Equatable {
+    /// The Amazon Resource Name (ARN) that specifies the resource to be untagged.
+    /// This member is required.
+    public var resourceARN: Swift.String?
+    /// Specifies the tags to be removed from the resource specified by the ResourceARN.
+    /// This member is required.
+    public var tagKeys: [Swift.String]?
+
+    public init(
+        resourceARN: Swift.String? = nil,
+        tagKeys: [Swift.String]? = nil
+    )
+    {
+        self.resourceARN = resourceARN
+        self.tagKeys = tagKeys
+    }
+}
+
+struct UntagResourceInputBody: Swift.Equatable {
+    let resourceARN: Swift.String?
+    let tagKeys: [Swift.String]?
+}
+
+extension UntagResourceInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case resourceARN = "ResourceARN"
+        case tagKeys = "TagKeys"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let resourceARNDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceARN)
+        resourceARN = resourceARNDecoded
+        let tagKeysContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .tagKeys)
+        var tagKeysDecoded0:[Swift.String]? = nil
+        if let tagKeysContainer = tagKeysContainer {
+            tagKeysDecoded0 = [Swift.String]()
+            for string0 in tagKeysContainer {
+                if let string0 = string0 {
+                    tagKeysDecoded0?.append(string0)
+                }
+            }
+        }
+        tagKeys = tagKeysDecoded0
+    }
+}
+
+extension UntagResourceOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+    }
+}
+
+public struct UntagResourceOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum UntagResourceOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
+extension UpdateAdapterInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterName = "AdapterName"
+        case autoUpdate = "AutoUpdate"
+        case description = "Description"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let adapterId = self.adapterId {
+            try encodeContainer.encode(adapterId, forKey: .adapterId)
+        }
+        if let adapterName = self.adapterName {
+            try encodeContainer.encode(adapterName, forKey: .adapterName)
+        }
+        if let autoUpdate = self.autoUpdate {
+            try encodeContainer.encode(autoUpdate.rawValue, forKey: .autoUpdate)
+        }
+        if let description = self.description {
+            try encodeContainer.encode(description, forKey: .description)
+        }
+    }
+}
+
+extension UpdateAdapterInput {
+
+    static func urlPathProvider(_ value: UpdateAdapterInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct UpdateAdapterInput: Swift.Equatable {
+    /// A string containing a unique ID for the adapter that will be updated.
+    /// This member is required.
+    public var adapterId: Swift.String?
+    /// The new name to be applied to the adapter.
+    public var adapterName: Swift.String?
+    /// The new auto-update status to be applied to the adapter.
+    public var autoUpdate: TextractClientTypes.AutoUpdate?
+    /// The new description to be applied to the adapter.
+    public var description: Swift.String?
+
+    public init(
+        adapterId: Swift.String? = nil,
+        adapterName: Swift.String? = nil,
+        autoUpdate: TextractClientTypes.AutoUpdate? = nil,
+        description: Swift.String? = nil
+    )
+    {
+        self.adapterId = adapterId
+        self.adapterName = adapterName
+        self.autoUpdate = autoUpdate
+        self.description = description
+    }
+}
+
+struct UpdateAdapterInputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+    let description: Swift.String?
+    let adapterName: Swift.String?
+    let autoUpdate: TextractClientTypes.AutoUpdate?
+}
+
+extension UpdateAdapterInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterName = "AdapterName"
+        case autoUpdate = "AutoUpdate"
+        case description = "Description"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let descriptionDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .description)
+        description = descriptionDecoded
+        let adapterNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterName)
+        adapterName = adapterNameDecoded
+        let autoUpdateDecoded = try containerValues.decodeIfPresent(TextractClientTypes.AutoUpdate.self, forKey: .autoUpdate)
+        autoUpdate = autoUpdateDecoded
+    }
+}
+
+extension UpdateAdapterOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: UpdateAdapterOutputBody = try responseDecoder.decode(responseBody: data)
+            self.adapterId = output.adapterId
+            self.adapterName = output.adapterName
+            self.autoUpdate = output.autoUpdate
+            self.creationTime = output.creationTime
+            self.description = output.description
+            self.featureTypes = output.featureTypes
+        } else {
+            self.adapterId = nil
+            self.adapterName = nil
+            self.autoUpdate = nil
+            self.creationTime = nil
+            self.description = nil
+            self.featureTypes = nil
+        }
+    }
+}
+
+public struct UpdateAdapterOutput: Swift.Equatable {
+    /// A string containing a unique ID for the adapter that has been updated.
+    public var adapterId: Swift.String?
+    /// A string containing the name of the adapter that has been updated.
+    public var adapterName: Swift.String?
+    /// The auto-update status of the adapter that has been updated.
+    public var autoUpdate: TextractClientTypes.AutoUpdate?
+    /// An object specifying the creation time of the the adapter that has been updated.
+    public var creationTime: ClientRuntime.Date?
+    /// A string containing the description of the adapter that has been updated.
+    public var description: Swift.String?
+    /// List of the targeted feature types for the updated adapter.
+    public var featureTypes: [TextractClientTypes.FeatureType]?
+
+    public init(
+        adapterId: Swift.String? = nil,
+        adapterName: Swift.String? = nil,
+        autoUpdate: TextractClientTypes.AutoUpdate? = nil,
+        creationTime: ClientRuntime.Date? = nil,
+        description: Swift.String? = nil,
+        featureTypes: [TextractClientTypes.FeatureType]? = nil
+    )
+    {
+        self.adapterId = adapterId
+        self.adapterName = adapterName
+        self.autoUpdate = autoUpdate
+        self.creationTime = creationTime
+        self.description = description
+        self.featureTypes = featureTypes
+    }
+}
+
+struct UpdateAdapterOutputBody: Swift.Equatable {
+    let adapterId: Swift.String?
+    let adapterName: Swift.String?
+    let creationTime: ClientRuntime.Date?
+    let description: Swift.String?
+    let featureTypes: [TextractClientTypes.FeatureType]?
+    let autoUpdate: TextractClientTypes.AutoUpdate?
+}
+
+extension UpdateAdapterOutputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case adapterId = "AdapterId"
+        case adapterName = "AdapterName"
+        case autoUpdate = "AutoUpdate"
+        case creationTime = "CreationTime"
+        case description = "Description"
+        case featureTypes = "FeatureTypes"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let adapterIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterId)
+        adapterId = adapterIdDecoded
+        let adapterNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .adapterName)
+        adapterName = adapterNameDecoded
+        let creationTimeDecoded = try containerValues.decodeTimestampIfPresent(.epochSeconds, forKey: .creationTime)
+        creationTime = creationTimeDecoded
+        let descriptionDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .description)
+        description = descriptionDecoded
+        let featureTypesContainer = try containerValues.decodeIfPresent([TextractClientTypes.FeatureType?].self, forKey: .featureTypes)
+        var featureTypesDecoded0:[TextractClientTypes.FeatureType]? = nil
+        if let featureTypesContainer = featureTypesContainer {
+            featureTypesDecoded0 = [TextractClientTypes.FeatureType]()
+            for enum0 in featureTypesContainer {
+                if let enum0 = enum0 {
+                    featureTypesDecoded0?.append(enum0)
+                }
+            }
+        }
+        featureTypes = featureTypesDecoded0
+        let autoUpdateDecoded = try containerValues.decodeIfPresent(TextractClientTypes.AutoUpdate.self, forKey: .autoUpdate)
+        autoUpdate = autoUpdateDecoded
+    }
+}
+
+enum UpdateAdapterOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "AccessDeniedException": return try await AccessDeniedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ConflictException": return try await ConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerError": return try await InternalServerError(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ProvisionedThroughputExceededException": return try await ProvisionedThroughputExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ThrottlingException": return try await ThrottlingException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ValidationException": return try await ValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
+extension ValidationException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: ValidationExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.code = output.code
+            self.properties.message = output.message
+        } else {
+            self.properties.code = nil
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
+    }
+}
+
+/// Indicates that a request was not valid. Check request for proper formatting.
+public struct ValidationException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
+
+    public struct Properties {
+        public internal(set) var code: Swift.String? = nil
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ValidationException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
+        code: Swift.String? = nil,
+        message: Swift.String? = nil
+    )
+    {
+        self.properties.code = code
+        self.properties.message = message
+    }
+}
+
+struct ValidationExceptionBody: Swift.Equatable {
+    let message: Swift.String?
+    let code: Swift.String?
+}
+
+extension ValidationExceptionBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case code = "Code"
+        case message = "Message"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -6458,7 +8940,7 @@ extension TextractClientTypes.Warning: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let errorCodeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .errorCode)
         errorCode = errorCodeDecoded
@@ -6484,7 +8966,7 @@ extension TextractClientTypes {
         /// A list of the pages that the warning applies to.
         public var pages: [Swift.Int]?
 
-        public init (
+        public init(
             errorCode: Swift.String? = nil,
             pages: [Swift.Int]? = nil
         )

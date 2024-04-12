@@ -12,7 +12,6 @@ import software.amazon.smithy.aws.swift.codegen.AWSSwiftDependency
 import software.amazon.smithy.aws.swift.codegen.ENDPOINT_PARAMS
 import software.amazon.smithy.aws.swift.codegen.ENDPOINT_RESOLVER
 import software.amazon.smithy.codegen.core.Symbol
-import software.amazon.smithy.swift.codegen.ClientRuntimeTypes
 import software.amazon.smithy.swift.codegen.Middleware
 import software.amazon.smithy.swift.codegen.SwiftDependency
 import software.amazon.smithy.swift.codegen.SwiftWriter
@@ -30,8 +29,7 @@ class EndpointResolverMiddleware(
 
     override val id: String = "EndpointResolverMiddleware"
 
-    override val typeName =
-        "EndpointResolverMiddleware<$outputSymbol: ${ClientRuntimeTypes.Http.HttpResponseBinding}, $outputErrorSymbol: ${ClientRuntimeTypes.Http.HttpResponseBinding}>"
+    override val typeName = "EndpointResolverMiddleware<$outputSymbol>"
 
     override val properties: MutableMap<String, Symbol> = mutableMapOf(
         ENDPOINT_RESOLVER to AWSServiceTypes.EndpointResolver,
@@ -102,15 +100,14 @@ class EndpointResolverMiddleware(
             writer.write("input.withProtocol(protocolType)")
         }.write("")
 
-        writer.write("var updatedContext = context")
         writer.openBlock("if let signingRegion = signingRegion {", "}") {
-            writer.write("updatedContext.attributes.set(key: HttpContext.signingRegion, value: signingRegion)")
+            writer.write("context.attributes.set(key: HttpContext.signingRegion, value: signingRegion)")
         }
         writer.openBlock("if let signingName = signingName {", "}") {
-            writer.write("updatedContext.attributes.set(key: HttpContext.signingName, value: signingName)")
+            writer.write("context.attributes.set(key: HttpContext.signingName, value: signingName)")
         }
         writer.openBlock("if let signingAlgorithm = signingAlgorithm {", "}") {
-            writer.write("updatedContext.attributes.set(key: HttpContext.signingAlgorithm, value: signingAlgorithm)")
+            writer.write("context.attributes.set(key: HttpContext.signingAlgorithm, value: signingAlgorithm)")
         }.write("")
 
         writer.openBlock("if let headers = endpoint.headers {", "}") {
@@ -128,6 +125,6 @@ class EndpointResolverMiddleware(
     }
 
     override fun renderReturn() {
-        writer.write("return try await next.handle(context: updatedContext, input: input)")
+        writer.write("return try await next.handle(context: context, input: input)")
     }
 }

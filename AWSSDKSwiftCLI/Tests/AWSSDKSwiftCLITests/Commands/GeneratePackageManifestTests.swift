@@ -31,6 +31,10 @@ class GeneratePackageManifestTests: CLITestCase {
                 withIntermediateDirectories: true
             )
         }
+        try! FileManager.default.createDirectory(
+            atPath: "IntegrationTests/Services",
+            withIntermediateDirectories: true
+        )
     }
     
     // MARK: - Tests
@@ -48,7 +52,7 @@ class GeneratePackageManifestTests: CLITestCase {
         createServiceFolders(services)
         
         let subject = GeneratePackageManifest.mock(buildPackageManifest: { _clientRuntimeVersion, _crtVersion, services in
-            "\(_clientRuntimeVersion)-\(_crtVersion)-\(services.joined(separator: "-"))"
+            "\(_clientRuntimeVersion)-\(_crtVersion)-\(services.map(\.name).joined(separator: "-"))"
         })
         try! subject.run()
         let result = try! String(contentsOfFile: "Package.swift", encoding: .utf8)
@@ -110,6 +114,10 @@ extension GeneratePackageManifest {
         clientRuntimeVersion: Version? = nil,
         crtVersion: Version? = nil,
         services: [String]? = nil,
+        includesIntegrationTests: Bool = false,
+        includeProtocolTests: Bool = false,
+        excludeAWSServices: Bool = false,
+        excludeRuntimeTests: Bool = false,
         buildPackageManifest: @escaping BuildPackageManifest = { (_,_,_) throws -> String in "" }
     ) -> GeneratePackageManifest {
         GeneratePackageManifest(
@@ -118,6 +126,10 @@ extension GeneratePackageManifest {
             clientRuntimeVersion: clientRuntimeVersion,
             crtVersion: crtVersion,
             services: services,
+            includeIntegrationTests: includesIntegrationTests,
+            includeProtocolTests: includeProtocolTests,
+            excludeAWSServices: excludeAWSServices,
+            excludeRuntimeTests: excludeRuntimeTests,
             buildPackageManifest: buildPackageManifest
         )
     }

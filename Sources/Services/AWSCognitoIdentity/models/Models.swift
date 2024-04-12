@@ -34,6 +34,8 @@ extension CognitoIdentityClientTypes {
     }
 }
 
+public enum CognitoIdentityClientTypes {}
+
 extension CognitoIdentityClientTypes.CognitoIdentityProvider: Swift.Codable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case clientId = "ClientId"
@@ -54,7 +56,7 @@ extension CognitoIdentityClientTypes.CognitoIdentityProvider: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let providerNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .providerName)
         providerName = providerNameDecoded
@@ -75,7 +77,7 @@ extension CognitoIdentityClientTypes {
         /// TRUE if server-side token validation is enabled for the identity provider’s token. Once you set ServerSideTokenCheck to TRUE for an identity pool, that identity pool will check with the integrated user pools to make sure that the user has not been globally signed out or deleted before the identity pool provides an OIDC token or AWS credentials for the user. If the user is signed out or deleted, the identity pool will return a 400 Not Authorized error.
         public var serverSideTokenCheck: Swift.Bool?
 
-        public init (
+        public init(
             clientId: Swift.String? = nil,
             providerName: Swift.String? = nil,
             serverSideTokenCheck: Swift.Bool? = nil
@@ -90,39 +92,42 @@ extension CognitoIdentityClientTypes {
 }
 
 extension ConcurrentModificationException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: ConcurrentModificationExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Thrown if there are parallel requests to modify a resource.
-public struct ConcurrentModificationException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    /// The message returned by a ConcurrentModificationException.
-    public var message: Swift.String?
+public struct ConcurrentModificationException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// The message returned by a ConcurrentModificationException.
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ConcurrentModificationException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -135,7 +140,7 @@ extension ConcurrentModificationExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -160,7 +165,7 @@ extension CreateIdentityPoolInput: Swift.Encodable {
         if let allowClassicFlow = self.allowClassicFlow {
             try encodeContainer.encode(allowClassicFlow, forKey: .allowClassicFlow)
         }
-        if allowUnauthenticatedIdentities != false {
+        if let allowUnauthenticatedIdentities = self.allowUnauthenticatedIdentities {
             try encodeContainer.encode(allowUnauthenticatedIdentities, forKey: .allowUnauthenticatedIdentities)
         }
         if let cognitoIdentityProviders = cognitoIdentityProviders {
@@ -202,8 +207,9 @@ extension CreateIdentityPoolInput: Swift.Encodable {
     }
 }
 
-extension CreateIdentityPoolInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension CreateIdentityPoolInput {
+
+    static func urlPathProvider(_ value: CreateIdentityPoolInput) -> Swift.String? {
         return "/"
     }
 }
@@ -214,7 +220,7 @@ public struct CreateIdentityPoolInput: Swift.Equatable {
     public var allowClassicFlow: Swift.Bool?
     /// TRUE if the identity pool supports unauthenticated logins.
     /// This member is required.
-    public var allowUnauthenticatedIdentities: Swift.Bool
+    public var allowUnauthenticatedIdentities: Swift.Bool?
     /// An array of Amazon Cognito user pools and their client IDs.
     public var cognitoIdentityProviders: [CognitoIdentityClientTypes.CognitoIdentityProvider]?
     /// The "domain" by which Cognito will refer to your users. This name acts as a placeholder that allows your backend and the Cognito service to communicate about the developer provider. For the DeveloperProviderName, you can use letters as well as period (.), underscore (_), and dash (-). Once you have set a developer provider name, you cannot change it. Please take care in setting this parameter.
@@ -231,9 +237,9 @@ public struct CreateIdentityPoolInput: Swift.Equatable {
     /// Optional key:value pairs mapping provider names to provider app IDs.
     public var supportedLoginProviders: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         allowClassicFlow: Swift.Bool? = nil,
-        allowUnauthenticatedIdentities: Swift.Bool = false,
+        allowUnauthenticatedIdentities: Swift.Bool? = nil,
         cognitoIdentityProviders: [CognitoIdentityClientTypes.CognitoIdentityProvider]? = nil,
         developerProviderName: Swift.String? = nil,
         identityPoolName: Swift.String? = nil,
@@ -257,7 +263,7 @@ public struct CreateIdentityPoolInput: Swift.Equatable {
 
 struct CreateIdentityPoolInputBody: Swift.Equatable {
     let identityPoolName: Swift.String?
-    let allowUnauthenticatedIdentities: Swift.Bool
+    let allowUnauthenticatedIdentities: Swift.Bool?
     let allowClassicFlow: Swift.Bool?
     let supportedLoginProviders: [Swift.String:Swift.String]?
     let developerProviderName: Swift.String?
@@ -280,11 +286,11 @@ extension CreateIdentityPoolInputBody: Swift.Decodable {
         case supportedLoginProviders = "SupportedLoginProviders"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolName)
         identityPoolName = identityPoolNameDecoded
-        let allowUnauthenticatedIdentitiesDecoded = try containerValues.decodeIfPresent(Swift.Bool.self, forKey: .allowUnauthenticatedIdentities) ?? false
+        let allowUnauthenticatedIdentitiesDecoded = try containerValues.decodeIfPresent(Swift.Bool.self, forKey: .allowUnauthenticatedIdentities)
         allowUnauthenticatedIdentities = allowUnauthenticatedIdentitiesDecoded
         let allowClassicFlowDecoded = try containerValues.decodeIfPresent(Swift.Bool.self, forKey: .allowClassicFlow)
         allowClassicFlow = allowClassicFlowDecoded
@@ -348,44 +354,11 @@ extension CreateIdentityPoolInputBody: Swift.Decodable {
     }
 }
 
-extension CreateIdentityPoolOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension CreateIdentityPoolOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LimitExceededException" : self = .limitExceededException(try LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum CreateIdentityPoolOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case limitExceededException(LimitExceededException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension CreateIdentityPoolOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension CreateIdentityPoolOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: CreateIdentityPoolOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: CreateIdentityPoolOutputBody = try responseDecoder.decode(responseBody: data)
             self.allowClassicFlow = output.allowClassicFlow
             self.allowUnauthenticatedIdentities = output.allowUnauthenticatedIdentities
             self.cognitoIdentityProviders = output.cognitoIdentityProviders
@@ -412,7 +385,7 @@ extension CreateIdentityPoolOutputResponse: ClientRuntime.HttpResponseBinding {
 }
 
 /// An object representing an Amazon Cognito identity pool.
-public struct CreateIdentityPoolOutputResponse: Swift.Equatable {
+public struct CreateIdentityPoolOutput: Swift.Equatable {
     /// Enables or disables the Basic (Classic) authentication flow. For more information, see [Identity Pools (Federated Identities) Authentication Flow](https://docs.aws.amazon.com/cognito/latest/developerguide/authentication-flow.html) in the Amazon Cognito Developer Guide.
     public var allowClassicFlow: Swift.Bool?
     /// TRUE if the identity pool supports unauthenticated logins.
@@ -437,7 +410,7 @@ public struct CreateIdentityPoolOutputResponse: Swift.Equatable {
     /// Optional key:value pairs mapping provider names to provider app IDs.
     public var supportedLoginProviders: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         allowClassicFlow: Swift.Bool? = nil,
         allowUnauthenticatedIdentities: Swift.Bool = false,
         cognitoIdentityProviders: [CognitoIdentityClientTypes.CognitoIdentityProvider]? = nil,
@@ -463,7 +436,7 @@ public struct CreateIdentityPoolOutputResponse: Swift.Equatable {
     }
 }
 
-struct CreateIdentityPoolOutputResponseBody: Swift.Equatable {
+struct CreateIdentityPoolOutputBody: Swift.Equatable {
     let identityPoolId: Swift.String?
     let identityPoolName: Swift.String?
     let allowUnauthenticatedIdentities: Swift.Bool
@@ -476,7 +449,7 @@ struct CreateIdentityPoolOutputResponseBody: Swift.Equatable {
     let identityPoolTags: [Swift.String:Swift.String]?
 }
 
-extension CreateIdentityPoolOutputResponseBody: Swift.Decodable {
+extension CreateIdentityPoolOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case allowClassicFlow = "AllowClassicFlow"
         case allowUnauthenticatedIdentities = "AllowUnauthenticatedIdentities"
@@ -490,7 +463,7 @@ extension CreateIdentityPoolOutputResponseBody: Swift.Decodable {
         case supportedLoginProviders = "SupportedLoginProviders"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -560,6 +533,22 @@ extension CreateIdentityPoolOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum CreateIdentityPoolOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LimitExceededException": return try await LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension CognitoIdentityClientTypes.Credentials: Swift.Codable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case accessKeyId = "AccessKeyId"
@@ -584,7 +573,7 @@ extension CognitoIdentityClientTypes.Credentials: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let accessKeyIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .accessKeyId)
         accessKeyId = accessKeyIdDecoded
@@ -609,7 +598,7 @@ extension CognitoIdentityClientTypes {
         /// The Session Token portion of the credentials
         public var sessionToken: Swift.String?
 
-        public init (
+        public init(
             accessKeyId: Swift.String? = nil,
             expiration: ClientRuntime.Date? = nil,
             secretKey: Swift.String? = nil,
@@ -641,8 +630,9 @@ extension DeleteIdentitiesInput: Swift.Encodable {
     }
 }
 
-extension DeleteIdentitiesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DeleteIdentitiesInput {
+
+    static func urlPathProvider(_ value: DeleteIdentitiesInput) -> Swift.String? {
         return "/"
     }
 }
@@ -653,7 +643,7 @@ public struct DeleteIdentitiesInput: Swift.Equatable {
     /// This member is required.
     public var identityIdsToDelete: [Swift.String]?
 
-    public init (
+    public init(
         identityIdsToDelete: [Swift.String]? = nil
     )
     {
@@ -670,7 +660,7 @@ extension DeleteIdentitiesInputBody: Swift.Decodable {
         case identityIdsToDelete = "IdentityIdsToDelete"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdsToDeleteContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .identityIdsToDelete)
         var identityIdsToDeleteDecoded0:[Swift.String]? = nil
@@ -686,38 +676,11 @@ extension DeleteIdentitiesInputBody: Swift.Decodable {
     }
 }
 
-extension DeleteIdentitiesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DeleteIdentitiesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DeleteIdentitiesOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DeleteIdentitiesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DeleteIdentitiesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DeleteIdentitiesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DeleteIdentitiesOutputBody = try responseDecoder.decode(responseBody: data)
             self.unprocessedIdentityIds = output.unprocessedIdentityIds
         } else {
             self.unprocessedIdentityIds = nil
@@ -726,11 +689,11 @@ extension DeleteIdentitiesOutputResponse: ClientRuntime.HttpResponseBinding {
 }
 
 /// Returned in response to a successful DeleteIdentities operation.
-public struct DeleteIdentitiesOutputResponse: Swift.Equatable {
+public struct DeleteIdentitiesOutput: Swift.Equatable {
     /// An array of UnprocessedIdentityId objects, each of which contains an ErrorCode and IdentityId.
     public var unprocessedIdentityIds: [CognitoIdentityClientTypes.UnprocessedIdentityId]?
 
-    public init (
+    public init(
         unprocessedIdentityIds: [CognitoIdentityClientTypes.UnprocessedIdentityId]? = nil
     )
     {
@@ -738,16 +701,16 @@ public struct DeleteIdentitiesOutputResponse: Swift.Equatable {
     }
 }
 
-struct DeleteIdentitiesOutputResponseBody: Swift.Equatable {
+struct DeleteIdentitiesOutputBody: Swift.Equatable {
     let unprocessedIdentityIds: [CognitoIdentityClientTypes.UnprocessedIdentityId]?
 }
 
-extension DeleteIdentitiesOutputResponseBody: Swift.Decodable {
+extension DeleteIdentitiesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case unprocessedIdentityIds = "UnprocessedIdentityIds"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let unprocessedIdentityIdsContainer = try containerValues.decodeIfPresent([CognitoIdentityClientTypes.UnprocessedIdentityId?].self, forKey: .unprocessedIdentityIds)
         var unprocessedIdentityIdsDecoded0:[CognitoIdentityClientTypes.UnprocessedIdentityId]? = nil
@@ -760,6 +723,19 @@ extension DeleteIdentitiesOutputResponseBody: Swift.Decodable {
             }
         }
         unprocessedIdentityIds = unprocessedIdentityIdsDecoded0
+    }
+}
+
+enum DeleteIdentitiesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -776,8 +752,9 @@ extension DeleteIdentityPoolInput: Swift.Encodable {
     }
 }
 
-extension DeleteIdentityPoolInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DeleteIdentityPoolInput {
+
+    static func urlPathProvider(_ value: DeleteIdentityPoolInput) -> Swift.String? {
         return "/"
     }
 }
@@ -788,7 +765,7 @@ public struct DeleteIdentityPoolInput: Swift.Equatable {
     /// This member is required.
     public var identityPoolId: Swift.String?
 
-    public init (
+    public init(
         identityPoolId: Swift.String? = nil
     )
     {
@@ -805,51 +782,36 @@ extension DeleteIdentityPoolInputBody: Swift.Decodable {
         case identityPoolId = "IdentityPoolId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
     }
 }
 
-extension DeleteIdentityPoolOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension DeleteIdentityPoolOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension DeleteIdentityPoolOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct DeleteIdentityPoolOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum DeleteIdentityPoolOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum DeleteIdentityPoolOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DeleteIdentityPoolOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct DeleteIdentityPoolOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension DescribeIdentityInput: Swift.Encodable {
@@ -865,8 +827,9 @@ extension DescribeIdentityInput: Swift.Encodable {
     }
 }
 
-extension DescribeIdentityInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeIdentityInput {
+
+    static func urlPathProvider(_ value: DescribeIdentityInput) -> Swift.String? {
         return "/"
     }
 }
@@ -877,7 +840,7 @@ public struct DescribeIdentityInput: Swift.Equatable {
     /// This member is required.
     public var identityId: Swift.String?
 
-    public init (
+    public init(
         identityId: Swift.String? = nil
     )
     {
@@ -894,49 +857,18 @@ extension DescribeIdentityInputBody: Swift.Decodable {
         case identityId = "IdentityId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
     }
 }
 
-extension DescribeIdentityOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeIdentityOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeIdentityOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeIdentityOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeIdentityOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeIdentityOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeIdentityOutputBody = try responseDecoder.decode(responseBody: data)
             self.creationDate = output.creationDate
             self.identityId = output.identityId
             self.lastModifiedDate = output.lastModifiedDate
@@ -951,7 +883,7 @@ extension DescribeIdentityOutputResponse: ClientRuntime.HttpResponseBinding {
 }
 
 /// A description of the identity.
-public struct DescribeIdentityOutputResponse: Swift.Equatable {
+public struct DescribeIdentityOutput: Swift.Equatable {
     /// Date on which the identity was created.
     public var creationDate: ClientRuntime.Date?
     /// A unique identifier in the format REGION:GUID.
@@ -961,7 +893,7 @@ public struct DescribeIdentityOutputResponse: Swift.Equatable {
     /// The provider names.
     public var logins: [Swift.String]?
 
-    public init (
+    public init(
         creationDate: ClientRuntime.Date? = nil,
         identityId: Swift.String? = nil,
         lastModifiedDate: ClientRuntime.Date? = nil,
@@ -975,14 +907,14 @@ public struct DescribeIdentityOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeIdentityOutputResponseBody: Swift.Equatable {
+struct DescribeIdentityOutputBody: Swift.Equatable {
     let identityId: Swift.String?
     let logins: [Swift.String]?
     let creationDate: ClientRuntime.Date?
     let lastModifiedDate: ClientRuntime.Date?
 }
 
-extension DescribeIdentityOutputResponseBody: Swift.Decodable {
+extension DescribeIdentityOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case creationDate = "CreationDate"
         case identityId = "IdentityId"
@@ -990,7 +922,7 @@ extension DescribeIdentityOutputResponseBody: Swift.Decodable {
         case logins = "Logins"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
@@ -1012,6 +944,21 @@ extension DescribeIdentityOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum DescribeIdentityOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension DescribeIdentityPoolInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case identityPoolId = "IdentityPoolId"
@@ -1025,8 +972,9 @@ extension DescribeIdentityPoolInput: Swift.Encodable {
     }
 }
 
-extension DescribeIdentityPoolInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeIdentityPoolInput {
+
+    static func urlPathProvider(_ value: DescribeIdentityPoolInput) -> Swift.String? {
         return "/"
     }
 }
@@ -1037,7 +985,7 @@ public struct DescribeIdentityPoolInput: Swift.Equatable {
     /// This member is required.
     public var identityPoolId: Swift.String?
 
-    public init (
+    public init(
         identityPoolId: Swift.String? = nil
     )
     {
@@ -1054,49 +1002,18 @@ extension DescribeIdentityPoolInputBody: Swift.Decodable {
         case identityPoolId = "IdentityPoolId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
     }
 }
 
-extension DescribeIdentityPoolOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeIdentityPoolOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeIdentityPoolOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeIdentityPoolOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeIdentityPoolOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeIdentityPoolOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeIdentityPoolOutputBody = try responseDecoder.decode(responseBody: data)
             self.allowClassicFlow = output.allowClassicFlow
             self.allowUnauthenticatedIdentities = output.allowUnauthenticatedIdentities
             self.cognitoIdentityProviders = output.cognitoIdentityProviders
@@ -1123,7 +1040,7 @@ extension DescribeIdentityPoolOutputResponse: ClientRuntime.HttpResponseBinding 
 }
 
 /// An object representing an Amazon Cognito identity pool.
-public struct DescribeIdentityPoolOutputResponse: Swift.Equatable {
+public struct DescribeIdentityPoolOutput: Swift.Equatable {
     /// Enables or disables the Basic (Classic) authentication flow. For more information, see [Identity Pools (Federated Identities) Authentication Flow](https://docs.aws.amazon.com/cognito/latest/developerguide/authentication-flow.html) in the Amazon Cognito Developer Guide.
     public var allowClassicFlow: Swift.Bool?
     /// TRUE if the identity pool supports unauthenticated logins.
@@ -1148,7 +1065,7 @@ public struct DescribeIdentityPoolOutputResponse: Swift.Equatable {
     /// Optional key:value pairs mapping provider names to provider app IDs.
     public var supportedLoginProviders: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         allowClassicFlow: Swift.Bool? = nil,
         allowUnauthenticatedIdentities: Swift.Bool = false,
         cognitoIdentityProviders: [CognitoIdentityClientTypes.CognitoIdentityProvider]? = nil,
@@ -1174,7 +1091,7 @@ public struct DescribeIdentityPoolOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeIdentityPoolOutputResponseBody: Swift.Equatable {
+struct DescribeIdentityPoolOutputBody: Swift.Equatable {
     let identityPoolId: Swift.String?
     let identityPoolName: Swift.String?
     let allowUnauthenticatedIdentities: Swift.Bool
@@ -1187,7 +1104,7 @@ struct DescribeIdentityPoolOutputResponseBody: Swift.Equatable {
     let identityPoolTags: [Swift.String:Swift.String]?
 }
 
-extension DescribeIdentityPoolOutputResponseBody: Swift.Decodable {
+extension DescribeIdentityPoolOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case allowClassicFlow = "AllowClassicFlow"
         case allowUnauthenticatedIdentities = "AllowUnauthenticatedIdentities"
@@ -1201,7 +1118,7 @@ extension DescribeIdentityPoolOutputResponseBody: Swift.Decodable {
         case supportedLoginProviders = "SupportedLoginProviders"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -1271,40 +1188,58 @@ extension DescribeIdentityPoolOutputResponseBody: Swift.Decodable {
     }
 }
 
-extension DeveloperUserAlreadyRegisteredException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
-            let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DeveloperUserAlreadyRegisteredExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
-        } else {
-            self.message = nil
+enum DescribeIdentityPoolOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+    }
+}
+
+extension DeveloperUserAlreadyRegisteredException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: DeveloperUserAlreadyRegisteredExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.message = output.message
+        } else {
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The provided developer user identifier is already registered with Cognito under a different identity ID.
-public struct DeveloperUserAlreadyRegisteredException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    /// This developer user identifier is already registered with Cognito.
-    public var message: Swift.String?
+public struct DeveloperUserAlreadyRegisteredException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// This developer user identifier is already registered with Cognito.
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "DeveloperUserAlreadyRegisteredException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -1317,7 +1252,7 @@ extension DeveloperUserAlreadyRegisteredExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -1357,39 +1292,42 @@ extension CognitoIdentityClientTypes {
 }
 
 extension ExternalServiceException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: ExternalServiceExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// An exception thrown when a dependent service such as Facebook or Twitter is not responding
-public struct ExternalServiceException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    /// The message returned by an ExternalServiceException
-    public var message: Swift.String?
+public struct ExternalServiceException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// The message returned by an ExternalServiceException
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ExternalServiceException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -1402,7 +1340,7 @@ extension ExternalServiceExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -1433,8 +1371,9 @@ extension GetCredentialsForIdentityInput: Swift.Encodable {
     }
 }
 
-extension GetCredentialsForIdentityInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension GetCredentialsForIdentityInput {
+
+    static func urlPathProvider(_ value: GetCredentialsForIdentityInput) -> Swift.String? {
         return "/"
     }
 }
@@ -1449,7 +1388,7 @@ public struct GetCredentialsForIdentityInput: Swift.Equatable {
     /// A set of optional name-value pairs that map provider names to provider tokens. The name-value pair will follow the syntax "provider_name": "provider_user_identifier". Logins should not be specified when trying to get credentials for an unauthenticated identity. The Logins parameter is required when using identities associated with external identity providers such as Facebook. For examples of Logins maps, see the code examples in the [External Identity Providers](https://docs.aws.amazon.com/cognito/latest/developerguide/external-identity-providers.html) section of the Amazon Cognito Developer Guide.
     public var logins: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         customRoleArn: Swift.String? = nil,
         identityId: Swift.String? = nil,
         logins: [Swift.String:Swift.String]? = nil
@@ -1474,7 +1413,7 @@ extension GetCredentialsForIdentityInputBody: Swift.Decodable {
         case logins = "Logins"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
@@ -1494,48 +1433,11 @@ extension GetCredentialsForIdentityInputBody: Swift.Decodable {
     }
 }
 
-extension GetCredentialsForIdentityOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetCredentialsForIdentityOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "ExternalServiceException" : self = .externalServiceException(try ExternalServiceException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidIdentityPoolConfigurationException" : self = .invalidIdentityPoolConfigurationException(try InvalidIdentityPoolConfigurationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetCredentialsForIdentityOutputError: Swift.Error, Swift.Equatable {
-    case externalServiceException(ExternalServiceException)
-    case internalErrorException(InternalErrorException)
-    case invalidIdentityPoolConfigurationException(InvalidIdentityPoolConfigurationException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetCredentialsForIdentityOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetCredentialsForIdentityOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetCredentialsForIdentityOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetCredentialsForIdentityOutputBody = try responseDecoder.decode(responseBody: data)
             self.credentials = output.credentials
             self.identityId = output.identityId
         } else {
@@ -1546,13 +1448,13 @@ extension GetCredentialsForIdentityOutputResponse: ClientRuntime.HttpResponseBin
 }
 
 /// Returned in response to a successful GetCredentialsForIdentity operation.
-public struct GetCredentialsForIdentityOutputResponse: Swift.Equatable {
+public struct GetCredentialsForIdentityOutput: Swift.Equatable {
     /// Credentials for the provided identity ID.
     public var credentials: CognitoIdentityClientTypes.Credentials?
     /// A unique identifier in the format REGION:GUID.
     public var identityId: Swift.String?
 
-    public init (
+    public init(
         credentials: CognitoIdentityClientTypes.Credentials? = nil,
         identityId: Swift.String? = nil
     )
@@ -1562,23 +1464,41 @@ public struct GetCredentialsForIdentityOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetCredentialsForIdentityOutputResponseBody: Swift.Equatable {
+struct GetCredentialsForIdentityOutputBody: Swift.Equatable {
     let identityId: Swift.String?
     let credentials: CognitoIdentityClientTypes.Credentials?
 }
 
-extension GetCredentialsForIdentityOutputResponseBody: Swift.Decodable {
+extension GetCredentialsForIdentityOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case credentials = "Credentials"
         case identityId = "IdentityId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
         let credentialsDecoded = try containerValues.decodeIfPresent(CognitoIdentityClientTypes.Credentials.self, forKey: .credentials)
         credentials = credentialsDecoded
+    }
+}
+
+enum GetCredentialsForIdentityOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "ExternalServiceException": return try await ExternalServiceException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidIdentityPoolConfigurationException": return try await InvalidIdentityPoolConfigurationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -1606,8 +1526,9 @@ extension GetIdInput: Swift.Encodable {
     }
 }
 
-extension GetIdInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension GetIdInput {
+
+    static func urlPathProvider(_ value: GetIdInput) -> Swift.String? {
         return "/"
     }
 }
@@ -1634,7 +1555,7 @@ public struct GetIdInput: Swift.Equatable {
     /// * Digits: www.digits.com
     public var logins: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         accountId: Swift.String? = nil,
         identityPoolId: Swift.String? = nil,
         logins: [Swift.String:Swift.String]? = nil
@@ -1659,7 +1580,7 @@ extension GetIdInputBody: Swift.Decodable {
         case logins = "Logins"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let accountIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .accountId)
         accountId = accountIdDecoded
@@ -1679,48 +1600,11 @@ extension GetIdInputBody: Swift.Decodable {
     }
 }
 
-extension GetIdOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetIdOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "ExternalServiceException" : self = .externalServiceException(try ExternalServiceException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LimitExceededException" : self = .limitExceededException(try LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetIdOutputError: Swift.Error, Swift.Equatable {
-    case externalServiceException(ExternalServiceException)
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case limitExceededException(LimitExceededException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetIdOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetIdOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetIdOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetIdOutputBody = try responseDecoder.decode(responseBody: data)
             self.identityId = output.identityId
         } else {
             self.identityId = nil
@@ -1729,11 +1613,11 @@ extension GetIdOutputResponse: ClientRuntime.HttpResponseBinding {
 }
 
 /// Returned in response to a GetId request.
-public struct GetIdOutputResponse: Swift.Equatable {
+public struct GetIdOutput: Swift.Equatable {
     /// A unique identifier in the format REGION:GUID.
     public var identityId: Swift.String?
 
-    public init (
+    public init(
         identityId: Swift.String? = nil
     )
     {
@@ -1741,19 +1625,37 @@ public struct GetIdOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetIdOutputResponseBody: Swift.Equatable {
+struct GetIdOutputBody: Swift.Equatable {
     let identityId: Swift.String?
 }
 
-extension GetIdOutputResponseBody: Swift.Decodable {
+extension GetIdOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case identityId = "IdentityId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
+    }
+}
+
+enum GetIdOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "ExternalServiceException": return try await ExternalServiceException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LimitExceededException": return try await LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -1770,8 +1672,9 @@ extension GetIdentityPoolRolesInput: Swift.Encodable {
     }
 }
 
-extension GetIdentityPoolRolesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension GetIdentityPoolRolesInput {
+
+    static func urlPathProvider(_ value: GetIdentityPoolRolesInput) -> Swift.String? {
         return "/"
     }
 }
@@ -1782,7 +1685,7 @@ public struct GetIdentityPoolRolesInput: Swift.Equatable {
     /// This member is required.
     public var identityPoolId: Swift.String?
 
-    public init (
+    public init(
         identityPoolId: Swift.String? = nil
     )
     {
@@ -1799,51 +1702,18 @@ extension GetIdentityPoolRolesInputBody: Swift.Decodable {
         case identityPoolId = "IdentityPoolId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
     }
 }
 
-extension GetIdentityPoolRolesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetIdentityPoolRolesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetIdentityPoolRolesOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetIdentityPoolRolesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetIdentityPoolRolesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetIdentityPoolRolesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetIdentityPoolRolesOutputBody = try responseDecoder.decode(responseBody: data)
             self.identityPoolId = output.identityPoolId
             self.roleMappings = output.roleMappings
             self.roles = output.roles
@@ -1856,7 +1726,7 @@ extension GetIdentityPoolRolesOutputResponse: ClientRuntime.HttpResponseBinding 
 }
 
 /// Returned in response to a successful GetIdentityPoolRoles operation.
-public struct GetIdentityPoolRolesOutputResponse: Swift.Equatable {
+public struct GetIdentityPoolRolesOutput: Swift.Equatable {
     /// An identity pool ID in the format REGION:GUID.
     public var identityPoolId: Swift.String?
     /// How users for a specific identity provider are to mapped to roles. This is a String-to-[RoleMapping] object map. The string identifies the identity provider, for example, "graph.facebook.com" or "cognito-idp.us-east-1.amazonaws.com/us-east-1_abcdefghi:app_client_id".
@@ -1864,7 +1734,7 @@ public struct GetIdentityPoolRolesOutputResponse: Swift.Equatable {
     /// The map of roles associated with this pool. Currently only authenticated and unauthenticated roles are supported.
     public var roles: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         identityPoolId: Swift.String? = nil,
         roleMappings: [Swift.String:CognitoIdentityClientTypes.RoleMapping]? = nil,
         roles: [Swift.String:Swift.String]? = nil
@@ -1876,20 +1746,20 @@ public struct GetIdentityPoolRolesOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetIdentityPoolRolesOutputResponseBody: Swift.Equatable {
+struct GetIdentityPoolRolesOutputBody: Swift.Equatable {
     let identityPoolId: Swift.String?
     let roles: [Swift.String:Swift.String]?
     let roleMappings: [Swift.String:CognitoIdentityClientTypes.RoleMapping]?
 }
 
-extension GetIdentityPoolRolesOutputResponseBody: Swift.Decodable {
+extension GetIdentityPoolRolesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case identityPoolId = "IdentityPoolId"
         case roleMappings = "RoleMappings"
         case roles = "Roles"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -1915,6 +1785,22 @@ extension GetIdentityPoolRolesOutputResponseBody: Swift.Decodable {
             }
         }
         roleMappings = roleMappingsDecoded0
+    }
+}
+
+enum GetIdentityPoolRolesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -1953,8 +1839,9 @@ extension GetOpenIdTokenForDeveloperIdentityInput: Swift.Encodable {
     }
 }
 
-extension GetOpenIdTokenForDeveloperIdentityInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension GetOpenIdTokenForDeveloperIdentityInput {
+
+    static func urlPathProvider(_ value: GetOpenIdTokenForDeveloperIdentityInput) -> Swift.String? {
         return "/"
     }
 }
@@ -1974,7 +1861,7 @@ public struct GetOpenIdTokenForDeveloperIdentityInput: Swift.Equatable {
     /// The expiration time of the token, in seconds. You can specify a custom expiration time for the token so that you can cache it. If you don't provide an expiration time, the token is valid for 15 minutes. You can exchange the token with Amazon STS for temporary AWS credentials, which are valid for a maximum of one hour. The maximum token duration you can set is 24 hours. You should take care in setting the expiration time for a token, as there are significant security implications: an attacker could use a leaked token to access your AWS resources for the token's duration. Please provide for a small grace period, usually no more than 5 minutes, to account for clock skew.
     public var tokenDuration: Swift.Int?
 
-    public init (
+    public init(
         identityId: Swift.String? = nil,
         identityPoolId: Swift.String? = nil,
         logins: [Swift.String:Swift.String]? = nil,
@@ -2007,7 +1894,7 @@ extension GetOpenIdTokenForDeveloperIdentityInputBody: Swift.Decodable {
         case tokenDuration = "TokenDuration"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -2040,46 +1927,11 @@ extension GetOpenIdTokenForDeveloperIdentityInputBody: Swift.Decodable {
     }
 }
 
-extension GetOpenIdTokenForDeveloperIdentityOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetOpenIdTokenForDeveloperIdentityOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "DeveloperUserAlreadyRegisteredException" : self = .developerUserAlreadyRegisteredException(try DeveloperUserAlreadyRegisteredException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetOpenIdTokenForDeveloperIdentityOutputError: Swift.Error, Swift.Equatable {
-    case developerUserAlreadyRegisteredException(DeveloperUserAlreadyRegisteredException)
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetOpenIdTokenForDeveloperIdentityOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetOpenIdTokenForDeveloperIdentityOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetOpenIdTokenForDeveloperIdentityOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetOpenIdTokenForDeveloperIdentityOutputBody = try responseDecoder.decode(responseBody: data)
             self.identityId = output.identityId
             self.token = output.token
         } else {
@@ -2090,13 +1942,13 @@ extension GetOpenIdTokenForDeveloperIdentityOutputResponse: ClientRuntime.HttpRe
 }
 
 /// Returned in response to a successful GetOpenIdTokenForDeveloperIdentity request.
-public struct GetOpenIdTokenForDeveloperIdentityOutputResponse: Swift.Equatable {
+public struct GetOpenIdTokenForDeveloperIdentityOutput: Swift.Equatable {
     /// A unique identifier in the format REGION:GUID.
     public var identityId: Swift.String?
     /// An OpenID token.
     public var token: Swift.String?
 
-    public init (
+    public init(
         identityId: Swift.String? = nil,
         token: Swift.String? = nil
     )
@@ -2106,23 +1958,40 @@ public struct GetOpenIdTokenForDeveloperIdentityOutputResponse: Swift.Equatable 
     }
 }
 
-struct GetOpenIdTokenForDeveloperIdentityOutputResponseBody: Swift.Equatable {
+struct GetOpenIdTokenForDeveloperIdentityOutputBody: Swift.Equatable {
     let identityId: Swift.String?
     let token: Swift.String?
 }
 
-extension GetOpenIdTokenForDeveloperIdentityOutputResponseBody: Swift.Decodable {
+extension GetOpenIdTokenForDeveloperIdentityOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case identityId = "IdentityId"
         case token = "Token"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
         let tokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .token)
         token = tokenDecoded
+    }
+}
+
+enum GetOpenIdTokenForDeveloperIdentityOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "DeveloperUserAlreadyRegisteredException": return try await DeveloperUserAlreadyRegisteredException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -2146,8 +2015,9 @@ extension GetOpenIdTokenInput: Swift.Encodable {
     }
 }
 
-extension GetOpenIdTokenInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension GetOpenIdTokenInput {
+
+    static func urlPathProvider(_ value: GetOpenIdTokenInput) -> Swift.String? {
         return "/"
     }
 }
@@ -2160,7 +2030,7 @@ public struct GetOpenIdTokenInput: Swift.Equatable {
     /// A set of optional name-value pairs that map provider names to provider tokens. When using graph.facebook.com and www.amazon.com, supply the access_token returned from the provider's authflow. For accounts.google.com, an Amazon Cognito user pool provider, or any other OpenID Connect provider, always include the id_token.
     public var logins: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         identityId: Swift.String? = nil,
         logins: [Swift.String:Swift.String]? = nil
     )
@@ -2181,7 +2051,7 @@ extension GetOpenIdTokenInputBody: Swift.Decodable {
         case logins = "Logins"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
@@ -2199,46 +2069,11 @@ extension GetOpenIdTokenInputBody: Swift.Decodable {
     }
 }
 
-extension GetOpenIdTokenOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetOpenIdTokenOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "ExternalServiceException" : self = .externalServiceException(try ExternalServiceException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetOpenIdTokenOutputError: Swift.Error, Swift.Equatable {
-    case externalServiceException(ExternalServiceException)
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetOpenIdTokenOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetOpenIdTokenOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetOpenIdTokenOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetOpenIdTokenOutputBody = try responseDecoder.decode(responseBody: data)
             self.identityId = output.identityId
             self.token = output.token
         } else {
@@ -2249,13 +2084,13 @@ extension GetOpenIdTokenOutputResponse: ClientRuntime.HttpResponseBinding {
 }
 
 /// Returned in response to a successful GetOpenIdToken request.
-public struct GetOpenIdTokenOutputResponse: Swift.Equatable {
+public struct GetOpenIdTokenOutput: Swift.Equatable {
     /// A unique identifier in the format REGION:GUID. Note that the IdentityId returned may not match the one passed on input.
     public var identityId: Swift.String?
     /// An OpenID token, valid for 10 minutes.
     public var token: Swift.String?
 
-    public init (
+    public init(
         identityId: Swift.String? = nil,
         token: Swift.String? = nil
     )
@@ -2265,23 +2100,40 @@ public struct GetOpenIdTokenOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetOpenIdTokenOutputResponseBody: Swift.Equatable {
+struct GetOpenIdTokenOutputBody: Swift.Equatable {
     let identityId: Swift.String?
     let token: Swift.String?
 }
 
-extension GetOpenIdTokenOutputResponseBody: Swift.Decodable {
+extension GetOpenIdTokenOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case identityId = "IdentityId"
         case token = "Token"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
         let tokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .token)
         token = tokenDecoded
+    }
+}
+
+enum GetOpenIdTokenOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "ExternalServiceException": return try await ExternalServiceException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -2302,8 +2154,9 @@ extension GetPrincipalTagAttributeMapInput: Swift.Encodable {
     }
 }
 
-extension GetPrincipalTagAttributeMapInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension GetPrincipalTagAttributeMapInput {
+
+    static func urlPathProvider(_ value: GetPrincipalTagAttributeMapInput) -> Swift.String? {
         return "/"
     }
 }
@@ -2316,7 +2169,7 @@ public struct GetPrincipalTagAttributeMapInput: Swift.Equatable {
     /// This member is required.
     public var identityProviderName: Swift.String?
 
-    public init (
+    public init(
         identityPoolId: Swift.String? = nil,
         identityProviderName: Swift.String? = nil
     )
@@ -2337,7 +2190,7 @@ extension GetPrincipalTagAttributeMapInputBody: Swift.Decodable {
         case identityProviderName = "IdentityProviderName"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -2346,42 +2199,11 @@ extension GetPrincipalTagAttributeMapInputBody: Swift.Decodable {
     }
 }
 
-extension GetPrincipalTagAttributeMapOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetPrincipalTagAttributeMapOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetPrincipalTagAttributeMapOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetPrincipalTagAttributeMapOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetPrincipalTagAttributeMapOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetPrincipalTagAttributeMapOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetPrincipalTagAttributeMapOutputBody = try responseDecoder.decode(responseBody: data)
             self.identityPoolId = output.identityPoolId
             self.identityProviderName = output.identityProviderName
             self.principalTags = output.principalTags
@@ -2395,7 +2217,7 @@ extension GetPrincipalTagAttributeMapOutputResponse: ClientRuntime.HttpResponseB
     }
 }
 
-public struct GetPrincipalTagAttributeMapOutputResponse: Swift.Equatable {
+public struct GetPrincipalTagAttributeMapOutput: Swift.Equatable {
     /// You can use this operation to get the ID of the Identity Pool you setup attribute mappings for.
     public var identityPoolId: Swift.String?
     /// You can use this operation to get the provider name.
@@ -2405,7 +2227,7 @@ public struct GetPrincipalTagAttributeMapOutputResponse: Swift.Equatable {
     /// You can use this operation to list
     public var useDefaults: Swift.Bool?
 
-    public init (
+    public init(
         identityPoolId: Swift.String? = nil,
         identityProviderName: Swift.String? = nil,
         principalTags: [Swift.String:Swift.String]? = nil,
@@ -2419,14 +2241,14 @@ public struct GetPrincipalTagAttributeMapOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetPrincipalTagAttributeMapOutputResponseBody: Swift.Equatable {
+struct GetPrincipalTagAttributeMapOutputBody: Swift.Equatable {
     let identityPoolId: Swift.String?
     let identityProviderName: Swift.String?
     let useDefaults: Swift.Bool?
     let principalTags: [Swift.String:Swift.String]?
 }
 
-extension GetPrincipalTagAttributeMapOutputResponseBody: Swift.Decodable {
+extension GetPrincipalTagAttributeMapOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case identityPoolId = "IdentityPoolId"
         case identityProviderName = "IdentityProviderName"
@@ -2434,7 +2256,7 @@ extension GetPrincipalTagAttributeMapOutputResponseBody: Swift.Decodable {
         case useDefaults = "UseDefaults"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -2453,6 +2275,21 @@ extension GetPrincipalTagAttributeMapOutputResponseBody: Swift.Decodable {
             }
         }
         principalTags = principalTagsDecoded0
+    }
+}
+
+enum GetPrincipalTagAttributeMapOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -2483,7 +2320,7 @@ extension CognitoIdentityClientTypes.IdentityDescription: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
@@ -2517,7 +2354,7 @@ extension CognitoIdentityClientTypes {
         /// The provider names.
         public var logins: [Swift.String]?
 
-        public init (
+        public init(
             creationDate: ClientRuntime.Date? = nil,
             identityId: Swift.String? = nil,
             lastModifiedDate: ClientRuntime.Date? = nil,
@@ -2549,7 +2386,7 @@ extension CognitoIdentityClientTypes.IdentityPoolShortDescription: Swift.Codable
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -2566,7 +2403,7 @@ extension CognitoIdentityClientTypes {
         /// A string that you provide.
         public var identityPoolName: Swift.String?
 
-        public init (
+        public init(
             identityPoolId: Swift.String? = nil,
             identityPoolName: Swift.String? = nil
         )
@@ -2579,39 +2416,42 @@ extension CognitoIdentityClientTypes {
 }
 
 extension InternalErrorException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InternalErrorExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Thrown when the service encounters an error during processing the request.
-public struct InternalErrorException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .server
-    /// The message returned by an InternalErrorException.
-    public var message: Swift.String?
+public struct InternalErrorException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// The message returned by an InternalErrorException.
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InternalErrorException" }
+    public static var fault: ErrorFault { .server }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -2624,7 +2464,7 @@ extension InternalErrorExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -2632,39 +2472,42 @@ extension InternalErrorExceptionBody: Swift.Decodable {
 }
 
 extension InvalidIdentityPoolConfigurationException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidIdentityPoolConfigurationExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Thrown if the identity pool has no role associated for the given auth type (auth/unauth) or if the AssumeRole fails.
-public struct InvalidIdentityPoolConfigurationException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    /// The message returned for an InvalidIdentityPoolConfigurationException
-    public var message: Swift.String?
+public struct InvalidIdentityPoolConfigurationException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// The message returned for an InvalidIdentityPoolConfigurationException
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidIdentityPoolConfigurationException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -2677,7 +2520,7 @@ extension InvalidIdentityPoolConfigurationExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -2685,39 +2528,42 @@ extension InvalidIdentityPoolConfigurationExceptionBody: Swift.Decodable {
 }
 
 extension InvalidParameterException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidParameterExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Thrown for missing or bad input parameter(s).
-public struct InvalidParameterException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    /// The message returned by an InvalidParameterException.
-    public var message: Swift.String?
+public struct InvalidParameterException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// The message returned by an InvalidParameterException.
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidParameterException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -2730,7 +2576,7 @@ extension InvalidParameterExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -2738,39 +2584,42 @@ extension InvalidParameterExceptionBody: Swift.Decodable {
 }
 
 extension LimitExceededException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: LimitExceededExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Thrown when the total number of user pools has exceeded a preset limit.
-public struct LimitExceededException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    /// The message returned by a LimitExceededException.
-    public var message: Swift.String?
+public struct LimitExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// The message returned by a LimitExceededException.
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "LimitExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -2783,7 +2632,7 @@ extension LimitExceededExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -2800,13 +2649,13 @@ extension ListIdentitiesInput: Swift.Encodable {
 
     public func encode(to encoder: Swift.Encoder) throws {
         var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
-        if hideDisabled != false {
+        if let hideDisabled = self.hideDisabled {
             try encodeContainer.encode(hideDisabled, forKey: .hideDisabled)
         }
         if let identityPoolId = self.identityPoolId {
             try encodeContainer.encode(identityPoolId, forKey: .identityPoolId)
         }
-        if maxResults != 0 {
+        if let maxResults = self.maxResults {
             try encodeContainer.encode(maxResults, forKey: .maxResults)
         }
         if let nextToken = self.nextToken {
@@ -2815,8 +2664,9 @@ extension ListIdentitiesInput: Swift.Encodable {
     }
 }
 
-extension ListIdentitiesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListIdentitiesInput {
+
+    static func urlPathProvider(_ value: ListIdentitiesInput) -> Swift.String? {
         return "/"
     }
 }
@@ -2824,20 +2674,20 @@ extension ListIdentitiesInput: ClientRuntime.URLPathProvider {
 /// Input to the ListIdentities action.
 public struct ListIdentitiesInput: Swift.Equatable {
     /// An optional boolean parameter that allows you to hide disabled identities. If omitted, the ListIdentities API will include disabled identities in the response.
-    public var hideDisabled: Swift.Bool
+    public var hideDisabled: Swift.Bool?
     /// An identity pool ID in the format REGION:GUID.
     /// This member is required.
     public var identityPoolId: Swift.String?
     /// The maximum number of identities to return.
     /// This member is required.
-    public var maxResults: Swift.Int
+    public var maxResults: Swift.Int?
     /// A pagination token.
     public var nextToken: Swift.String?
 
-    public init (
-        hideDisabled: Swift.Bool = false,
+    public init(
+        hideDisabled: Swift.Bool? = nil,
         identityPoolId: Swift.String? = nil,
-        maxResults: Swift.Int = 0,
+        maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
     )
     {
@@ -2850,9 +2700,9 @@ public struct ListIdentitiesInput: Swift.Equatable {
 
 struct ListIdentitiesInputBody: Swift.Equatable {
     let identityPoolId: Swift.String?
-    let maxResults: Swift.Int
+    let maxResults: Swift.Int?
     let nextToken: Swift.String?
-    let hideDisabled: Swift.Bool
+    let hideDisabled: Swift.Bool?
 }
 
 extension ListIdentitiesInputBody: Swift.Decodable {
@@ -2863,55 +2713,24 @@ extension ListIdentitiesInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
-        let maxResultsDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .maxResults) ?? 0
+        let maxResultsDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .maxResults)
         maxResults = maxResultsDecoded
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
-        let hideDisabledDecoded = try containerValues.decodeIfPresent(Swift.Bool.self, forKey: .hideDisabled) ?? false
+        let hideDisabledDecoded = try containerValues.decodeIfPresent(Swift.Bool.self, forKey: .hideDisabled)
         hideDisabled = hideDisabledDecoded
     }
 }
 
-extension ListIdentitiesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListIdentitiesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListIdentitiesOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListIdentitiesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListIdentitiesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListIdentitiesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListIdentitiesOutputBody = try responseDecoder.decode(responseBody: data)
             self.identities = output.identities
             self.identityPoolId = output.identityPoolId
             self.nextToken = output.nextToken
@@ -2924,7 +2743,7 @@ extension ListIdentitiesOutputResponse: ClientRuntime.HttpResponseBinding {
 }
 
 /// The response to a ListIdentities request.
-public struct ListIdentitiesOutputResponse: Swift.Equatable {
+public struct ListIdentitiesOutput: Swift.Equatable {
     /// An object containing a set of identities and associated mappings.
     public var identities: [CognitoIdentityClientTypes.IdentityDescription]?
     /// An identity pool ID in the format REGION:GUID.
@@ -2932,7 +2751,7 @@ public struct ListIdentitiesOutputResponse: Swift.Equatable {
     /// A pagination token.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         identities: [CognitoIdentityClientTypes.IdentityDescription]? = nil,
         identityPoolId: Swift.String? = nil,
         nextToken: Swift.String? = nil
@@ -2944,20 +2763,20 @@ public struct ListIdentitiesOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListIdentitiesOutputResponseBody: Swift.Equatable {
+struct ListIdentitiesOutputBody: Swift.Equatable {
     let identityPoolId: Swift.String?
     let identities: [CognitoIdentityClientTypes.IdentityDescription]?
     let nextToken: Swift.String?
 }
 
-extension ListIdentitiesOutputResponseBody: Swift.Decodable {
+extension ListIdentitiesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case identities = "Identities"
         case identityPoolId = "IdentityPoolId"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -2977,6 +2796,21 @@ extension ListIdentitiesOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum ListIdentitiesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension ListIdentityPoolsInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case maxResults = "MaxResults"
@@ -2985,7 +2819,7 @@ extension ListIdentityPoolsInput: Swift.Encodable {
 
     public func encode(to encoder: Swift.Encoder) throws {
         var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
-        if maxResults != 0 {
+        if let maxResults = self.maxResults {
             try encodeContainer.encode(maxResults, forKey: .maxResults)
         }
         if let nextToken = self.nextToken {
@@ -2994,8 +2828,9 @@ extension ListIdentityPoolsInput: Swift.Encodable {
     }
 }
 
-extension ListIdentityPoolsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListIdentityPoolsInput {
+
+    static func urlPathProvider(_ value: ListIdentityPoolsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -3004,12 +2839,12 @@ extension ListIdentityPoolsInput: ClientRuntime.URLPathProvider {
 public struct ListIdentityPoolsInput: Swift.Equatable {
     /// The maximum number of identities to return.
     /// This member is required.
-    public var maxResults: Swift.Int
+    public var maxResults: Swift.Int?
     /// A pagination token.
     public var nextToken: Swift.String?
 
-    public init (
-        maxResults: Swift.Int = 0,
+    public init(
+        maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
     )
     {
@@ -3019,7 +2854,7 @@ public struct ListIdentityPoolsInput: Swift.Equatable {
 }
 
 struct ListIdentityPoolsInputBody: Swift.Equatable {
-    let maxResults: Swift.Int
+    let maxResults: Swift.Int?
     let nextToken: Swift.String?
 }
 
@@ -3029,51 +2864,20 @@ extension ListIdentityPoolsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
-        let maxResultsDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .maxResults) ?? 0
+        let maxResultsDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .maxResults)
         maxResults = maxResultsDecoded
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
     }
 }
 
-extension ListIdentityPoolsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListIdentityPoolsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListIdentityPoolsOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListIdentityPoolsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListIdentityPoolsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListIdentityPoolsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListIdentityPoolsOutputBody = try responseDecoder.decode(responseBody: data)
             self.identityPools = output.identityPools
             self.nextToken = output.nextToken
         } else {
@@ -3084,13 +2888,13 @@ extension ListIdentityPoolsOutputResponse: ClientRuntime.HttpResponseBinding {
 }
 
 /// The result of a successful ListIdentityPools action.
-public struct ListIdentityPoolsOutputResponse: Swift.Equatable {
+public struct ListIdentityPoolsOutput: Swift.Equatable {
     /// The identity pools returned by the ListIdentityPools action.
     public var identityPools: [CognitoIdentityClientTypes.IdentityPoolShortDescription]?
     /// A pagination token.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         identityPools: [CognitoIdentityClientTypes.IdentityPoolShortDescription]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -3100,18 +2904,18 @@ public struct ListIdentityPoolsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListIdentityPoolsOutputResponseBody: Swift.Equatable {
+struct ListIdentityPoolsOutputBody: Swift.Equatable {
     let identityPools: [CognitoIdentityClientTypes.IdentityPoolShortDescription]?
     let nextToken: Swift.String?
 }
 
-extension ListIdentityPoolsOutputResponseBody: Swift.Decodable {
+extension ListIdentityPoolsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case identityPools = "IdentityPools"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolsContainer = try containerValues.decodeIfPresent([CognitoIdentityClientTypes.IdentityPoolShortDescription?].self, forKey: .identityPools)
         var identityPoolsDecoded0:[CognitoIdentityClientTypes.IdentityPoolShortDescription]? = nil
@@ -3129,6 +2933,21 @@ extension ListIdentityPoolsOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum ListIdentityPoolsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension ListTagsForResourceInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case resourceArn = "ResourceArn"
@@ -3142,8 +2961,9 @@ extension ListTagsForResourceInput: Swift.Encodable {
     }
 }
 
-extension ListTagsForResourceInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListTagsForResourceInput {
+
+    static func urlPathProvider(_ value: ListTagsForResourceInput) -> Swift.String? {
         return "/"
     }
 }
@@ -3153,7 +2973,7 @@ public struct ListTagsForResourceInput: Swift.Equatable {
     /// This member is required.
     public var resourceArn: Swift.String?
 
-    public init (
+    public init(
         resourceArn: Swift.String? = nil
     )
     {
@@ -3170,49 +2990,18 @@ extension ListTagsForResourceInputBody: Swift.Decodable {
         case resourceArn = "ResourceArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourceArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceArn)
         resourceArn = resourceArnDecoded
     }
 }
 
-extension ListTagsForResourceOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListTagsForResourceOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListTagsForResourceOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListTagsForResourceOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListTagsForResourceOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListTagsForResourceOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListTagsForResourceOutputBody = try responseDecoder.decode(responseBody: data)
             self.tags = output.tags
         } else {
             self.tags = nil
@@ -3220,11 +3009,11 @@ extension ListTagsForResourceOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct ListTagsForResourceOutputResponse: Swift.Equatable {
+public struct ListTagsForResourceOutput: Swift.Equatable {
     /// The tags that are assigned to the identity pool.
     public var tags: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         tags: [Swift.String:Swift.String]? = nil
     )
     {
@@ -3232,16 +3021,16 @@ public struct ListTagsForResourceOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListTagsForResourceOutputResponseBody: Swift.Equatable {
+struct ListTagsForResourceOutputBody: Swift.Equatable {
     let tags: [Swift.String:Swift.String]?
 }
 
-extension ListTagsForResourceOutputResponseBody: Swift.Decodable {
+extension ListTagsForResourceOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case tags = "Tags"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let tagsContainer = try containerValues.decodeIfPresent([Swift.String: Swift.String?].self, forKey: .tags)
         var tagsDecoded0: [Swift.String:Swift.String]? = nil
@@ -3254,6 +3043,21 @@ extension ListTagsForResourceOutputResponseBody: Swift.Decodable {
             }
         }
         tags = tagsDecoded0
+    }
+}
+
+enum ListTagsForResourceOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -3277,7 +3081,7 @@ extension LookupDeveloperIdentityInput: Swift.Encodable {
         if let identityPoolId = self.identityPoolId {
             try encodeContainer.encode(identityPoolId, forKey: .identityPoolId)
         }
-        if maxResults != 0 {
+        if let maxResults = self.maxResults {
             try encodeContainer.encode(maxResults, forKey: .maxResults)
         }
         if let nextToken = self.nextToken {
@@ -3286,8 +3090,9 @@ extension LookupDeveloperIdentityInput: Swift.Encodable {
     }
 }
 
-extension LookupDeveloperIdentityInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension LookupDeveloperIdentityInput {
+
+    static func urlPathProvider(_ value: LookupDeveloperIdentityInput) -> Swift.String? {
         return "/"
     }
 }
@@ -3302,15 +3107,15 @@ public struct LookupDeveloperIdentityInput: Swift.Equatable {
     /// This member is required.
     public var identityPoolId: Swift.String?
     /// The maximum number of identities to return.
-    public var maxResults: Swift.Int
+    public var maxResults: Swift.Int?
     /// A pagination token. The first call you make will have NextToken set to null. After that the service will return NextToken values as needed. For example, let's say you make a request with MaxResults set to 10, and there are 20 matches in the database. The service will return a pagination token as a part of the response. This token can be used to call the API again and get results starting from the 11th match.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         developerUserIdentifier: Swift.String? = nil,
         identityId: Swift.String? = nil,
         identityPoolId: Swift.String? = nil,
-        maxResults: Swift.Int = 0,
+        maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
     )
     {
@@ -3326,7 +3131,7 @@ struct LookupDeveloperIdentityInputBody: Swift.Equatable {
     let identityPoolId: Swift.String?
     let identityId: Swift.String?
     let developerUserIdentifier: Swift.String?
-    let maxResults: Swift.Int
+    let maxResults: Swift.Int?
     let nextToken: Swift.String?
 }
 
@@ -3339,7 +3144,7 @@ extension LookupDeveloperIdentityInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -3347,51 +3152,18 @@ extension LookupDeveloperIdentityInputBody: Swift.Decodable {
         identityId = identityIdDecoded
         let developerUserIdentifierDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .developerUserIdentifier)
         developerUserIdentifier = developerUserIdentifierDecoded
-        let maxResultsDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .maxResults) ?? 0
+        let maxResultsDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .maxResults)
         maxResults = maxResultsDecoded
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
     }
 }
 
-extension LookupDeveloperIdentityOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension LookupDeveloperIdentityOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum LookupDeveloperIdentityOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension LookupDeveloperIdentityOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension LookupDeveloperIdentityOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: LookupDeveloperIdentityOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: LookupDeveloperIdentityOutputBody = try responseDecoder.decode(responseBody: data)
             self.developerUserIdentifierList = output.developerUserIdentifierList
             self.identityId = output.identityId
             self.nextToken = output.nextToken
@@ -3404,7 +3176,7 @@ extension LookupDeveloperIdentityOutputResponse: ClientRuntime.HttpResponseBindi
 }
 
 /// Returned in response to a successful LookupDeveloperIdentity action.
-public struct LookupDeveloperIdentityOutputResponse: Swift.Equatable {
+public struct LookupDeveloperIdentityOutput: Swift.Equatable {
     /// This is the list of developer user identifiers associated with an identity ID. Cognito supports the association of multiple developer user identifiers with an identity ID.
     public var developerUserIdentifierList: [Swift.String]?
     /// A unique identifier in the format REGION:GUID.
@@ -3412,7 +3184,7 @@ public struct LookupDeveloperIdentityOutputResponse: Swift.Equatable {
     /// A pagination token. The first call you make will have NextToken set to null. After that the service will return NextToken values as needed. For example, let's say you make a request with MaxResults set to 10, and there are 20 matches in the database. The service will return a pagination token as a part of the response. This token can be used to call the API again and get results starting from the 11th match.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         developerUserIdentifierList: [Swift.String]? = nil,
         identityId: Swift.String? = nil,
         nextToken: Swift.String? = nil
@@ -3424,20 +3196,20 @@ public struct LookupDeveloperIdentityOutputResponse: Swift.Equatable {
     }
 }
 
-struct LookupDeveloperIdentityOutputResponseBody: Swift.Equatable {
+struct LookupDeveloperIdentityOutputBody: Swift.Equatable {
     let identityId: Swift.String?
     let developerUserIdentifierList: [Swift.String]?
     let nextToken: Swift.String?
 }
 
-extension LookupDeveloperIdentityOutputResponseBody: Swift.Decodable {
+extension LookupDeveloperIdentityOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case developerUserIdentifierList = "DeveloperUserIdentifierList"
         case identityId = "IdentityId"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
@@ -3454,6 +3226,22 @@ extension LookupDeveloperIdentityOutputResponseBody: Swift.Decodable {
         developerUserIdentifierList = developerUserIdentifierListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum LookupDeveloperIdentityOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -3481,7 +3269,7 @@ extension CognitoIdentityClientTypes.MappingRule: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let claimDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .claim)
         claim = claimDecoded
@@ -3510,7 +3298,7 @@ extension CognitoIdentityClientTypes {
         /// This member is required.
         public var value: Swift.String?
 
-        public init (
+        public init(
             claim: Swift.String? = nil,
             matchType: CognitoIdentityClientTypes.MappingRuleMatchType? = nil,
             roleARN: Swift.String? = nil,
@@ -3589,8 +3377,9 @@ extension MergeDeveloperIdentitiesInput: Swift.Encodable {
     }
 }
 
-extension MergeDeveloperIdentitiesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension MergeDeveloperIdentitiesInput {
+
+    static func urlPathProvider(_ value: MergeDeveloperIdentitiesInput) -> Swift.String? {
         return "/"
     }
 }
@@ -3610,7 +3399,7 @@ public struct MergeDeveloperIdentitiesInput: Swift.Equatable {
     /// This member is required.
     public var sourceUserIdentifier: Swift.String?
 
-    public init (
+    public init(
         destinationUserIdentifier: Swift.String? = nil,
         developerProviderName: Swift.String? = nil,
         identityPoolId: Swift.String? = nil,
@@ -3639,7 +3428,7 @@ extension MergeDeveloperIdentitiesInputBody: Swift.Decodable {
         case sourceUserIdentifier = "SourceUserIdentifier"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let sourceUserIdentifierDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .sourceUserIdentifier)
         sourceUserIdentifier = sourceUserIdentifierDecoded
@@ -3652,44 +3441,11 @@ extension MergeDeveloperIdentitiesInputBody: Swift.Decodable {
     }
 }
 
-extension MergeDeveloperIdentitiesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension MergeDeveloperIdentitiesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum MergeDeveloperIdentitiesOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension MergeDeveloperIdentitiesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension MergeDeveloperIdentitiesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: MergeDeveloperIdentitiesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: MergeDeveloperIdentitiesOutputBody = try responseDecoder.decode(responseBody: data)
             self.identityId = output.identityId
         } else {
             self.identityId = nil
@@ -3698,11 +3454,11 @@ extension MergeDeveloperIdentitiesOutputResponse: ClientRuntime.HttpResponseBind
 }
 
 /// Returned in response to a successful MergeDeveloperIdentities action.
-public struct MergeDeveloperIdentitiesOutputResponse: Swift.Equatable {
+public struct MergeDeveloperIdentitiesOutput: Swift.Equatable {
     /// A unique identifier in the format REGION:GUID.
     public var identityId: Swift.String?
 
-    public init (
+    public init(
         identityId: Swift.String? = nil
     )
     {
@@ -3710,56 +3466,75 @@ public struct MergeDeveloperIdentitiesOutputResponse: Swift.Equatable {
     }
 }
 
-struct MergeDeveloperIdentitiesOutputResponseBody: Swift.Equatable {
+struct MergeDeveloperIdentitiesOutputBody: Swift.Equatable {
     let identityId: Swift.String?
 }
 
-extension MergeDeveloperIdentitiesOutputResponseBody: Swift.Decodable {
+extension MergeDeveloperIdentitiesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case identityId = "IdentityId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
     }
 }
 
-extension NotAuthorizedException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
-            let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: NotAuthorizedExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
-        } else {
-            self.message = nil
+enum MergeDeveloperIdentitiesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+    }
+}
+
+extension NotAuthorizedException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: NotAuthorizedExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.message = output.message
+        } else {
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Thrown when a user is not authorized to access the requested resource.
-public struct NotAuthorizedException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    /// The message returned by a NotAuthorizedException
-    public var message: Swift.String?
+public struct NotAuthorizedException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// The message returned by a NotAuthorizedException
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "NotAuthorizedException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -3772,7 +3547,7 @@ extension NotAuthorizedExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -3780,39 +3555,42 @@ extension NotAuthorizedExceptionBody: Swift.Decodable {
 }
 
 extension ResourceConflictException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: ResourceConflictExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Thrown when a user tries to use a login which is already linked to another account.
-public struct ResourceConflictException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    /// The message returned by a ResourceConflictException.
-    public var message: Swift.String?
+public struct ResourceConflictException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// The message returned by a ResourceConflictException.
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ResourceConflictException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -3825,7 +3603,7 @@ extension ResourceConflictExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -3833,39 +3611,42 @@ extension ResourceConflictExceptionBody: Swift.Decodable {
 }
 
 extension ResourceNotFoundException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: ResourceNotFoundExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Thrown when the requested resource (for example, a dataset or record) does not exist.
-public struct ResourceNotFoundException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    /// The message returned by a ResourceNotFoundException.
-    public var message: Swift.String?
+public struct ResourceNotFoundException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// The message returned by a ResourceNotFoundException.
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ResourceNotFoundException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -3878,7 +3659,7 @@ extension ResourceNotFoundExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -3905,7 +3686,7 @@ extension CognitoIdentityClientTypes.RoleMapping: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let typeDecoded = try containerValues.decodeIfPresent(CognitoIdentityClientTypes.RoleMappingType.self, forKey: .type)
         type = typeDecoded
@@ -3927,7 +3708,7 @@ extension CognitoIdentityClientTypes {
         /// This member is required.
         public var type: CognitoIdentityClientTypes.RoleMappingType?
 
-        public init (
+        public init(
             ambiguousRoleResolution: CognitoIdentityClientTypes.AmbiguousRoleResolutionType? = nil,
             rulesConfiguration: CognitoIdentityClientTypes.RulesConfigurationType? = nil,
             type: CognitoIdentityClientTypes.RoleMappingType? = nil
@@ -3988,7 +3769,7 @@ extension CognitoIdentityClientTypes.RulesConfigurationType: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let rulesContainer = try containerValues.decodeIfPresent([CognitoIdentityClientTypes.MappingRule?].self, forKey: .rules)
         var rulesDecoded0:[CognitoIdentityClientTypes.MappingRule]? = nil
@@ -4011,7 +3792,7 @@ extension CognitoIdentityClientTypes {
         /// This member is required.
         public var rules: [CognitoIdentityClientTypes.MappingRule]?
 
-        public init (
+        public init(
             rules: [CognitoIdentityClientTypes.MappingRule]? = nil
         )
         {
@@ -4048,8 +3829,9 @@ extension SetIdentityPoolRolesInput: Swift.Encodable {
     }
 }
 
-extension SetIdentityPoolRolesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension SetIdentityPoolRolesInput {
+
+    static func urlPathProvider(_ value: SetIdentityPoolRolesInput) -> Swift.String? {
         return "/"
     }
 }
@@ -4065,7 +3847,7 @@ public struct SetIdentityPoolRolesInput: Swift.Equatable {
     /// This member is required.
     public var roles: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         identityPoolId: Swift.String? = nil,
         roleMappings: [Swift.String:CognitoIdentityClientTypes.RoleMapping]? = nil,
         roles: [Swift.String:Swift.String]? = nil
@@ -4090,7 +3872,7 @@ extension SetIdentityPoolRolesInputBody: Swift.Decodable {
         case roles = "Roles"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -4119,48 +3901,31 @@ extension SetIdentityPoolRolesInputBody: Swift.Decodable {
     }
 }
 
-extension SetIdentityPoolRolesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension SetIdentityPoolRolesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension SetIdentityPoolRolesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "ConcurrentModificationException" : self = .concurrentModificationException(try ConcurrentModificationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct SetIdentityPoolRolesOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum SetIdentityPoolRolesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "ConcurrentModificationException": return try await ConcurrentModificationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum SetIdentityPoolRolesOutputError: Swift.Error, Swift.Equatable {
-    case concurrentModificationException(ConcurrentModificationException)
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension SetIdentityPoolRolesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct SetIdentityPoolRolesOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension SetPrincipalTagAttributeMapInput: Swift.Encodable {
@@ -4191,8 +3956,9 @@ extension SetPrincipalTagAttributeMapInput: Swift.Encodable {
     }
 }
 
-extension SetPrincipalTagAttributeMapInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension SetPrincipalTagAttributeMapInput {
+
+    static func urlPathProvider(_ value: SetPrincipalTagAttributeMapInput) -> Swift.String? {
         return "/"
     }
 }
@@ -4209,7 +3975,7 @@ public struct SetPrincipalTagAttributeMapInput: Swift.Equatable {
     /// You can use this operation to use default (username and clientID) attribute mappings.
     public var useDefaults: Swift.Bool?
 
-    public init (
+    public init(
         identityPoolId: Swift.String? = nil,
         identityProviderName: Swift.String? = nil,
         principalTags: [Swift.String:Swift.String]? = nil,
@@ -4238,7 +4004,7 @@ extension SetPrincipalTagAttributeMapInputBody: Swift.Decodable {
         case useDefaults = "UseDefaults"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -4260,42 +4026,11 @@ extension SetPrincipalTagAttributeMapInputBody: Swift.Decodable {
     }
 }
 
-extension SetPrincipalTagAttributeMapOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension SetPrincipalTagAttributeMapOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum SetPrincipalTagAttributeMapOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension SetPrincipalTagAttributeMapOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension SetPrincipalTagAttributeMapOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: SetPrincipalTagAttributeMapOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: SetPrincipalTagAttributeMapOutputBody = try responseDecoder.decode(responseBody: data)
             self.identityPoolId = output.identityPoolId
             self.identityProviderName = output.identityProviderName
             self.principalTags = output.principalTags
@@ -4309,7 +4044,7 @@ extension SetPrincipalTagAttributeMapOutputResponse: ClientRuntime.HttpResponseB
     }
 }
 
-public struct SetPrincipalTagAttributeMapOutputResponse: Swift.Equatable {
+public struct SetPrincipalTagAttributeMapOutput: Swift.Equatable {
     /// The ID of the Identity Pool you want to set attribute mappings for.
     public var identityPoolId: Swift.String?
     /// The provider name you want to use for attribute mappings.
@@ -4319,7 +4054,7 @@ public struct SetPrincipalTagAttributeMapOutputResponse: Swift.Equatable {
     /// You can use this operation to select default (username and clientID) attribute mappings.
     public var useDefaults: Swift.Bool?
 
-    public init (
+    public init(
         identityPoolId: Swift.String? = nil,
         identityProviderName: Swift.String? = nil,
         principalTags: [Swift.String:Swift.String]? = nil,
@@ -4333,14 +4068,14 @@ public struct SetPrincipalTagAttributeMapOutputResponse: Swift.Equatable {
     }
 }
 
-struct SetPrincipalTagAttributeMapOutputResponseBody: Swift.Equatable {
+struct SetPrincipalTagAttributeMapOutputBody: Swift.Equatable {
     let identityPoolId: Swift.String?
     let identityProviderName: Swift.String?
     let useDefaults: Swift.Bool?
     let principalTags: [Swift.String:Swift.String]?
 }
 
-extension SetPrincipalTagAttributeMapOutputResponseBody: Swift.Decodable {
+extension SetPrincipalTagAttributeMapOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case identityPoolId = "IdentityPoolId"
         case identityProviderName = "IdentityProviderName"
@@ -4348,7 +4083,7 @@ extension SetPrincipalTagAttributeMapOutputResponseBody: Swift.Decodable {
         case useDefaults = "UseDefaults"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -4367,6 +4102,21 @@ extension SetPrincipalTagAttributeMapOutputResponseBody: Swift.Decodable {
             }
         }
         principalTags = principalTagsDecoded0
+    }
+}
+
+enum SetPrincipalTagAttributeMapOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -4390,8 +4140,9 @@ extension TagResourceInput: Swift.Encodable {
     }
 }
 
-extension TagResourceInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension TagResourceInput {
+
+    static func urlPathProvider(_ value: TagResourceInput) -> Swift.String? {
         return "/"
     }
 }
@@ -4404,7 +4155,7 @@ public struct TagResourceInput: Swift.Equatable {
     /// This member is required.
     public var tags: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         resourceArn: Swift.String? = nil,
         tags: [Swift.String:Swift.String]? = nil
     )
@@ -4425,7 +4176,7 @@ extension TagResourceInputBody: Swift.Decodable {
         case tags = "Tags"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourceArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceArn)
         resourceArn = resourceArnDecoded
@@ -4443,80 +4194,68 @@ extension TagResourceInputBody: Swift.Decodable {
     }
 }
 
-extension TagResourceOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension TagResourceOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension TagResourceOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct TagResourceOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum TagResourceOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum TagResourceOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension TagResourceOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct TagResourceOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension TooManyRequestsException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: TooManyRequestsExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Thrown when a request is throttled.
-public struct TooManyRequestsException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    /// Message returned by a TooManyRequestsException
-    public var message: Swift.String?
+public struct TooManyRequestsException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// Message returned by a TooManyRequestsException
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "TooManyRequestsException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -4529,7 +4268,7 @@ extension TooManyRequestsExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -4561,8 +4300,9 @@ extension UnlinkDeveloperIdentityInput: Swift.Encodable {
     }
 }
 
-extension UnlinkDeveloperIdentityInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension UnlinkDeveloperIdentityInput {
+
+    static func urlPathProvider(_ value: UnlinkDeveloperIdentityInput) -> Swift.String? {
         return "/"
     }
 }
@@ -4582,7 +4322,7 @@ public struct UnlinkDeveloperIdentityInput: Swift.Equatable {
     /// This member is required.
     public var identityPoolId: Swift.String?
 
-    public init (
+    public init(
         developerProviderName: Swift.String? = nil,
         developerUserIdentifier: Swift.String? = nil,
         identityId: Swift.String? = nil,
@@ -4611,7 +4351,7 @@ extension UnlinkDeveloperIdentityInputBody: Swift.Decodable {
         case identityPoolId = "IdentityPoolId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
@@ -4624,46 +4364,30 @@ extension UnlinkDeveloperIdentityInputBody: Swift.Decodable {
     }
 }
 
-extension UnlinkDeveloperIdentityOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension UnlinkDeveloperIdentityOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension UnlinkDeveloperIdentityOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct UnlinkDeveloperIdentityOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum UnlinkDeveloperIdentityOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum UnlinkDeveloperIdentityOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension UnlinkDeveloperIdentityOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct UnlinkDeveloperIdentityOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension UnlinkIdentityInput: Swift.Encodable {
@@ -4693,8 +4417,9 @@ extension UnlinkIdentityInput: Swift.Encodable {
     }
 }
 
-extension UnlinkIdentityInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension UnlinkIdentityInput {
+
+    static func urlPathProvider(_ value: UnlinkIdentityInput) -> Swift.String? {
         return "/"
     }
 }
@@ -4711,7 +4436,7 @@ public struct UnlinkIdentityInput: Swift.Equatable {
     /// This member is required.
     public var loginsToRemove: [Swift.String]?
 
-    public init (
+    public init(
         identityId: Swift.String? = nil,
         logins: [Swift.String:Swift.String]? = nil,
         loginsToRemove: [Swift.String]? = nil
@@ -4736,7 +4461,7 @@ extension UnlinkIdentityInputBody: Swift.Decodable {
         case loginsToRemove = "LoginsToRemove"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
@@ -4765,48 +4490,31 @@ extension UnlinkIdentityInputBody: Swift.Decodable {
     }
 }
 
-extension UnlinkIdentityOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension UnlinkIdentityOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension UnlinkIdentityOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "ExternalServiceException" : self = .externalServiceException(try ExternalServiceException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct UnlinkIdentityOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum UnlinkIdentityOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "ExternalServiceException": return try await ExternalServiceException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum UnlinkIdentityOutputError: Swift.Error, Swift.Equatable {
-    case externalServiceException(ExternalServiceException)
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension UnlinkIdentityOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct UnlinkIdentityOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension CognitoIdentityClientTypes.UnprocessedIdentityId: Swift.Codable {
@@ -4825,7 +4533,7 @@ extension CognitoIdentityClientTypes.UnprocessedIdentityId: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityId)
         identityId = identityIdDecoded
@@ -4842,7 +4550,7 @@ extension CognitoIdentityClientTypes {
         /// A unique identifier in the format REGION:GUID.
         public var identityId: Swift.String?
 
-        public init (
+        public init(
             errorCode: CognitoIdentityClientTypes.ErrorCode? = nil,
             identityId: Swift.String? = nil
         )
@@ -4874,8 +4582,9 @@ extension UntagResourceInput: Swift.Encodable {
     }
 }
 
-extension UntagResourceInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension UntagResourceInput {
+
+    static func urlPathProvider(_ value: UntagResourceInput) -> Swift.String? {
         return "/"
     }
 }
@@ -4888,7 +4597,7 @@ public struct UntagResourceInput: Swift.Equatable {
     /// This member is required.
     public var tagKeys: [Swift.String]?
 
-    public init (
+    public init(
         resourceArn: Swift.String? = nil,
         tagKeys: [Swift.String]? = nil
     )
@@ -4909,7 +4618,7 @@ extension UntagResourceInputBody: Swift.Decodable {
         case tagKeys = "TagKeys"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourceArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceArn)
         resourceArn = resourceArnDecoded
@@ -4927,44 +4636,29 @@ extension UntagResourceInputBody: Swift.Decodable {
     }
 }
 
-extension UntagResourceOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension UntagResourceOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension UntagResourceOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct UntagResourceOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum UntagResourceOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum UntagResourceOutputError: Swift.Error, Swift.Equatable {
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension UntagResourceOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct UntagResourceOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension UpdateIdentityPoolInput: Swift.Encodable {
@@ -5031,8 +4725,9 @@ extension UpdateIdentityPoolInput: Swift.Encodable {
     }
 }
 
-extension UpdateIdentityPoolInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension UpdateIdentityPoolInput {
+
+    static func urlPathProvider(_ value: UpdateIdentityPoolInput) -> Swift.String? {
         return "/"
     }
 }
@@ -5063,7 +4758,7 @@ public struct UpdateIdentityPoolInput: Swift.Equatable {
     /// Optional key:value pairs mapping provider names to provider app IDs.
     public var supportedLoginProviders: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         allowClassicFlow: Swift.Bool? = nil,
         allowUnauthenticatedIdentities: Swift.Bool = false,
         cognitoIdentityProviders: [CognitoIdentityClientTypes.CognitoIdentityProvider]? = nil,
@@ -5116,7 +4811,7 @@ extension UpdateIdentityPoolInputBody: Swift.Decodable {
         case supportedLoginProviders = "SupportedLoginProviders"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -5186,48 +4881,11 @@ extension UpdateIdentityPoolInputBody: Swift.Decodable {
     }
 }
 
-extension UpdateIdentityPoolOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension UpdateIdentityPoolOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "ConcurrentModificationException" : self = .concurrentModificationException(try ConcurrentModificationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalErrorException" : self = .internalErrorException(try InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidParameterException" : self = .invalidParameterException(try InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LimitExceededException" : self = .limitExceededException(try LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "NotAuthorizedException" : self = .notAuthorizedException(try NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceConflictException" : self = .resourceConflictException(try ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum UpdateIdentityPoolOutputError: Swift.Error, Swift.Equatable {
-    case concurrentModificationException(ConcurrentModificationException)
-    case internalErrorException(InternalErrorException)
-    case invalidParameterException(InvalidParameterException)
-    case limitExceededException(LimitExceededException)
-    case notAuthorizedException(NotAuthorizedException)
-    case resourceConflictException(ResourceConflictException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension UpdateIdentityPoolOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension UpdateIdentityPoolOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: UpdateIdentityPoolOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: UpdateIdentityPoolOutputBody = try responseDecoder.decode(responseBody: data)
             self.allowClassicFlow = output.allowClassicFlow
             self.allowUnauthenticatedIdentities = output.allowUnauthenticatedIdentities
             self.cognitoIdentityProviders = output.cognitoIdentityProviders
@@ -5254,7 +4912,7 @@ extension UpdateIdentityPoolOutputResponse: ClientRuntime.HttpResponseBinding {
 }
 
 /// An object representing an Amazon Cognito identity pool.
-public struct UpdateIdentityPoolOutputResponse: Swift.Equatable {
+public struct UpdateIdentityPoolOutput: Swift.Equatable {
     /// Enables or disables the Basic (Classic) authentication flow. For more information, see [Identity Pools (Federated Identities) Authentication Flow](https://docs.aws.amazon.com/cognito/latest/developerguide/authentication-flow.html) in the Amazon Cognito Developer Guide.
     public var allowClassicFlow: Swift.Bool?
     /// TRUE if the identity pool supports unauthenticated logins.
@@ -5279,7 +4937,7 @@ public struct UpdateIdentityPoolOutputResponse: Swift.Equatable {
     /// Optional key:value pairs mapping provider names to provider app IDs.
     public var supportedLoginProviders: [Swift.String:Swift.String]?
 
-    public init (
+    public init(
         allowClassicFlow: Swift.Bool? = nil,
         allowUnauthenticatedIdentities: Swift.Bool = false,
         cognitoIdentityProviders: [CognitoIdentityClientTypes.CognitoIdentityProvider]? = nil,
@@ -5305,7 +4963,7 @@ public struct UpdateIdentityPoolOutputResponse: Swift.Equatable {
     }
 }
 
-struct UpdateIdentityPoolOutputResponseBody: Swift.Equatable {
+struct UpdateIdentityPoolOutputBody: Swift.Equatable {
     let identityPoolId: Swift.String?
     let identityPoolName: Swift.String?
     let allowUnauthenticatedIdentities: Swift.Bool
@@ -5318,7 +4976,7 @@ struct UpdateIdentityPoolOutputResponseBody: Swift.Equatable {
     let identityPoolTags: [Swift.String:Swift.String]?
 }
 
-extension UpdateIdentityPoolOutputResponseBody: Swift.Decodable {
+extension UpdateIdentityPoolOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case allowClassicFlow = "AllowClassicFlow"
         case allowUnauthenticatedIdentities = "AllowUnauthenticatedIdentities"
@@ -5332,7 +4990,7 @@ extension UpdateIdentityPoolOutputResponseBody: Swift.Decodable {
         case supportedLoginProviders = "SupportedLoginProviders"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let identityPoolIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .identityPoolId)
         identityPoolId = identityPoolIdDecoded
@@ -5399,5 +5057,23 @@ extension UpdateIdentityPoolOutputResponseBody: Swift.Decodable {
             }
         }
         identityPoolTags = identityPoolTagsDecoded0
+    }
+}
+
+enum UpdateIdentityPoolOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "ConcurrentModificationException": return try await ConcurrentModificationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalErrorException": return try await InternalErrorException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidParameterException": return try await InvalidParameterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LimitExceededException": return try await LimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "NotAuthorizedException": return try await NotAuthorizedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceConflictException": return try await ResourceConflictException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }

@@ -82,7 +82,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>AcceptInboundCrossClusterSearchConnection</a></code> operation.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>AcceptInboundCrossClusterSearchConnection</a></code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#AcceptInboundCrossClusterSearchConnectionResponse": {
@@ -96,7 +97,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code><a>AcceptInboundCrossClusterSearchConnection</a></code> operation. Contains details of accepted inbound connection.</p>"
+                "smithy.api#documentation": "<p>The result of a <code><a>AcceptInboundCrossClusterSearchConnection</a></code> operation. Contains details of accepted inbound connection.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#AccessDeniedException": {
@@ -187,7 +189,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>AddTags</a></code> operation. Specify the tags that you want to attach to the Elasticsearch domain.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>AddTags</a></code> operation. Specify the tags that you want to attach to the Elasticsearch domain.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#AdditionalLimit": {
@@ -365,6 +368,9 @@
                     "target": "com.amazonaws.elasticsearchservice#AuthorizeVpcEndpointAccess"
                 },
                 {
+                    "target": "com.amazonaws.elasticsearchservice#CancelDomainConfigChange"
+                },
+                {
                     "target": "com.amazonaws.elasticsearchservice#CancelElasticsearchServiceSoftwareUpdate"
                 },
                 {
@@ -509,6 +515,7 @@
                     "arnNamespace": "es",
                     "cloudFormationName": "Elasticsearch",
                     "cloudTrailEventSource": "elasticsearchservice.amazonaws.com",
+                    "docId": "es-2015-01-01",
                     "endpointPrefix": "es"
                 },
                 "aws.auth#sigv4": {
@@ -562,7 +569,6 @@
                                     ]
                                 }
                             ],
-                            "type": "tree",
                             "rules": [
                                 {
                                     "conditions": [
@@ -580,9 +586,187 @@
                                     "type": "error"
                                 },
                                 {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseDualStack"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
                                     "conditions": [],
-                                    "type": "tree",
+                                    "endpoint": {
+                                        "url": {
+                                            "ref": "Endpoint"
+                                        },
+                                        "properties": {},
+                                        "headers": {}
+                                    },
+                                    "type": "endpoint"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Region"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "aws.partition",
+                                            "argv": [
+                                                {
+                                                    "ref": "Region"
+                                                }
+                                            ],
+                                            "assign": "PartitionResult"
+                                        }
+                                    ],
                                     "rules": [
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                },
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://es-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                },
+                                                                true
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://es-fips.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS is enabled but this partition does not support FIPS",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
                                         {
                                             "conditions": [
                                                 {
@@ -595,278 +779,140 @@
                                                     ]
                                                 }
                                             ],
-                                            "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
-                                            "type": "error"
-                                        },
-                                        {
-                                            "conditions": [],
-                                            "endpoint": {
-                                                "url": {
-                                                    "ref": "Endpoint"
-                                                },
-                                                "properties": {},
-                                                "headers": {}
-                                            },
-                                            "type": "endpoint"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "conditions": [],
-                            "type": "tree",
-                            "rules": [
-                                {
-                                    "conditions": [
-                                        {
-                                            "fn": "isSet",
-                                            "argv": [
-                                                {
-                                                    "ref": "Region"
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "type": "tree",
-                                    "rules": [
-                                        {
-                                            "conditions": [
-                                                {
-                                                    "fn": "aws.partition",
-                                                    "argv": [
-                                                        {
-                                                            "ref": "Region"
-                                                        }
-                                                    ],
-                                                    "assign": "PartitionResult"
-                                                }
-                                            ],
-                                            "type": "tree",
                                             "rules": [
                                                 {
                                                     "conditions": [
                                                         {
                                                             "fn": "booleanEquals",
                                                             "argv": [
+                                                                true,
                                                                 {
-                                                                    "ref": "UseFIPS"
-                                                                },
-                                                                true
-                                                            ]
-                                                        },
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseDualStack"
-                                                                },
-                                                                true
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
                                                             ]
                                                         }
                                                     ],
-                                                    "type": "tree",
                                                     "rules": [
                                                         {
                                                             "conditions": [
                                                                 {
-                                                                    "fn": "booleanEquals",
+                                                                    "fn": "stringEquals",
                                                                     "argv": [
-                                                                        true,
+                                                                        "aws",
                                                                         {
                                                                             "fn": "getAttr",
                                                                             "argv": [
                                                                                 {
                                                                                     "ref": "PartitionResult"
                                                                                 },
-                                                                                "supportsFIPS"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsDualStack"
+                                                                                "name"
                                                                             ]
                                                                         }
                                                                     ]
                                                                 }
                                                             ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://es-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
+                                                            "endpoint": {
+                                                                "url": "https://aos.{Region}.api.aws",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
                                                         },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseFIPS"
-                                                                },
-                                                                true
-                                                            ]
-                                                        }
-                                                    ],
-                                                    "type": "tree",
-                                                    "rules": [
                                                         {
                                                             "conditions": [
                                                                 {
-                                                                    "fn": "booleanEquals",
+                                                                    "fn": "stringEquals",
                                                                     "argv": [
-                                                                        true,
+                                                                        "aws-cn",
                                                                         {
                                                                             "fn": "getAttr",
                                                                             "argv": [
                                                                                 {
                                                                                     "ref": "PartitionResult"
                                                                                 },
-                                                                                "supportsFIPS"
+                                                                                "name"
                                                                             ]
                                                                         }
                                                                     ]
                                                                 }
                                                             ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://es-fips.{Region}.{PartitionResult#dnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
+                                                            "endpoint": {
+                                                                "url": "https://aos.{Region}.api.amazonwebservices.com.cn",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
                                                         },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "FIPS is enabled but this partition does not support FIPS",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseDualStack"
-                                                                },
-                                                                true
-                                                            ]
-                                                        }
-                                                    ],
-                                                    "type": "tree",
-                                                    "rules": [
                                                         {
                                                             "conditions": [
                                                                 {
-                                                                    "fn": "booleanEquals",
+                                                                    "fn": "stringEquals",
                                                                     "argv": [
-                                                                        true,
+                                                                        "aws-us-gov",
                                                                         {
                                                                             "fn": "getAttr",
                                                                             "argv": [
                                                                                 {
                                                                                     "ref": "PartitionResult"
                                                                                 },
-                                                                                "supportsDualStack"
+                                                                                "name"
                                                                             ]
                                                                         }
                                                                     ]
                                                                 }
                                                             ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://es.{Region}.{PartitionResult#dualStackDnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
+                                                            "endpoint": {
+                                                                "url": "https://aos.{Region}.api.aws",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
                                                         },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "DualStack is enabled but this partition does not support DualStack",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [],
-                                                    "type": "tree",
-                                                    "rules": [
                                                         {
                                                             "conditions": [],
                                                             "endpoint": {
-                                                                "url": "https://es.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "url": "https://es.{Region}.{PartitionResult#dualStackDnsSuffix}",
                                                                 "properties": {},
                                                                 "headers": {}
                                                             },
                                                             "type": "endpoint"
                                                         }
-                                                    ]
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "DualStack is enabled but this partition does not support DualStack",
+                                                    "type": "error"
                                                 }
-                                            ]
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [],
+                                            "endpoint": {
+                                                "url": "https://es.{Region}.{PartitionResult#dnsSuffix}",
+                                                "properties": {},
+                                                "headers": {}
+                                            },
+                                            "type": "endpoint"
                                         }
-                                    ]
-                                },
-                                {
-                                    "conditions": [],
-                                    "error": "Invalid Configuration: Missing Region",
-                                    "type": "error"
+                                    ],
+                                    "type": "tree"
                                 }
-                            ]
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [],
+                            "error": "Invalid Configuration: Missing Region",
+                            "type": "error"
                         }
                     ]
                 },
@@ -881,8 +927,8 @@
                             },
                             "params": {
                                 "Region": "af-south-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -894,8 +940,8 @@
                             },
                             "params": {
                                 "Region": "ap-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -907,8 +953,8 @@
                             },
                             "params": {
                                 "Region": "ap-northeast-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -920,8 +966,8 @@
                             },
                             "params": {
                                 "Region": "ap-northeast-2",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -933,8 +979,8 @@
                             },
                             "params": {
                                 "Region": "ap-northeast-3",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -946,8 +992,8 @@
                             },
                             "params": {
                                 "Region": "ap-south-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -959,8 +1005,8 @@
                             },
                             "params": {
                                 "Region": "ap-southeast-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -972,8 +1018,8 @@
                             },
                             "params": {
                                 "Region": "ap-southeast-2",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -985,8 +1031,8 @@
                             },
                             "params": {
                                 "Region": "ap-southeast-3",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -998,8 +1044,8 @@
                             },
                             "params": {
                                 "Region": "ca-central-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1011,8 +1057,8 @@
                             },
                             "params": {
                                 "Region": "eu-central-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1024,8 +1070,8 @@
                             },
                             "params": {
                                 "Region": "eu-north-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1037,8 +1083,8 @@
                             },
                             "params": {
                                 "Region": "eu-south-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1050,8 +1096,8 @@
                             },
                             "params": {
                                 "Region": "eu-west-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1063,8 +1109,8 @@
                             },
                             "params": {
                                 "Region": "eu-west-2",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1076,8 +1122,8 @@
                             },
                             "params": {
                                 "Region": "eu-west-3",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1089,8 +1135,8 @@
                             },
                             "params": {
                                 "Region": "me-south-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1102,8 +1148,8 @@
                             },
                             "params": {
                                 "Region": "sa-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1115,8 +1161,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1128,8 +1174,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1141,8 +1187,8 @@
                             },
                             "params": {
                                 "Region": "us-east-2",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1154,8 +1200,8 @@
                             },
                             "params": {
                                 "Region": "us-east-2",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1167,8 +1213,8 @@
                             },
                             "params": {
                                 "Region": "us-west-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1180,8 +1226,8 @@
                             },
                             "params": {
                                 "Region": "us-west-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1193,8 +1239,8 @@
                             },
                             "params": {
                                 "Region": "us-west-2",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1206,8 +1252,8 @@
                             },
                             "params": {
                                 "Region": "us-west-2",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1219,21 +1265,21 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
                             "documentation": "For region us-east-1 with FIPS disabled and DualStack enabled",
                             "expect": {
                                 "endpoint": {
-                                    "url": "https://es.us-east-1.api.aws"
+                                    "url": "https://aos.us-east-1.api.aws"
                                 }
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1245,8 +1291,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1258,8 +1304,8 @@
                             },
                             "params": {
                                 "Region": "cn-northwest-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1271,8 +1317,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1284,21 +1330,21 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
                             "documentation": "For region cn-north-1 with FIPS disabled and DualStack enabled",
                             "expect": {
                                 "endpoint": {
-                                    "url": "https://es.cn-north-1.api.amazonwebservices.com.cn"
+                                    "url": "https://aos.cn-north-1.api.amazonwebservices.com.cn"
                                 }
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1310,8 +1356,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1323,8 +1369,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1336,8 +1382,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-west-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1349,8 +1395,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-west-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1362,21 +1408,21 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
                             "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack enabled",
                             "expect": {
                                 "endpoint": {
-                                    "url": "https://es.us-gov-east-1.api.aws"
+                                    "url": "https://aos.us-gov-east-1.api.aws"
                                 }
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1388,8 +1434,8 @@
                             },
                             "params": {
                                 "Region": "us-iso-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1401,8 +1447,19 @@
                             },
                             "params": {
                                 "Region": "us-iso-west-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1414,8 +1471,19 @@
                             },
                             "params": {
                                 "Region": "us-iso-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1427,8 +1495,19 @@
                             },
                             "params": {
                                 "Region": "us-isob-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1440,8 +1519,19 @@
                             },
                             "params": {
                                 "Region": "us-isob-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1453,8 +1543,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
                                 "UseFIPS": false,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -1466,8 +1556,8 @@
                                 }
                             },
                             "params": {
-                                "UseDualStack": false,
                                 "UseFIPS": false,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -1478,8 +1568,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
                                 "UseFIPS": true,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -1490,9 +1580,15 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
                                 "UseFIPS": false,
+                                "UseDualStack": true,
                                 "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "Missing region",
+                            "expect": {
+                                "error": "Invalid Configuration: Missing Region"
                             }
                         }
                     ],
@@ -1558,7 +1654,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>AssociatePackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>AssociatePackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#AssociatePackageResponse": {
@@ -1572,7 +1669,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>AssociatePackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>AssociatePackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#AuthorizeVpcEndpointAccess": {
@@ -1632,7 +1730,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for request parameters to the <code><a>AuthorizeVpcEndpointAccess</a></code> operation.\n          Specifies the account to be permitted to manage VPC endpoints against the domain.</p>"
+                "smithy.api#documentation": "<p>Container for request parameters to the <code><a>AuthorizeVpcEndpointAccess</a></code> operation.\n          Specifies the account to be permitted to manage VPC endpoints against the domain.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#AuthorizeVpcEndpointAccessResponse": {
@@ -1647,7 +1746,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>AuthorizeVpcEndpointAccess</a></code> operation.\n          Contains the account ID and the type of the account being authorized to access the VPC endpoint.</p>"
+                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>AuthorizeVpcEndpointAccess</a></code> operation.\n          Contains the account ID and the type of the account being authorized to access the VPC endpoint.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#AuthorizedPrincipal": {
@@ -2014,6 +2114,90 @@
         "com.amazonaws.elasticsearchservice#Boolean": {
             "type": "boolean"
         },
+        "com.amazonaws.elasticsearchservice#CancelDomainConfigChange": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazonaws.elasticsearchservice#CancelDomainConfigChangeRequest"
+            },
+            "output": {
+                "target": "com.amazonaws.elasticsearchservice#CancelDomainConfigChangeResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazonaws.elasticsearchservice#BaseException"
+                },
+                {
+                    "target": "com.amazonaws.elasticsearchservice#DisabledOperationException"
+                },
+                {
+                    "target": "com.amazonaws.elasticsearchservice#InternalException"
+                },
+                {
+                    "target": "com.amazonaws.elasticsearchservice#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazonaws.elasticsearchservice#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "<p>Cancels a pending configuration change on an Amazon OpenSearch Service domain.</p>",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/2015-01-01/es/domain/{DomainName}/config/cancel",
+                    "code": 200
+                }
+            }
+        },
+        "com.amazonaws.elasticsearchservice#CancelDomainConfigChangeRequest": {
+            "type": "structure",
+            "members": {
+                "DomainName": {
+                    "target": "com.amazonaws.elasticsearchservice#DomainName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Name of the OpenSearch Service domain configuration request to cancel.</p>",
+                        "smithy.api#httpLabel": {},
+                        "smithy.api#required": {}
+                    }
+                },
+                "DryRun": {
+                    "target": "com.amazonaws.elasticsearchservice#DryRun",
+                    "traits": {
+                        "smithy.api#documentation": "<p>When set to <b>True</b>, returns the list of change IDs and properties that will be cancelled without actually cancelling the change.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>Container for parameters of the <code>CancelDomainConfigChange</code> operation.</p>",
+                "smithy.api#input": {}
+            }
+        },
+        "com.amazonaws.elasticsearchservice#CancelDomainConfigChangeResponse": {
+            "type": "structure",
+            "members": {
+                "DryRun": {
+                    "target": "com.amazonaws.elasticsearchservice#DryRun",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Whether or not the request was a dry run. If <b>True</b>, the changes were not actually cancelled.</p>"
+                    }
+                },
+                "CancelledChangeIds": {
+                    "target": "com.amazonaws.elasticsearchservice#GUIDList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The unique identifiers of the changes that were cancelled.</p>"
+                    }
+                },
+                "CancelledChangeProperties": {
+                    "target": "com.amazonaws.elasticsearchservice#CancelledChangePropertyList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The domain change properties that were cancelled.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>Contains the details of the cancelled domain config change.</p>",
+                "smithy.api#output": {}
+            }
+        },
         "com.amazonaws.elasticsearchservice#CancelElasticsearchServiceSoftwareUpdate": {
             "type": "operation",
             "input": {
@@ -2057,7 +2241,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>CancelElasticsearchServiceSoftwareUpdate</a></code> operation. Specifies the name of the Elasticsearch domain that you wish to cancel a service software update on.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>CancelElasticsearchServiceSoftwareUpdate</a></code> operation. Specifies the name of the Elasticsearch domain that you wish to cancel a service software update on.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#CancelElasticsearchServiceSoftwareUpdateResponse": {
@@ -2071,7 +2256,40 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code>CancelElasticsearchServiceSoftwareUpdate</code> operation. Contains the status of the update.</p>"
+                "smithy.api#documentation": "<p>The result of a <code>CancelElasticsearchServiceSoftwareUpdate</code> operation. Contains the status of the update.</p>",
+                "smithy.api#output": {}
+            }
+        },
+        "com.amazonaws.elasticsearchservice#CancelledChangeProperty": {
+            "type": "structure",
+            "members": {
+                "PropertyName": {
+                    "target": "com.amazonaws.elasticsearchservice#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The name of the property whose change was cancelled.</p>"
+                    }
+                },
+                "CancelledValue": {
+                    "target": "com.amazonaws.elasticsearchservice#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The pending value of the property that was cancelled. This would have been the eventual value of the property if the chance had not been cancelled.</p>"
+                    }
+                },
+                "ActiveValue": {
+                    "target": "com.amazonaws.elasticsearchservice#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The current value of the property, after the change was cancelled.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>A property change that was cancelled for an Amazon OpenSearch Service domain.</p>"
+            }
+        },
+        "com.amazonaws.elasticsearchservice#CancelledChangePropertyList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.elasticsearchservice#CancelledChangeProperty"
             }
         },
         "com.amazonaws.elasticsearchservice#ChangeProgressDetails": {
@@ -2087,6 +2305,30 @@
                     "target": "com.amazonaws.elasticsearchservice#Message",
                     "traits": {
                         "smithy.api#documentation": "<p>Contains an optional message associated with the domain configuration change.</p>"
+                    }
+                },
+                "ConfigChangeStatus": {
+                    "target": "com.amazonaws.elasticsearchservice#ConfigChangeStatus",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The current status of the configuration change.</p>"
+                    }
+                },
+                "StartTime": {
+                    "target": "com.amazonaws.elasticsearchservice#UpdateTimestamp",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The time that the configuration change was initiated, in Universal Coordinated Time (UTC).</p>"
+                    }
+                },
+                "LastUpdatedTime": {
+                    "target": "com.amazonaws.elasticsearchservice#UpdateTimestamp",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The last time that the configuration change was updated.</p>"
+                    }
+                },
+                "InitiatedBy": {
+                    "target": "com.amazonaws.elasticsearchservice#InitiatedBy",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The IAM principal who initiated the configuration change.</p>"
                     }
                 }
             },
@@ -2197,6 +2439,24 @@
                     "target": "com.amazonaws.elasticsearchservice#ChangeProgressStageList",
                     "traits": {
                         "smithy.api#documentation": "<p>The specific stages that the domain is going through to perform the configuration change.</p>"
+                    }
+                },
+                "ConfigChangeStatus": {
+                    "target": "com.amazonaws.elasticsearchservice#ConfigChangeStatus",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The current status of the configuration change.</p>"
+                    }
+                },
+                "LastUpdatedTime": {
+                    "target": "com.amazonaws.elasticsearchservice#UpdateTimestamp",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The last time that the status of the configuration change was updated.</p>"
+                    }
+                },
+                "InitiatedBy": {
+                    "target": "com.amazonaws.elasticsearchservice#InitiatedBy",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The IAM principal who initiated the configuration change.</p>"
                     }
                 }
             },
@@ -2318,6 +2578,59 @@
             },
             "traits": {
                 "smithy.api#documentation": "<p>\n      A map from an\n      <code>\n        <a>ElasticsearchVersion</a>\n      </code>\n      to a list of compatible\n      <code>\n        <a>ElasticsearchVersion</a>\n      </code>\n      s to which the domain can be upgraded.\n    </p>"
+            }
+        },
+        "com.amazonaws.elasticsearchservice#ConfigChangeStatus": {
+            "type": "enum",
+            "members": {
+                "PENDING": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Pending"
+                    }
+                },
+                "INITIALIZING": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Initializing"
+                    }
+                },
+                "VALIDATING": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Validating"
+                    }
+                },
+                "VALIDATION_FAILED": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "ValidationFailed"
+                    }
+                },
+                "APPLYING_CHANGES": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "ApplyingChanges"
+                    }
+                },
+                "COMPLETED": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Completed"
+                    }
+                },
+                "PENDING_USER_INPUT": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "PendingUserInput"
+                    }
+                },
+                "CANCELLED": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Cancelled"
+                    }
+                }
             }
         },
         "com.amazonaws.elasticsearchservice#ConflictException": {
@@ -2485,6 +2798,9 @@
                         "smithy.api#documentation": "<p>A list of <code>Tag</code> added during domain creation.</p>"
                     }
                 }
+            },
+            "traits": {
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#CreateElasticsearchDomainResponse": {
@@ -2498,7 +2814,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code>CreateElasticsearchDomain</code> operation. Contains the status of the newly created Elasticsearch domain.</p>"
+                "smithy.api#documentation": "<p>The result of a <code>CreateElasticsearchDomain</code> operation. Contains the status of the newly created Elasticsearch domain.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#CreateOutboundCrossClusterSearchConnection": {
@@ -2558,7 +2875,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>CreateOutboundCrossClusterSearchConnection</a></code> operation.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>CreateOutboundCrossClusterSearchConnection</a></code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#CreateOutboundCrossClusterSearchConnectionResponse": {
@@ -2596,7 +2914,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code><a>CreateOutboundCrossClusterSearchConnection</a></code> request. Contains the details of the newly created cross-cluster search connection.</p>"
+                "smithy.api#documentation": "<p>The result of a <code><a>CreateOutboundCrossClusterSearchConnection</a></code> request. Contains the details of the newly created cross-cluster search connection.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#CreatePackage": {
@@ -2671,7 +2990,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>CreatePackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>CreatePackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#CreatePackageResponse": {
@@ -2685,7 +3005,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>CreatePackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>CreatePackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#CreateVpcEndpoint": {
@@ -2750,7 +3071,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>CreateVpcEndpointRequest</a></code> operation.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>CreateVpcEndpointRequest</a></code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#CreateVpcEndpointResponse": {
@@ -2765,7 +3087,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>CreateVpcEndpoint</a></code> operation. Contains the configuration and status of the VPC Endpoint being created.</p>"
+                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>CreateVpcEndpoint</a></code> operation. Contains the configuration and status of the VPC Endpoint being created.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#CreatedAt": {
@@ -2821,7 +3144,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DeleteElasticsearchDomain</a></code> operation. Specifies the name of the Elasticsearch domain that you want to delete.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DeleteElasticsearchDomain</a></code> operation. Specifies the name of the Elasticsearch domain that you want to delete.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DeleteElasticsearchDomainResponse": {
@@ -2835,7 +3159,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code>DeleteElasticsearchDomain</code> request. Contains the status of the pending deletion, or no status if the domain and all of its resources have been deleted.</p>"
+                "smithy.api#documentation": "<p>The result of a <code>DeleteElasticsearchDomain</code> request. Contains the status of the pending deletion, or no status if the domain and all of its resources have been deleted.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DeleteElasticsearchServiceRole": {
@@ -2904,7 +3229,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DeleteInboundCrossClusterSearchConnection</a></code> operation.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DeleteInboundCrossClusterSearchConnection</a></code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DeleteInboundCrossClusterSearchConnectionResponse": {
@@ -2918,7 +3244,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code><a>DeleteInboundCrossClusterSearchConnection</a></code> operation. Contains details of deleted inbound connection.</p>"
+                "smithy.api#documentation": "<p>The result of a <code><a>DeleteInboundCrossClusterSearchConnection</a></code> operation. Contains details of deleted inbound connection.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DeleteOutboundCrossClusterSearchConnection": {
@@ -2959,7 +3286,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DeleteOutboundCrossClusterSearchConnection</a></code> operation.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DeleteOutboundCrossClusterSearchConnection</a></code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DeleteOutboundCrossClusterSearchConnectionResponse": {
@@ -2973,7 +3301,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code><a>DeleteOutboundCrossClusterSearchConnection</a></code> operation. Contains details of deleted outbound connection.</p>"
+                "smithy.api#documentation": "<p>The result of a <code><a>DeleteOutboundCrossClusterSearchConnection</a></code> operation. Contains details of deleted outbound connection.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DeletePackage": {
@@ -3026,7 +3355,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>DeletePackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>DeletePackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DeletePackageResponse": {
@@ -3040,7 +3370,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response parameters to\n      <code>\n        <a>DeletePackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response parameters to\n      <code>\n        <a>DeletePackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DeleteVpcEndpoint": {
@@ -3087,7 +3418,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Deletes an Amazon OpenSearch Service-managed interface VPC endpoint.</p>"
+                "smithy.api#documentation": "<p>Deletes an Amazon OpenSearch Service-managed interface VPC endpoint.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DeleteVpcEndpointResponse": {
@@ -3102,7 +3434,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>DeleteVpcEndpoint</a></code> operation. Contains the summarized detail of the VPC Endpoint being deleted.</p>"
+                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>DeleteVpcEndpoint</a></code> operation. Contains the summarized detail of the VPC Endpoint being deleted.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DeploymentCloseDateTimeStamp": {
@@ -3214,7 +3547,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code>DescribeDomainAutoTunes</code> operation.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code>DescribeDomainAutoTunes</code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeDomainAutoTunesResponse": {
@@ -3234,7 +3568,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of <code>DescribeDomainAutoTunes</code> request. See the <a href=\"https://docs.aws.amazon.com/elasticsearch-service/latest/developerguide/auto-tune.html\" target=\"_blank\">Developer Guide</a> for more information. </p>"
+                "smithy.api#documentation": "<p>The result of <code>DescribeDomainAutoTunes</code> request. See the <a href=\"https://docs.aws.amazon.com/elasticsearch-service/latest/developerguide/auto-tune.html\" target=\"_blank\">Developer Guide</a> for more information. </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeDomainChangeProgress": {
@@ -3288,7 +3623,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code>DescribeDomainChangeProgress</code> operation. Specifies the\n        domain name and optional change specific identity for which you want progress information.\n      </p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code>DescribeDomainChangeProgress</code> operation. Specifies the\n        domain name and optional change specific identity for which you want progress information.\n      </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeDomainChangeProgressResponse": {
@@ -3302,7 +3638,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code>DescribeDomainChangeProgress</code> request. Contains the progress information of\n        the requested domain change.\n      </p>"
+                "smithy.api#documentation": "<p>The result of a <code>DescribeDomainChangeProgress</code> request. Contains the progress information of\n        the requested domain change.\n      </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeElasticsearchDomain": {
@@ -3380,7 +3717,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p> Container for the parameters to the <code>DescribeElasticsearchDomainConfig</code> operation. Specifies the domain name for which you want configuration information.</p>"
+                "smithy.api#documentation": "<p> Container for the parameters to the <code>DescribeElasticsearchDomainConfig</code> operation. Specifies the domain name for which you want configuration information.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeElasticsearchDomainConfigResponse": {
@@ -3395,7 +3733,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code>DescribeElasticsearchDomainConfig</code> request. Contains the configuration information of the requested domain.</p>"
+                "smithy.api#documentation": "<p>The result of a <code>DescribeElasticsearchDomainConfig</code> request. Contains the configuration information of the requested domain.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeElasticsearchDomainRequest": {
@@ -3411,7 +3750,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DescribeElasticsearchDomain</a></code> operation.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DescribeElasticsearchDomain</a></code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeElasticsearchDomainResponse": {
@@ -3426,7 +3766,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code>DescribeElasticsearchDomain</code> request. Contains the status of the domain specified in the request.</p>"
+                "smithy.api#documentation": "<p>The result of a <code>DescribeElasticsearchDomain</code> request. Contains the status of the domain specified in the request.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeElasticsearchDomains": {
@@ -3469,7 +3810,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DescribeElasticsearchDomains</a></code> operation. By default, the API returns the status of all Elasticsearch domains.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DescribeElasticsearchDomains</a></code> operation. By default, the API returns the status of all Elasticsearch domains.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeElasticsearchDomainsResponse": {
@@ -3484,7 +3826,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code>DescribeElasticsearchDomains</code> request. Contains the status of the specified domains or all domains owned by the account.</p>"
+                "smithy.api#documentation": "<p>The result of a <code>DescribeElasticsearchDomains</code> request. Contains the status of the specified domains or all domains owned by the account.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeElasticsearchInstanceTypeLimits": {
@@ -3552,7 +3895,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for the parameters to\n      <code>\n        <a>DescribeElasticsearchInstanceTypeLimits</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for the parameters to\n      <code>\n        <a>DescribeElasticsearchInstanceTypeLimits</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeElasticsearchInstanceTypeLimitsResponse": {
@@ -3563,7 +3907,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for the parameters received from\n      <code>\n        <a>DescribeElasticsearchInstanceTypeLimits</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for the parameters received from\n      <code>\n        <a>DescribeElasticsearchInstanceTypeLimits</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeInboundCrossClusterSearchConnections": {
@@ -3620,7 +3965,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DescribeInboundCrossClusterSearchConnections</a></code> operation.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DescribeInboundCrossClusterSearchConnections</a></code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeInboundCrossClusterSearchConnectionsResponse": {
@@ -3640,7 +3986,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code><a>DescribeInboundCrossClusterSearchConnections</a></code> request. Contains the list of connections matching the filter criteria.</p>"
+                "smithy.api#documentation": "<p>The result of a <code><a>DescribeInboundCrossClusterSearchConnections</a></code> request. Contains the list of connections matching the filter criteria.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeOutboundCrossClusterSearchConnections": {
@@ -3697,7 +4044,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DescribeOutboundCrossClusterSearchConnections</a></code> operation.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>DescribeOutboundCrossClusterSearchConnections</a></code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeOutboundCrossClusterSearchConnectionsResponse": {
@@ -3717,7 +4065,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code><a>DescribeOutboundCrossClusterSearchConnections</a></code> request. Contains the list of connections matching the filter criteria.</p>"
+                "smithy.api#documentation": "<p>The result of a <code><a>DescribeOutboundCrossClusterSearchConnections</a></code> request. Contains the list of connections matching the filter criteria.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribePackages": {
@@ -3771,7 +4120,7 @@
                 "Value": {
                     "target": "com.amazonaws.elasticsearchservice#DescribePackagesFilterValues",
                     "traits": {
-                        "smithy.api#documentation": "<p>A list of values for the specified field.</p>"
+                        "smithy.api#documentation": "<p>A non-empty list of values for the specified field.</p>"
                     }
                 }
             },
@@ -3821,6 +4170,11 @@
             "type": "list",
             "member": {
                 "target": "com.amazonaws.elasticsearchservice#DescribePackagesFilterValue"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1
+                }
             }
         },
         "com.amazonaws.elasticsearchservice#DescribePackagesRequest": {
@@ -3847,7 +4201,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>DescribePackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>DescribePackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribePackagesResponse": {
@@ -3864,7 +4219,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>DescribePackages</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>DescribePackages</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeReservedElasticsearchInstanceOfferings": {
@@ -3930,7 +4286,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for parameters to <code>DescribeReservedElasticsearchInstanceOfferings</code></p>"
+                "smithy.api#documentation": "<p>Container for parameters to <code>DescribeReservedElasticsearchInstanceOfferings</code></p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeReservedElasticsearchInstanceOfferingsResponse": {
@@ -3950,7 +4307,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for results from <code>DescribeReservedElasticsearchInstanceOfferings</code></p>"
+                "smithy.api#documentation": "<p>Container for results from <code>DescribeReservedElasticsearchInstanceOfferings</code></p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeReservedElasticsearchInstances": {
@@ -4016,7 +4374,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for parameters to <code>DescribeReservedElasticsearchInstances</code></p>"
+                "smithy.api#documentation": "<p>Container for parameters to <code>DescribeReservedElasticsearchInstances</code></p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeReservedElasticsearchInstancesResponse": {
@@ -4036,7 +4395,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for results from <code>DescribeReservedElasticsearchInstances</code></p>"
+                "smithy.api#documentation": "<p>Container for results from <code>DescribeReservedElasticsearchInstances</code></p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeVpcEndpoints": {
@@ -4082,7 +4442,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for request parameters to the <code><a>DescribeVpcEndpoints</a></code> operation. Specifies the list of VPC endpoints to be described.</p>"
+                "smithy.api#documentation": "<p>Container for request parameters to the <code><a>DescribeVpcEndpoints</a></code> operation. Specifies the list of VPC endpoints to be described.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DescribeVpcEndpointsResponse": {
@@ -4104,7 +4465,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>DescribeVpcEndpoints</a></code> operation. Returns a list containing configuration details and\n          status of the VPC Endpoints as well as a list containing error responses of the endpoints that could not be described</p>"
+                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>DescribeVpcEndpoints</a></code> operation. Returns a list containing configuration details and\n          status of the VPC Endpoints as well as a list containing error responses of the endpoints that could not be described</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#Description": {
@@ -4187,7 +4549,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>DissociatePackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>DissociatePackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DissociatePackageResponse": {
@@ -4201,7 +4564,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>DissociatePackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>DissociatePackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#DomainArn": {
@@ -4226,7 +4590,7 @@
                 "TLSSecurityPolicy": {
                     "target": "com.amazonaws.elasticsearchservice#TLSSecurityPolicy",
                     "traits": {
-                        "smithy.api#documentation": "<p>Specify the TLS security policy that needs to be applied to the HTTPS endpoint of Elasticsearch domain.\n        <br></br> It can be one of the following values:\n        <ul>\n            <li><b>Policy-Min-TLS-1-0-2019-07: </b> TLS security policy which supports TLSv1.0 and higher.</li>\n            <li><b>Policy-Min-TLS-1-2-2019-07: </b> TLS security policy which supports only TLSv1.2</li>\n        </ul>\n    </p>"
+                        "smithy.api#documentation": "<p>Specify the TLS security policy that needs to be applied to the HTTPS endpoint of Elasticsearch domain.\n        <br></br> It can be one of the following values:\n        <ul>\n            <li><b>Policy-Min-TLS-1-0-2019-07: </b> TLS security policy that supports TLS version 1.0 to TLS version 1.2</li>\n            <li><b>Policy-Min-TLS-1-2-2019-07: </b> TLS security policy that supports only TLS version 1.2</li>\n            <li><b>Policy-Min-TLS-1-2-PFS-2023-10: </b> TLS security policy that supports TLS version 1.2 to TLS version 1.3 with perfect forward secrecy cipher suites</li>\n        </ul>\n    </p>"
                     }
                 },
                 "CustomEndpointEnabled": {
@@ -4457,6 +4821,53 @@
                 }
             }
         },
+        "com.amazonaws.elasticsearchservice#DomainProcessingStatusType": {
+            "type": "enum",
+            "members": {
+                "CREATING": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Creating"
+                    }
+                },
+                "ACTIVE": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Active"
+                    }
+                },
+                "MODIFYING": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Modifying"
+                    }
+                },
+                "UPGRADING": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "UpgradingEngineVersion"
+                    }
+                },
+                "UPDATING": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "UpdatingServiceSoftware"
+                    }
+                },
+                "ISOLATED": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Isolated"
+                    }
+                },
+                "DELETING": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Deleting"
+                    }
+                }
+            }
+        },
         "com.amazonaws.elasticsearchservice#Double": {
             "type": "double"
         },
@@ -4486,7 +4897,6 @@
                 "Value": {
                     "target": "com.amazonaws.elasticsearchservice#DurationValue",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p> Integer to specify the value of a maintenance schedule duration. See the <a href=\"https://docs.aws.amazon.com/elasticsearch-service/latest/developerguide/auto-tune.html\" target=\"_blank\">Developer Guide</a> for more information.</p>"
                     }
                 },
@@ -4504,7 +4914,6 @@
         "com.amazonaws.elasticsearchservice#DurationValue": {
             "type": "long",
             "traits": {
-                "smithy.api#default": 0,
                 "smithy.api#documentation": "<p> Integer to specify the value of a maintenance schedule duration. See the <a href=\"https://docs.aws.amazon.com/elasticsearch-service/latest/developerguide/auto-tune.html\" target=\"_blank\">Developer Guide</a> for more information.</p>",
                 "smithy.api#range": {
                     "min": 1,
@@ -5130,6 +5539,12 @@
                     "traits": {
                         "smithy.api#documentation": "<p>Specifies change details of the domain configuration change.</p>"
                     }
+                },
+                "ModifyingProperties": {
+                    "target": "com.amazonaws.elasticsearchservice#ModifyingPropertiesList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Information about the domain properties that are currently being modified.</p>"
+                    }
                 }
             },
             "traits": {
@@ -5289,6 +5704,18 @@
                     "traits": {
                         "smithy.api#documentation": "<p>Specifies change details of the domain configuration change.</p>"
                     }
+                },
+                "DomainProcessingStatus": {
+                    "target": "com.amazonaws.elasticsearchservice#DomainProcessingStatusType",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The status of any changes that are currently in progress for the domain.</p>"
+                    }
+                },
+                "ModifyingProperties": {
+                    "target": "com.amazonaws.elasticsearchservice#ModifyingPropertiesList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Information about the domain properties that are currently being modified.</p>"
+                    }
                 }
             },
             "traits": {
@@ -5347,7 +5774,7 @@
         "com.amazonaws.elasticsearchservice#ElasticsearchVersionString": {
             "type": "string",
             "traits": {
-                "smithy.api#pattern": "^[0-9]{1}\\.[0-9]{1,2}$|^OpenSearch_[0-9]{1,2}\\.[0-9]{1,2}$"
+                "smithy.api#pattern": "^[0-9]{1}\\.[0-9]{1,2}$|^OpenSearch_[0-9]{1,2}\\.[0-9]{1,2}$|^OS_[0-9]{1,2}\\.[0-9]{1,2}$"
             }
         },
         "com.amazonaws.elasticsearchservice#EncryptionAtRestOptions": {
@@ -5473,6 +5900,12 @@
                 "smithy.api#pattern": "^\\p{XDigit}{8}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{4}-\\p{XDigit}{12}$"
             }
         },
+        "com.amazonaws.elasticsearchservice#GUIDList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.elasticsearchservice#GUID"
+            }
+        },
         "com.amazonaws.elasticsearchservice#GetCompatibleElasticsearchVersions": {
             "type": "operation",
             "input": {
@@ -5518,7 +5951,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>GetCompatibleElasticsearchVersions</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>GetCompatibleElasticsearchVersions</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#GetCompatibleElasticsearchVersionsResponse": {
@@ -5532,7 +5966,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>GetCompatibleElasticsearchVersions</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>GetCompatibleElasticsearchVersions</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#GetPackageVersionHistory": {
@@ -5602,7 +6037,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>GetPackageVersionHistory</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>GetPackageVersionHistory</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#GetPackageVersionHistoryResponse": {
@@ -5622,7 +6058,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>GetPackageVersionHistory</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>GetPackageVersionHistory</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#GetUpgradeHistory": {
@@ -5689,7 +6126,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>GetUpgradeHistory</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>GetUpgradeHistory</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#GetUpgradeHistoryResponse": {
@@ -5709,7 +6147,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>GetUpgradeHistory</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>GetUpgradeHistory</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#GetUpgradeStatus": {
@@ -5758,7 +6197,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>GetUpgradeStatus</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>GetUpgradeStatus</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#GetUpgradeStatusResponse": {
@@ -5784,7 +6224,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>GetUpgradeStatus</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>GetUpgradeStatus</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#IdentityPoolId": {
@@ -5896,10 +6337,26 @@
                 "target": "com.amazonaws.elasticsearchservice#InboundCrossClusterSearchConnection"
             }
         },
+        "com.amazonaws.elasticsearchservice#InitiatedBy": {
+            "type": "enum",
+            "members": {
+                "CUSTOMER": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "CUSTOMER"
+                    }
+                },
+                "SERVICE": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "SERVICE"
+                    }
+                }
+            }
+        },
         "com.amazonaws.elasticsearchservice#InstanceCount": {
             "type": "integer",
             "traits": {
-                "smithy.api#default": 0,
                 "smithy.api#documentation": "<p>Specifies the number of EC2 instances in the Elasticsearch domain.</p>",
                 "smithy.api#range": {
                     "min": 1
@@ -6118,7 +6575,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p> Container for the parameters to the <code><a>ListDomainNames</a></code> operation.</p>"
+                "smithy.api#documentation": "<p> Container for the parameters to the <code><a>ListDomainNames</a></code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListDomainNamesResponse": {
@@ -6132,7 +6590,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code>ListDomainNames</code> operation. Contains the names of all domains owned by this account and their respective engine types.</p>"
+                "smithy.api#documentation": "<p>The result of a <code>ListDomainNames</code> operation. Contains the names of all domains owned by this account and their respective engine types.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListDomainsForPackage": {
@@ -6202,7 +6661,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>ListDomainsForPackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>ListDomainsForPackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListDomainsForPackageResponse": {
@@ -6219,7 +6679,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response parameters to\n      <code>\n        <a>ListDomainsForPackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response parameters to\n      <code>\n        <a>ListDomainsForPackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListElasticsearchInstanceTypes": {
@@ -6293,7 +6754,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for the parameters to the\n      <code>\n        <a>ListElasticsearchInstanceTypes</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for the parameters to the\n      <code>\n        <a>ListElasticsearchInstanceTypes</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListElasticsearchInstanceTypesResponse": {
@@ -6313,7 +6775,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for the parameters returned by\n      <code>\n        <a>ListElasticsearchInstanceTypes</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for the parameters returned by\n      <code>\n        <a>ListElasticsearchInstanceTypes</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListElasticsearchVersions": {
@@ -6371,7 +6834,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for the parameters to the\n      <code>\n        <a>ListElasticsearchVersions</a>\n      </code>\n      operation.\n      <p>\n        Use\n        <code>\n          <a>MaxResults</a>\n        </code>\n        to control the maximum number of results to retrieve in a single\n        call.\n      </p>\n      <p>\n        Use\n        <code>\n          <a>NextToken</a>\n        </code>\n        in response to retrieve more results. If the received response does\n        not contain a NextToken, then there are no more results to retrieve.\n      </p>\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for the parameters to the\n      <code>\n        <a>ListElasticsearchVersions</a>\n      </code>\n      operation.\n      <p>\n        Use\n        <code>\n          <a>MaxResults</a>\n        </code>\n        to control the maximum number of results to retrieve in a single\n        call.\n      </p>\n      <p>\n        Use\n        <code>\n          <a>NextToken</a>\n        </code>\n        in response to retrieve more results. If the received response does\n        not contain a NextToken, then there are no more results to retrieve.\n      </p>\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListElasticsearchVersionsResponse": {
@@ -6385,7 +6849,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for the parameters for response received from\n      <code>\n        <a>ListElasticsearchVersions</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for the parameters for response received from\n      <code>\n        <a>ListElasticsearchVersions</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListPackagesForDomain": {
@@ -6455,7 +6920,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>ListPackagesForDomain</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>ListPackagesForDomain</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListPackagesForDomainResponse": {
@@ -6475,7 +6941,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response parameters to\n      <code>\n        <a>ListPackagesForDomain</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response parameters to\n      <code>\n        <a>ListPackagesForDomain</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListTags": {
@@ -6522,7 +6989,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>ListTags</a></code> operation. Specify the <code>ARN</code> for the Elasticsearch domain to which the tags are attached that you want to view are attached.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>ListTags</a></code> operation. Specify the <code>ARN</code> for the Elasticsearch domain to which the tags are attached that you want to view are attached.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListTagsResponse": {
@@ -6536,7 +7004,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code>ListTags</code> operation. Contains tags for all requested Elasticsearch domains.</p>"
+                "smithy.api#documentation": "<p>The result of a <code>ListTags</code> operation. Contains tags for all requested Elasticsearch domains.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListVpcEndpointAccess": {
@@ -6590,7 +7059,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Retrieves information about each principal that is allowed to access a\n   given Amazon OpenSearch Service domain through the use of an interface VPC endpoint</p>"
+                "smithy.api#documentation": "<p>Retrieves information about each principal that is allowed to access a\n   given Amazon OpenSearch Service domain through the use of an interface VPC endpoint</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListVpcEndpointAccessResponse": {
@@ -6612,7 +7082,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>ListVpcEndpointAccess</a></code> operation.\n          Returns a list of accounts id and account type authorized to manage VPC endpoints.</p>"
+                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>ListVpcEndpointAccess</a></code> operation.\n          Returns a list of accounts id and account type authorized to manage VPC endpoints.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListVpcEndpoints": {
@@ -6694,7 +7165,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for request parameters to the <code><a>ListVpcEndpointsForDomain</a></code> operation. Specifies the domain whose VPC endpoints will be listed.</p>"
+                "smithy.api#documentation": "<p>Container for request parameters to the <code><a>ListVpcEndpointsForDomain</a></code> operation. Specifies the domain whose VPC endpoints will be listed.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListVpcEndpointsForDomainResponse": {
@@ -6716,7 +7188,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>ListVpcEndpointsForDomain</a></code> operation. Returns a list containing summarized details of the VPC endpoints.</p>"
+                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>ListVpcEndpointsForDomain</a></code> operation. Returns a list containing summarized details of the VPC endpoints.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListVpcEndpointsRequest": {
@@ -6731,7 +7204,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for request parameters to the <code><a>ListVpcEndpoints</a></code> operation.</p>"
+                "smithy.api#documentation": "<p>Container for request parameters to the <code><a>ListVpcEndpoints</a></code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ListVpcEndpointsResponse": {
@@ -6753,7 +7227,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>ListVpcEndpoints</a></code> operation. Returns a list containing summarized details of the VPC endpoints.</p>"
+                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>ListVpcEndpoints</a></code> operation. Returns a list containing summarized details of the VPC endpoints.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#LogPublishingOption": {
@@ -6891,6 +7366,44 @@
             "traits": {
                 "smithy.api#default": 0,
                 "smithy.api#documentation": "<p>\n      Minimum number of Instances that can be instantiated for given InstanceType.\n    </p>"
+            }
+        },
+        "com.amazonaws.elasticsearchservice#ModifyingProperties": {
+            "type": "structure",
+            "members": {
+                "Name": {
+                    "target": "com.amazonaws.elasticsearchservice#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The name of the property that is currently being modified.</p>"
+                    }
+                },
+                "ActiveValue": {
+                    "target": "com.amazonaws.elasticsearchservice#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The current value of the domain property that is being modified.</p>"
+                    }
+                },
+                "PendingValue": {
+                    "target": "com.amazonaws.elasticsearchservice#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The value that the property that is currently being modified will eventually have.</p>"
+                    }
+                },
+                "ValueType": {
+                    "target": "com.amazonaws.elasticsearchservice#PropertyValueType",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The type of value that is currently being modified. Properties can have two types:</p>\n    <ul>\n      <li><b>PLAIN_TEXT</b>: Contain direct values such as \"1\", \"True\", or \"c5.large.search\".</li>\n      <li><b>STRINGIFIED_JSON</b>: Contain content in JSON format, such as {\"Enabled\":\"True\"}\".</li>\n    </ul>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>Information about the domain properties that are currently being modified.</p>"
+            }
+        },
+        "com.amazonaws.elasticsearchservice#ModifyingPropertiesList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.elasticsearchservice#ModifyingProperties"
             }
         },
         "com.amazonaws.elasticsearchservice#NextToken": {
@@ -7407,6 +7920,23 @@
                 "smithy.api#documentation": "<p>Specifies the type of AWS account permitted to manage VPC endpoints.:\n     <ul>\n       <li>AWS_ACCOUNT: Indicates that the account is owned by an AWS user.</li>\n       <li>AWS_SERVICE: Indicates the the account is owned by an AWS service.</li>\n     </ul>\n    </p>"
             }
         },
+        "com.amazonaws.elasticsearchservice#PropertyValueType": {
+            "type": "enum",
+            "members": {
+                "PLAIN_TEXT": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "PLAIN_TEXT"
+                    }
+                },
+                "STRINGIFIED_JSON": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "STRINGIFIED_JSON"
+                    }
+                }
+            }
+        },
         "com.amazonaws.elasticsearchservice#PurchaseReservedElasticsearchInstanceOffering": {
             "type": "operation",
             "input": {
@@ -7464,13 +7994,13 @@
                 "InstanceCount": {
                     "target": "com.amazonaws.elasticsearchservice#InstanceCount",
                     "traits": {
-                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The number of Elasticsearch instances to reserve.</p>"
                     }
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for parameters to <code>PurchaseReservedElasticsearchInstanceOffering</code></p>"
+                "smithy.api#documentation": "<p>Container for parameters to <code>PurchaseReservedElasticsearchInstanceOffering</code></p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#PurchaseReservedElasticsearchInstanceOfferingResponse": {
@@ -7490,7 +8020,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Represents the output of a <code>PurchaseReservedElasticsearchInstanceOffering</code> operation.</p>"
+                "smithy.api#documentation": "<p>Represents the output of a <code>PurchaseReservedElasticsearchInstanceOffering</code> operation.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#RecurringCharge": {
@@ -7566,7 +8097,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>RejectInboundCrossClusterSearchConnection</a></code> operation.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>RejectInboundCrossClusterSearchConnection</a></code> operation.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#RejectInboundCrossClusterSearchConnectionResponse": {
@@ -7580,7 +8112,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code><a>RejectInboundCrossClusterSearchConnection</a></code> operation. Contains details of rejected inbound connection.</p>"
+                "smithy.api#documentation": "<p>The result of a <code><a>RejectInboundCrossClusterSearchConnection</a></code> operation. Contains details of rejected inbound connection.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#RemoveTags": {
@@ -7630,7 +8163,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>RemoveTags</a></code> operation. Specify the <code>ARN</code> for the Elasticsearch domain from which you want to remove the specified <code>TagKey</code>.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>RemoveTags</a></code> operation. Specify the <code>ARN</code> for the Elasticsearch domain from which you want to remove the specified <code>TagKey</code>.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#ReservationToken": {
@@ -7911,14 +8445,16 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Revokes access to an Amazon OpenSearch Service domain that was provided through an interface\n   VPC endpoint.</p>"
+                "smithy.api#documentation": "<p>Revokes access to an Amazon OpenSearch Service domain that was provided through an interface\n   VPC endpoint.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#RevokeVpcEndpointAccessResponse": {
             "type": "structure",
             "members": {},
             "traits": {
-                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>RevokeVpcEndpointAccess</a></code> operation. The response body for this operation is empty.</p>"
+                "smithy.api#documentation": "<p>Container for response parameters to the <code><a>RevokeVpcEndpointAccess</a></code> operation. The response body for this operation is empty.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#RoleArn": {
@@ -8318,7 +8854,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>StartElasticsearchServiceSoftwareUpdate</a></code> operation. Specifies the name of the Elasticsearch domain that you wish to schedule a service software update on.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>StartElasticsearchServiceSoftwareUpdate</a></code> operation. Specifies the name of the Elasticsearch domain that you wish to schedule a service software update on.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#StartElasticsearchServiceSoftwareUpdateResponse": {
@@ -8332,7 +8869,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of a <code>StartElasticsearchServiceSoftwareUpdate</code> operation. Contains the status of the update.</p>"
+                "smithy.api#documentation": "<p>The result of a <code>StartElasticsearchServiceSoftwareUpdate</code> operation. Contains the status of the update.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#StartTimestamp": {
@@ -8424,6 +8962,12 @@
                     "target": "smithy.api#Unit",
                     "traits": {
                         "smithy.api#enumValue": "Policy-Min-TLS-1-2-2019-07"
+                    }
+                },
+                "POLICY_MIN_TLS_1_2_PFS_2023_10": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Policy-Min-TLS-1-2-PFS-2023-10"
                     }
                 }
             }
@@ -8642,7 +9186,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>UpdateElasticsearchDomain</a></code> operation. Specifies the type and number of instances in the domain cluster.</p>"
+                "smithy.api#documentation": "<p>Container for the parameters to the <code><a>UpdateElasticsearchDomain</a></code> operation. Specifies the type and number of instances in the domain cluster.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#UpdateElasticsearchDomainConfigResponse": {
@@ -8663,7 +9208,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>The result of an <code>UpdateElasticsearchDomain</code> request. Contains the status of the Elasticsearch domain being updated.</p>"
+                "smithy.api#documentation": "<p>The result of an <code>UpdateElasticsearchDomain</code> request. Contains the status of the Elasticsearch domain being updated.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#UpdatePackage": {
@@ -8733,7 +9279,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>UpdatePackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>UpdatePackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#UpdatePackageResponse": {
@@ -8747,7 +9294,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>UpdatePackage</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>UpdatePackage</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#UpdateTimestamp": {
@@ -8809,7 +9357,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Modifies an Amazon OpenSearch Service-managed interface VPC endpoint.</p>"
+                "smithy.api#documentation": "<p>Modifies an Amazon OpenSearch Service-managed interface VPC endpoint.</p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#UpdateVpcEndpointResponse": {
@@ -8824,7 +9373,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Contains the configuration and status of the VPC endpoint being updated.</p>"
+                "smithy.api#documentation": "<p>Contains the configuration and status of the VPC endpoint being updated.</p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#UpgradeElasticsearchDomain": {
@@ -8888,7 +9438,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>UpgradeElasticsearchDomain</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for request parameters to\n      <code>\n        <a>UpgradeElasticsearchDomain</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#input": {}
             }
         },
         "com.amazonaws.elasticsearchservice#UpgradeElasticsearchDomainResponse": {
@@ -8914,7 +9465,8 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>UpgradeElasticsearchDomain</a>\n      </code>\n      operation.\n    </p>"
+                "smithy.api#documentation": "<p>\n      Container for response returned by\n      <code>\n        <a>UpgradeElasticsearchDomain</a>\n      </code>\n      operation.\n    </p>",
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.elasticsearchservice#UpgradeHistory": {

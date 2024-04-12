@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ArgumentParser
 
 extension Process {
     /// Creates a process using `/usr/bin/env` as the executable
@@ -47,6 +48,21 @@ func _run(_ process: Process) throws {
     try ProcessRunner.standard.run(process)
 }
 
+func _runReturningStdOut(_ process: Process) throws -> String? {
+    let stdOut = Pipe()
+    process.standardOutput = stdOut
+    
+    var data = Data()
+    stdOut.fileHandleForReading.readabilityHandler = { handle in
+        data += handle.availableData
+    }
+    
+    try _run(process)
+    process.waitUntilExit()
+    
+    return String(data: data, encoding: .utf8)
+}
+
 /// A simple struct that runs a process
 struct ProcessRunner {
     let run: (Process) throws -> Void
@@ -57,6 +73,11 @@ struct ProcessRunner {
     static let standard = ProcessRunner { process in
         log("Running process: \(process.commandString)")
         try process.run()
+        process.waitUntilExit()
+        let exitCode = ExitCode(process.terminationStatus)
+        if !exitCode.isSuccess {
+            throw exitCode
+        }
     }
     
     #if DEBUG

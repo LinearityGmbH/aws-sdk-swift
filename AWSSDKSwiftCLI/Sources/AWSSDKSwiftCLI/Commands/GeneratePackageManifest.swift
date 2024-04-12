@@ -31,14 +31,30 @@ struct GeneratePackageManifestCommand: ParsableCommand {
     
     @Option(help: "The names of the services to include in the package manifest. This defaults to all services located in aws-sdk-swift/Sources/Services")
     var services: [String] = []
+
+    @Flag(help: "If the package manifest should include the integration tests.")
+    var includeIntegrationTests: Bool = false
     
+    @Flag(help: "If the package manifest should include the protocol tests.")
+    var includeProtocolTests: Bool = false
+
+    @Flag(help: "If the package manifest should exclude AWS services.")
+    var excludeAWSServices = false
+
+    @Flag(help: "If the package manifest should exclude runtime tests.")
+    var excludeRuntimeTests = false
+
     func run() throws {
         let generatePackageManifest = GeneratePackageManifest.standard(
             repoPath: repoPath,
             packageFileName: packageFileName,
             clientRuntimeVersion: clientRuntimeVersion,
             crtVersion: crtVersion,
-            services: services.isEmpty ? nil : services
+            services: services.isEmpty ? nil : services,
+            includeIntegrationTests: includeIntegrationTests,
+            includeProtocolTests: includeProtocolTests,
+            excludeAWSServices: excludeAWSServices,
+            excludeRuntimeTests: excludeRuntimeTests
         )
         try generatePackageManifest.run()
     }
@@ -61,11 +77,19 @@ struct GeneratePackageManifest {
     /// The list of services to include as products
     /// If `nil` then the list is populated with the names of all items within the `Sources/Services` directory
     let services: [String]?
-    
+    /// If the package manifest should include the integration tests.
+    let includeIntegrationTests: Bool
+    /// If the package manifest should include the protocol tests.
+    let includeProtocolTests: Bool
+    /// If the package manifest should exclude the AWS services.
+    let excludeAWSServices: Bool
+    /// If the package manifest should exclude runtime unit tests.
+    let excludeRuntimeTests: Bool
+
     typealias BuildPackageManifest = (
         _ clientRuntimeVersion: Version,
         _ crtVersion: Version,
-        _ services: [String]
+        _ services: [PackageManifestBuilder.Service]
     ) throws -> String
     /// Returns the contents of the package manifest file given the versions of dependencies and the list of services.
     let buildPackageManifest: BuildPackageManifest
@@ -85,7 +109,13 @@ struct GeneratePackageManifest {
     /// - Returns: The contents of the generated package manifest.
     func generatePackageManifestContents() throws -> String {
         let versions = try resolveVersions()
-        let services = try resolveServices()
+        let servicesWithIntegrationTests = try resolveServicesWithIntegrationTests()
+        let services = try resolveServices().map {
+            PackageManifestBuilder.Service(
+                name: $0,
+                includeIntegrationTests: servicesWithIntegrationTests.contains($0)
+            )
+        }
         log("Creating package manifest contents...")
         let contents = try buildPackageManifest(versions.clientRuntime, versions.crt, services)
         log("Successfully created package manifest contents")
@@ -113,7 +143,7 @@ struct GeneratePackageManifest {
     /// - Returns: The versions for ClientRuntime and CRT.
     func resolveVersions() throws -> (clientRuntime: Version, crt: Version) {
         log("Resolving versions of dependencies...")
-        let packageDependencies = LazyValue {
+        let packageDependencies = LazyValue<PackageDependencies> {
             do {
                 return try PackageDependencies.load()
             } catch let error as Error {
@@ -170,6 +200,21 @@ struct GeneratePackageManifest {
         log("Resolved list of services: \(resolvedServices.count)")
         return resolvedServices
     }
+
+    /// Returns the list of services to include in the package manifest.
+    /// If an explicit list of services was provided by the command, then this returns the specified services.
+    /// Otherwise, this returns the list of services that exist within `Sources/Services`
+    ///
+    /// - Returns: The list of services to include in the package manifest
+    func resolveServicesWithIntegrationTests() throws -> [String] {
+        log("Resolving services with integration tests...")
+        let resolvedServices = try FileManager
+            .default
+            .integrationTests()
+            .map { $0.replacingOccurrences(of: "IntegrationTests", with: "") }
+        log("List of services with integration tests: \(resolvedServices.count)")
+        return resolvedServices
+    }
 }
 
 // MARK: - Factory
@@ -191,19 +236,31 @@ extension GeneratePackageManifest {
         packageFileName: String,
         clientRuntimeVersion: Version? = nil,
         crtVersion: Version? = nil,
-        services: [String]? = nil
+        services: [String]? = nil,
+        includeIntegrationTests: Bool = false,
+        includeProtocolTests: Bool = false,
+        excludeAWSServices: Bool = false,
+        excludeRuntimeTests: Bool = false
     ) -> Self {
         GeneratePackageManifest(
             repoPath: repoPath,
             packageFileName: packageFileName,
             clientRuntimeVersion: clientRuntimeVersion,
             crtVersion: crtVersion,
-            services: services
+            services: services,
+            includeIntegrationTests: includeIntegrationTests,
+            includeProtocolTests: includeProtocolTests,
+            excludeAWSServices: excludeAWSServices,
+            excludeRuntimeTests: excludeRuntimeTests
         ) { _clientRuntimeVersion, _crtVersion, _services in
             let builder = PackageManifestBuilder(
                 clientRuntimeVersion: _clientRuntimeVersion,
                 crtVersion: _crtVersion,
-                services: _services
+                services: _services,
+                includeProtocolTests: includeProtocolTests,
+                includeIntegrationTests: includeIntegrationTests,
+                excludeAWSServices: excludeAWSServices,
+                excludeRuntimeTests: excludeRuntimeTests
             )
             return try builder.build()
         }

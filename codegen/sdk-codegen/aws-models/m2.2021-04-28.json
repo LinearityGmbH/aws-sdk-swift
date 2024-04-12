@@ -281,7 +281,7 @@
                 "lastStartTime": {
                     "target": "com.amazonaws.m2#Timestamp",
                     "traits": {
-                        "smithy.api#documentation": "<p>The timestamp when you last started the application. Null until the application runs for the first time.</p>"
+                        "smithy.api#documentation": "<p>The timestamp when you last started the application. Null until the application runs for\n         the first time.</p>"
                     }
                 },
                 "versionStatus": {
@@ -294,6 +294,12 @@
                     "target": "com.amazonaws.m2#ApplicationDeploymentLifecycle",
                     "traits": {
                         "smithy.api#documentation": "<p>Indicates either an ongoing deployment or if the application has ever deployed\n         successfully.</p>"
+                    }
+                },
+                "roleArn": {
+                    "target": "com.amazonaws.m2#Arn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The Amazon Resource Name (ARN) of the role associated with the application.</p>"
                     }
                 }
             },
@@ -370,7 +376,7 @@
         "com.amazonaws.m2#Arn": {
             "type": "string",
             "traits": {
-                "smithy.api#pattern": "^arn:(aws|aws-cn|aws-iso|aws-iso-[a-z]{1}|aws-us-gov):[A-Za-z0-9][A-Za-z0-9_/.-]{0,62}:([a-z]{2}-((iso[a-z]{0,1}-)|(gov-)){0,1}[a-z]+-[0-9]):[0-9]{12}:[A-Za-z0-9/][A-Za-z0-9:_/+=,@.-]{0,1023}$"
+                "smithy.api#pattern": "^arn:(aws|aws-cn|aws-iso|aws-iso-[a-z]{1}|aws-us-gov):[A-Za-z0-9][A-Za-z0-9_/.-]{0,62}:([a-z]{2}-((iso[a-z]{0,1}-)|(gov-)){0,1}[a-z]+-[0-9]|):[0-9]{12}:[A-Za-z0-9/][A-Za-z0-9:_/+=,@.-]{0,1023}$"
             }
         },
         "com.amazonaws.m2#ArnList": {
@@ -388,6 +394,9 @@
             "type": "service",
             "version": "2021-04-28",
             "operations": [
+                {
+                    "target": "com.amazonaws.m2#GetSignedBluinsightsUrl"
+                },
                 {
                     "target": "com.amazonaws.m2#ListEngineVersions"
                 },
@@ -486,7 +495,6 @@
                                     ]
                                 }
                             ],
-                            "type": "tree",
                             "rules": [
                                 {
                                     "conditions": [
@@ -504,9 +512,187 @@
                                     "type": "error"
                                 },
                                 {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseDualStack"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
                                     "conditions": [],
-                                    "type": "tree",
+                                    "endpoint": {
+                                        "url": {
+                                            "ref": "Endpoint"
+                                        },
+                                        "properties": {},
+                                        "headers": {}
+                                    },
+                                    "type": "endpoint"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Region"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "aws.partition",
+                                            "argv": [
+                                                {
+                                                    "ref": "Region"
+                                                }
+                                            ],
+                                            "assign": "PartitionResult"
+                                        }
+                                    ],
                                     "rules": [
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                },
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://m2-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                },
+                                                                true
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://m2-fips.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS is enabled but this partition does not support FIPS",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
                                         {
                                             "conditions": [
                                                 {
@@ -519,278 +705,65 @@
                                                     ]
                                                 }
                                             ],
-                                            "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
-                                            "type": "error"
-                                        },
-                                        {
-                                            "conditions": [],
-                                            "endpoint": {
-                                                "url": {
-                                                    "ref": "Endpoint"
-                                                },
-                                                "properties": {},
-                                                "headers": {}
-                                            },
-                                            "type": "endpoint"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "conditions": [],
-                            "type": "tree",
-                            "rules": [
-                                {
-                                    "conditions": [
-                                        {
-                                            "fn": "isSet",
-                                            "argv": [
-                                                {
-                                                    "ref": "Region"
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "type": "tree",
-                                    "rules": [
-                                        {
-                                            "conditions": [
-                                                {
-                                                    "fn": "aws.partition",
-                                                    "argv": [
-                                                        {
-                                                            "ref": "Region"
-                                                        }
-                                                    ],
-                                                    "assign": "PartitionResult"
-                                                }
-                                            ],
-                                            "type": "tree",
                                             "rules": [
                                                 {
                                                     "conditions": [
                                                         {
                                                             "fn": "booleanEquals",
                                                             "argv": [
+                                                                true,
                                                                 {
-                                                                    "ref": "UseFIPS"
-                                                                },
-                                                                true
-                                                            ]
-                                                        },
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseDualStack"
-                                                                },
-                                                                true
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
                                                             ]
                                                         }
                                                     ],
-                                                    "type": "tree",
-                                                    "rules": [
-                                                        {
-                                                            "conditions": [
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsFIPS"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsDualStack"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://m2-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseFIPS"
-                                                                },
-                                                                true
-                                                            ]
-                                                        }
-                                                    ],
-                                                    "type": "tree",
-                                                    "rules": [
-                                                        {
-                                                            "conditions": [
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsFIPS"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://m2-fips.{Region}.{PartitionResult#dnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "FIPS is enabled but this partition does not support FIPS",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [
-                                                        {
-                                                            "fn": "booleanEquals",
-                                                            "argv": [
-                                                                {
-                                                                    "ref": "UseDualStack"
-                                                                },
-                                                                true
-                                                            ]
-                                                        }
-                                                    ],
-                                                    "type": "tree",
-                                                    "rules": [
-                                                        {
-                                                            "conditions": [
-                                                                {
-                                                                    "fn": "booleanEquals",
-                                                                    "argv": [
-                                                                        true,
-                                                                        {
-                                                                            "fn": "getAttr",
-                                                                            "argv": [
-                                                                                {
-                                                                                    "ref": "PartitionResult"
-                                                                                },
-                                                                                "supportsDualStack"
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ],
-                                                            "type": "tree",
-                                                            "rules": [
-                                                                {
-                                                                    "conditions": [],
-                                                                    "type": "tree",
-                                                                    "rules": [
-                                                                        {
-                                                                            "conditions": [],
-                                                                            "endpoint": {
-                                                                                "url": "https://m2.{Region}.{PartitionResult#dualStackDnsSuffix}",
-                                                                                "properties": {},
-                                                                                "headers": {}
-                                                                            },
-                                                                            "type": "endpoint"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "conditions": [],
-                                                            "error": "DualStack is enabled but this partition does not support DualStack",
-                                                            "type": "error"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "conditions": [],
-                                                    "type": "tree",
                                                     "rules": [
                                                         {
                                                             "conditions": [],
                                                             "endpoint": {
-                                                                "url": "https://m2.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "url": "https://m2.{Region}.{PartitionResult#dualStackDnsSuffix}",
                                                                 "properties": {},
                                                                 "headers": {}
                                                             },
                                                             "type": "endpoint"
                                                         }
-                                                    ]
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "DualStack is enabled but this partition does not support DualStack",
+                                                    "type": "error"
                                                 }
-                                            ]
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [],
+                                            "endpoint": {
+                                                "url": "https://m2.{Region}.{PartitionResult#dnsSuffix}",
+                                                "properties": {},
+                                                "headers": {}
+                                            },
+                                            "type": "endpoint"
                                         }
-                                    ]
-                                },
-                                {
-                                    "conditions": [],
-                                    "error": "Invalid Configuration: Missing Region",
-                                    "type": "error"
+                                    ],
+                                    "type": "tree"
                                 }
-                            ]
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [],
+                            "error": "Invalid Configuration: Missing Region",
+                            "type": "error"
                         }
                     ]
                 },
@@ -805,8 +778,8 @@
                             },
                             "params": {
                                 "Region": "ap-southeast-2",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -818,8 +791,8 @@
                             },
                             "params": {
                                 "Region": "ca-central-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -831,8 +804,8 @@
                             },
                             "params": {
                                 "Region": "eu-central-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -844,8 +817,8 @@
                             },
                             "params": {
                                 "Region": "eu-west-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -857,8 +830,8 @@
                             },
                             "params": {
                                 "Region": "sa-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -870,8 +843,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -883,8 +856,8 @@
                             },
                             "params": {
                                 "Region": "us-west-2",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -896,8 +869,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -909,8 +882,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -922,8 +895,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -935,8 +908,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -948,8 +921,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -961,8 +934,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -974,8 +947,8 @@
                             },
                             "params": {
                                 "Region": "cn-north-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -987,8 +960,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1000,8 +973,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1013,8 +986,8 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": true,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1026,8 +999,19 @@
                             },
                             "params": {
                                 "Region": "us-gov-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1039,8 +1023,19 @@
                             },
                             "params": {
                                 "Region": "us-iso-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1052,8 +1047,19 @@
                             },
                             "params": {
                                 "Region": "us-iso-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1065,8 +1071,19 @@
                             },
                             "params": {
                                 "Region": "us-isob-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": true
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
                             }
                         },
                         {
@@ -1078,8 +1095,8 @@
                             },
                             "params": {
                                 "Region": "us-isob-east-1",
-                                "UseDualStack": false,
-                                "UseFIPS": false
+                                "UseFIPS": false,
+                                "UseDualStack": false
                             }
                         },
                         {
@@ -1091,8 +1108,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
                                 "UseFIPS": false,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -1104,8 +1121,8 @@
                                 }
                             },
                             "params": {
-                                "UseDualStack": false,
                                 "UseFIPS": false,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -1116,8 +1133,8 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": false,
                                 "UseFIPS": true,
+                                "UseDualStack": false,
                                 "Endpoint": "https://example.com"
                             }
                         },
@@ -1128,9 +1145,15 @@
                             },
                             "params": {
                                 "Region": "us-east-1",
-                                "UseDualStack": true,
                                 "UseFIPS": false,
+                                "UseDualStack": true,
                                 "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "Missing region",
+                            "expect": {
+                                "error": "Invalid Configuration: Missing Region"
                             }
                         }
                     ],
@@ -1265,11 +1288,14 @@
                 "returnCode": {
                     "target": "smithy.api#String",
                     "traits": {
-                        "smithy.api#documentation": "<p/>"
+                        "smithy.api#documentation": "<p>The batch job return code from either the Blu Age or Micro Focus runtime engines. For more\n         information, see <a href=\"https://www.ibm.com/docs/en/was/8.5.5?topic=model-batch-return-codes\">Batch return\n            codes</a> in the <i>IBM WebSphere Application Server</i>\n         documentation.</p>"
                     }
                 },
                 "batchJobIdentifier": {
-                    "target": "com.amazonaws.m2#BatchJobIdentifier"
+                    "target": "com.amazonaws.m2#BatchJobIdentifier",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The unique identifier of this batch job.</p>"
+                    }
                 }
             },
             "traits": {
@@ -1294,7 +1320,13 @@
                 "scriptBatchJobIdentifier": {
                     "target": "com.amazonaws.m2#ScriptBatchJobIdentifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>A batch job identifier in which the batch job to run is identified by the script name.</p>"
+                        "smithy.api#documentation": "<p>A batch job identifier in which the batch job to run is identified by the script\n         name.</p>"
+                    }
+                },
+                "s3BatchJobIdentifier": {
+                    "target": "com.amazonaws.m2#S3BatchJobIdentifier",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Specifies an Amazon S3 location that identifies the batch jobs that you want to run. Use this identifier to run ad hoc batch jobs.</p>"
                     }
                 }
             },
@@ -1340,10 +1372,10 @@
         "com.amazonaws.m2#BatchParamKey": {
             "type": "string",
             "traits": {
-                "smithy.api#documentation": "Parameter key: the first character must be alphabetic.\nCan be of up to 8 alphanumeric characters.",
+                "smithy.api#documentation": "See https://www.ibm.com/docs/en/workload-automation/9.3.0?topic=zos-coding-variables-in-jcl\nto get details about limits for both keys and values:\n8 for keys (variable names), 44 for values (variable values)\nIn addition, keys will be only alphabetic characters and digits, without any space\nor special characters (dash, underscore, etc ...)\n\nParameter key: the first character must be alphabetic.\nCan be of up to 8 alphanumeric characters.",
                 "smithy.api#length": {
                     "min": 1,
-                    "max": 8
+                    "max": 32
                 },
                 "smithy.api#pattern": "^[A-Za-z][A-Za-z0-9]{1,7}$"
             }
@@ -1354,7 +1386,7 @@
                 "smithy.api#documentation": "Parameter value can be of up to 44 alphanumeric characters.",
                 "smithy.api#length": {
                     "min": 0,
-                    "max": 44
+                    "max": 80
                 }
             }
         },
@@ -1428,13 +1460,7 @@
             "members": {}
         },
         "com.amazonaws.m2#CapacityValue": {
-            "type": "integer",
-            "traits": {
-                "smithy.api#range": {
-                    "min": 1,
-                    "max": 100
-                }
-            }
+            "type": "integer"
         },
         "com.amazonaws.m2#ConflictException": {
             "type": "structure",
@@ -1502,7 +1528,7 @@
                     "s3:GetObject",
                     "s3:ListBucket"
                 ],
-                "smithy.api#documentation": "<p>Creates a new application with given parameters. Requires an existing runtime environment and\n         application definition file.</p>",
+                "smithy.api#documentation": "<p>Creates a new application with given parameters. Requires an existing runtime\n         environment and application definition file.</p>",
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/applications",
@@ -1558,6 +1584,12 @@
                     "target": "smithy.api#String",
                     "traits": {
                         "smithy.api#documentation": "<p>The identifier of a customer managed key.</p>"
+                    }
+                },
+                "roleArn": {
+                    "target": "com.amazonaws.m2#Arn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The Amazon Resource Name (ARN) that identifies a role that the application uses to access Amazon Web Services resources\n         that are not part of the application or are in a different Amazon Web Services account.</p>"
                     }
                 }
             }
@@ -1706,7 +1738,7 @@
                     "elasticloadbalancing:CreateTargetGroup",
                     "elasticloadbalancing:CreateListener"
                 ],
-                "smithy.api#documentation": "<p>Creates and starts a deployment to deploy an application into a runtime environment.</p>",
+                "smithy.api#documentation": "<p>Creates and starts a deployment to deploy an application into a runtime\n         environment.</p>",
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/applications/{applicationId}/deployments",
@@ -1721,7 +1753,7 @@
                 "environmentId": {
                     "target": "com.amazonaws.m2#Identifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The identifier of the runtime environment where you want to deploy this application.</p>",
+                        "smithy.api#documentation": "<p>The identifier of the runtime environment where you want to deploy this\n         application.</p>",
                         "smithy.api#required": {}
                     }
                 },
@@ -1895,7 +1927,7 @@
                 "preferredMaintenanceWindow": {
                     "target": "com.amazonaws.m2#String50",
                     "traits": {
-                        "smithy.api#documentation": "<p>Configures the maintenance window you want for the runtime environment. If you do not provide a\n         value, a random system-generated value will be assigned.</p>"
+                        "smithy.api#documentation": "<p>Configures the maintenance window that you want for the runtime environment. The maintenance window must have the format <code>ddd:hh24:mi-ddd:hh24:mi</code> and must be less than 24 hours. The following two examples are valid maintenance windows: <code>sun:23:45-mon:00:15</code> or <code>sat:01:00-sat:03:00</code>. </p>\n         <p>If you do not provide a value, a random system-generated value will be assigned.</p>"
                     }
                 },
                 "clientToken": {
@@ -2091,6 +2123,12 @@
                         "smithy.api#documentation": "<p>A summary of the data set import task.</p>",
                         "smithy.api#required": {}
                     }
+                },
+                "statusReason": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>If dataset import failed, the failure reason will show here.</p>"
+                    }
                 }
             },
             "traits": {
@@ -2163,6 +2201,10 @@
                     {
                         "value": "Completed",
                         "name": "COMPLETED"
+                    },
+                    {
+                        "value": "Failed",
+                        "name": "FAILED"
                     }
                 ]
             }
@@ -2187,6 +2229,18 @@
                     "traits": {
                         "smithy.api#documentation": "<p>The generation data group of the data set.</p>"
                     }
+                },
+                "po": {
+                    "target": "com.amazonaws.m2#PoDetailAttributes",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The details of a PO type data set.</p>"
+                    }
+                },
+                "ps": {
+                    "target": "com.amazonaws.m2#PsDetailAttributes",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The details of a PS type data set.</p>"
+                    }
                 }
             },
             "traits": {
@@ -2206,6 +2260,18 @@
                     "target": "com.amazonaws.m2#GdgAttributes",
                     "traits": {
                         "smithy.api#documentation": "<p>The generation data group of the data set.</p>"
+                    }
+                },
+                "po": {
+                    "target": "com.amazonaws.m2#PoAttributes",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The details of a PO type data set.</p>"
+                    }
+                },
+                "ps": {
+                    "target": "com.amazonaws.m2#PsAttributes",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The details of a PS type data set.</p>"
                     }
                 }
             },
@@ -2303,7 +2369,7 @@
             ],
             "traits": {
                 "aws.api#controlPlane": {},
-                "smithy.api#documentation": "<p>Deletes a specific application from the specific runtime environment where it was previously\n         deployed. You cannot delete a runtime environment using DeleteEnvironment if any application has\n         ever been deployed to it. This API removes the association of the application with the\n         runtime environment so you can delete the environment smoothly.</p>",
+                "smithy.api#documentation": "<p>Deletes a specific application from the specific runtime environment where it was\n         previously deployed. You cannot delete a runtime environment using DeleteEnvironment if any\n         application has ever been deployed to it. This API removes the association of the\n         application with the runtime environment so you can delete the environment smoothly.</p>",
                 "smithy.api#http": {
                     "method": "DELETE",
                     "uri": "/applications/{applicationId}/environment/{environmentId}",
@@ -2383,7 +2449,7 @@
                 "aws.iam#requiredActions": [
                     "elasticloadbalancing:DeleteLoadBalancer"
                 ],
-                "smithy.api#documentation": "<p>Deletes a specific runtime environment. The environment cannot contain deployed applications. If\n         it does, you must delete those applications before you delete the environment.</p>",
+                "smithy.api#documentation": "<p>Deletes a specific runtime environment. The environment cannot contain deployed\n         applications. If it does, you must delete those applications before you delete the\n         environment.</p>",
                 "smithy.api#http": {
                     "method": "DELETE",
                     "uri": "/environments/{environmentId}",
@@ -2452,6 +2518,10 @@
                     {
                         "value": "Failed",
                         "name": "FAILED"
+                    },
+                    {
+                        "value": "Updating Deployment",
+                        "name": "DEPLOY_UPDATE"
                     }
                 ]
             }
@@ -2663,16 +2733,16 @@
                         "name": "AVAILABLE"
                     },
                     {
+                        "value": "Updating",
+                        "name": "UPDATING"
+                    },
+                    {
                         "value": "Deleting",
                         "name": "DELETING"
                     },
                     {
                         "value": "Failed",
                         "name": "FAILED"
-                    },
-                    {
-                        "value": "Updating",
-                        "name": "UPDATING"
                     }
                 ]
             }
@@ -2738,13 +2808,30 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>Contains a subset of the possible runtime environment attributes. Used in the environment\n         list.</p>"
+                "smithy.api#documentation": "<p>Contains a subset of the possible runtime environment attributes. Used in the\n         environment list.</p>"
             }
         },
         "com.amazonaws.m2#EnvironmentSummaryList": {
             "type": "list",
             "member": {
                 "target": "com.amazonaws.m2#EnvironmentSummary"
+            }
+        },
+        "com.amazonaws.m2#ExecutionTimeoutException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p> Failed to connect to server, or didn’t receive response within expected time period.</p>",
+                "smithy.api#error": "server",
+                "smithy.api#httpError": 504,
+                "smithy.api#retryable": {}
             }
         },
         "com.amazonaws.m2#ExternalLocation": {
@@ -2978,7 +3065,7 @@
                 "logGroups": {
                     "target": "com.amazonaws.m2#LogGroupSummaries",
                     "traits": {
-                        "smithy.api#documentation": "<p>The list of log summaries. Each log summary includes the log type as well as the log\n         group identifier. These are CloudWatch logs. Amazon Web Services Mainframe Modernization pushes the application log to CloudWatch\n         under the customer's account.</p>"
+                        "smithy.api#documentation": "<p>The list of log summaries. Each log summary includes the log type as well as the log\n         group identifier. These are CloudWatch logs. Amazon Web Services Mainframe Modernization pushes the application log to CloudWatch under\n         the customer's account.</p>"
                     }
                 },
                 "creationTime": {
@@ -2991,7 +3078,7 @@
                 "lastStartTime": {
                     "target": "com.amazonaws.m2#Timestamp",
                     "traits": {
-                        "smithy.api#documentation": "<p>The timestamp when you last started the application. Null until the application runs for the first time.</p>"
+                        "smithy.api#documentation": "<p>The timestamp when you last started the application. Null until the application runs for\n         the first time.</p>"
                     }
                 },
                 "tags": {
@@ -3003,7 +3090,7 @@
                 "environmentId": {
                     "target": "com.amazonaws.m2#Identifier",
                     "traits": {
-                        "smithy.api#documentation": "<p>The identifier of the runtime environment where you want to deploy the application.</p>"
+                        "smithy.api#documentation": "<p>The identifier of the runtime environment where you want to deploy the\n         application.</p>"
                     }
                 },
                 "targetGroupArns": {
@@ -3040,6 +3127,12 @@
                     "target": "smithy.api#String",
                     "traits": {
                         "smithy.api#documentation": "<p>The identifier of a customer managed key.</p>"
+                    }
+                },
+                "roleArn": {
+                    "target": "com.amazonaws.m2#Arn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The Amazon Resource Name (ARN) of the role associated with the application.</p>"
                     }
                 }
             }
@@ -3280,11 +3373,14 @@
                 "returnCode": {
                     "target": "smithy.api#String",
                     "traits": {
-                        "smithy.api#documentation": "<p/>"
+                        "smithy.api#documentation": "<p>The batch job return code from either the Blu Age or Micro Focus runtime engines. For more\n         information, see <a href=\"https://www.ibm.com/docs/en/was/8.5.5?topic=model-batch-return-codes\">Batch return\n            codes</a> in the <i>IBM WebSphere Application Server</i>\n         documentation.</p>"
                     }
                 },
                 "batchJobIdentifier": {
-                    "target": "com.amazonaws.m2#BatchJobIdentifier"
+                    "target": "com.amazonaws.m2#BatchJobIdentifier",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The unique identifier of this batch job.</p>"
+                    }
                 }
             }
         },
@@ -3301,10 +3397,19 @@
                     "target": "com.amazonaws.m2#AccessDeniedException"
                 },
                 {
+                    "target": "com.amazonaws.m2#ConflictException"
+                },
+                {
+                    "target": "com.amazonaws.m2#ExecutionTimeoutException"
+                },
+                {
                     "target": "com.amazonaws.m2#InternalServerException"
                 },
                 {
                     "target": "com.amazonaws.m2#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazonaws.m2#ServiceUnavailableException"
                 },
                 {
                     "target": "com.amazonaws.m2#ThrottlingException"
@@ -3400,6 +3505,13 @@
                     "target": "com.amazonaws.m2#Timestamp",
                     "traits": {
                         "smithy.api#documentation": "<p>The last time the data set was referenced.</p>"
+                    }
+                },
+                "fileSize": {
+                    "target": "smithy.api#Long",
+                    "traits": {
+                        "smithy.api#default": null,
+                        "smithy.api#documentation": "<p>File size of the dataset.</p>"
                     }
                 }
             },
@@ -3762,7 +3874,7 @@
                 "actualCapacity": {
                     "target": "com.amazonaws.m2#CapacityValue",
                     "traits": {
-                        "smithy.api#documentation": "<p>The number of instances included in the runtime environment. A standalone runtime\n         environment has a maxiumum of one instance. Currently, a high availability runtime\n         environment has a maximum of two instances. </p>"
+                        "smithy.api#documentation": "<p>The number of instances included in the runtime environment. A standalone runtime\n         environment has a maximum of one instance. Currently, a high availability runtime\n         environment has a maximum of two instances. </p>"
                     }
                 },
                 "loadBalancerArn": {
@@ -3780,7 +3892,7 @@
                 "preferredMaintenanceWindow": {
                     "target": "com.amazonaws.m2#String50",
                     "traits": {
-                        "smithy.api#documentation": "<p>Configures the maintenance window you want for the runtime environment. If you do not provide a\n         value, a random system-generated value will be assigned.</p>"
+                        "smithy.api#documentation": "<p>The maintenance window for the runtime environment. If you don't\n         provide a value for the maintenance window, the service assigns a random value.</p>"
                     }
                 },
                 "pendingMaintenance": {
@@ -3797,13 +3909,59 @@
                 }
             }
         },
+        "com.amazonaws.m2#GetSignedBluinsightsUrl": {
+            "type": "operation",
+            "input": {
+                "target": "smithy.api#Unit"
+            },
+            "output": {
+                "target": "com.amazonaws.m2#GetSignedBluinsightsUrlResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazonaws.m2#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazonaws.m2#InternalServerException"
+                },
+                {
+                    "target": "com.amazonaws.m2#ThrottlingException"
+                }
+            ],
+            "traits": {
+                "aws.api#controlPlane": {},
+                "aws.iam#actionPermissionDescription": "Grants permission to create a signed Bluinsights url",
+                "smithy.api#documentation": "<p>Gets a single sign-on URL that can be used to connect to AWS Blu Insights.</p>",
+                "smithy.api#http": {
+                    "method": "GET",
+                    "uri": "/signed-bi-url",
+                    "code": 200
+                },
+                "smithy.api#readonly": {}
+            }
+        },
+        "com.amazonaws.m2#GetSignedBluinsightsUrlResponse": {
+            "type": "structure",
+            "members": {
+                "signedBiUrl": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Single sign-on AWS Blu Insights URL.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#output": {}
+            }
+        },
         "com.amazonaws.m2#HighAvailabilityConfig": {
             "type": "structure",
             "members": {
                 "desiredCapacity": {
                     "target": "com.amazonaws.m2#CapacityValue",
                     "traits": {
-                        "smithy.api#documentation": "<p>The number of instances in a high availability configuration.</p>",
+                        "smithy.api#documentation": "<p>The number of instances in a high availability configuration. The minimum possible value is 1 and the maximum is 100.</p>",
                         "smithy.api#required": {}
                     }
                 }
@@ -3859,6 +4017,26 @@
                 "smithy.api#error": "server",
                 "smithy.api#httpError": 500,
                 "smithy.api#retryable": {}
+            }
+        },
+        "com.amazonaws.m2#JobIdentifier": {
+            "type": "union",
+            "members": {
+                "fileName": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The name of the file that contains the batch job definition.</p>"
+                    }
+                },
+                "scriptName": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The name of the script that contains the batch job definition.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>Identifies a specific batch job.</p>"
             }
         },
         "com.amazonaws.m2#ListApplicationVersions": {
@@ -3979,7 +4157,7 @@
             ],
             "traits": {
                 "aws.api#controlPlane": {},
-                "smithy.api#documentation": "<p>Lists the applications associated with a specific Amazon Web Services account. You can provide the\n         unique identifier of a specific runtime environment in a query parameter to see all applications\n         associated with that environment.</p>",
+                "smithy.api#documentation": "<p>Lists the applications associated with a specific Amazon Web Services account. You can provide the\n         unique identifier of a specific runtime environment in a query parameter to see all\n         applications associated with that environment.</p>",
                 "smithy.api#http": {
                     "method": "GET",
                     "uri": "/applications",
@@ -4042,7 +4220,7 @@
                 "applications": {
                     "target": "com.amazonaws.m2#ApplicationSummaryList",
                     "traits": {
-                        "smithy.api#documentation": "<p>Returns a list of summary details for all the applications in a runtime environment.</p>",
+                        "smithy.api#documentation": "<p>Returns a list of summary details for all the applications in a runtime\n         environment.</p>",
                         "smithy.api#required": {}
                     }
                 },
@@ -4388,10 +4566,19 @@
                     "target": "com.amazonaws.m2#AccessDeniedException"
                 },
                 {
+                    "target": "com.amazonaws.m2#ConflictException"
+                },
+                {
+                    "target": "com.amazonaws.m2#ExecutionTimeoutException"
+                },
+                {
                     "target": "com.amazonaws.m2#InternalServerException"
                 },
                 {
                     "target": "com.amazonaws.m2#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazonaws.m2#ServiceUnavailableException"
                 },
                 {
                     "target": "com.amazonaws.m2#ThrottlingException"
@@ -4402,7 +4589,7 @@
             ],
             "traits": {
                 "aws.api#controlPlane": {},
-                "smithy.api#documentation": "<p>Lists the data sets imported for a specific application. In Amazon Web Services Mainframe Modernization, data sets are\n         associated with applications deployed on runtime environments. This is known as importing data\n         sets. Currently, Amazon Web Services Mainframe Modernization can import data sets into catalogs using <a href=\"https://docs.aws.amazon.com/m2/latest/APIReference/API_CreateDataSetImportTask.html\">CreateDataSetImportTask</a>.</p>",
+                "smithy.api#documentation": "<p>Lists the data sets imported for a specific application. In Amazon Web Services Mainframe Modernization, data sets are\n         associated with applications deployed on runtime environments. This is known as importing\n         data sets. Currently, Amazon Web Services Mainframe Modernization can import data sets into catalogs using <a href=\"https://docs.aws.amazon.com/m2/latest/APIReference/API_CreateDataSetImportTask.html\">CreateDataSetImportTask</a>.</p>",
                 "smithy.api#http": {
                     "method": "GET",
                     "uri": "/applications/{applicationId}/datasets",
@@ -4448,6 +4635,13 @@
                     "traits": {
                         "smithy.api#documentation": "<p>The prefix of the data set name, which you can use to filter the list of data\n         sets.</p>",
                         "smithy.api#httpQuery": "prefix"
+                    }
+                },
+                "nameFilter": {
+                    "target": "com.amazonaws.m2#String200",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Filter dataset name matching the specified pattern. Can use * and % as wild cards.</p>",
+                        "smithy.api#httpQuery": "nameFilter"
                     }
                 }
             },
@@ -4699,7 +4893,7 @@
                 "nextToken": {
                     "target": "com.amazonaws.m2#NextToken",
                     "traits": {
-                        "smithy.api#documentation": "<p>A pagination token to control the number of runtime environments displayed in the list.</p>",
+                        "smithy.api#documentation": "<p>A pagination token to control the number of runtime environments displayed in the\n         list.</p>",
                         "smithy.api#httpQuery": "nextToken"
                     }
                 },
@@ -4736,14 +4930,14 @@
                 "environments": {
                     "target": "com.amazonaws.m2#EnvironmentSummaryList",
                     "traits": {
-                        "smithy.api#documentation": "<p>Returns a list of summary details for all the runtime environments in your account. </p>",
+                        "smithy.api#documentation": "<p>Returns a list of summary details for all the runtime environments in your account.\n      </p>",
                         "smithy.api#required": {}
                     }
                 },
                 "nextToken": {
                     "target": "com.amazonaws.m2#NextToken",
                     "traits": {
-                        "smithy.api#documentation": "<p>A pagination token that's returned when the response doesn't contain all the\n         runtime environments.</p>"
+                        "smithy.api#documentation": "<p>A pagination token that's returned when the response doesn't contain all the runtime\n         environments.</p>"
                     }
                 }
             },
@@ -4845,7 +5039,7 @@
                 }
             },
             "traits": {
-                "smithy.api#documentation": "<p>A subset of the attributes that describe a log group. In CloudWatch a log group is a group of log\n         streams that share the same retention, monitoring, and access control settings.</p>"
+                "smithy.api#documentation": "<p>A subset of the attributes that describe a log group. In CloudWatch a log group is a group of\n         log streams that share the same retention, monitoring, and access control settings.</p>"
             }
         },
         "com.amazonaws.m2#MaintenanceSchedule": {
@@ -4873,7 +5067,7 @@
             "traits": {
                 "smithy.api#range": {
                     "min": 1,
-                    "max": 100
+                    "max": 2000
                 }
             }
         },
@@ -4901,6 +5095,56 @@
             },
             "traits": {
                 "smithy.api#documentation": "<p>The scheduled maintenance for a runtime engine.</p>"
+            }
+        },
+        "com.amazonaws.m2#PoAttributes": {
+            "type": "structure",
+            "members": {
+                "format": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The format of the data set records.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "encoding": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The character set encoding of the data set.</p>"
+                    }
+                },
+                "memberFileExtensions": {
+                    "target": "com.amazonaws.m2#String20List",
+                    "traits": {
+                        "smithy.api#documentation": "<p>An array containing one or more filename extensions, allowing you to specify which files\n         to be included as PDS member.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>The supported properties for a PO type data set.</p>"
+            }
+        },
+        "com.amazonaws.m2#PoDetailAttributes": {
+            "type": "structure",
+            "members": {
+                "format": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The format of the data set records.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "encoding": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The character set encoding of the data set.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>The supported properties for a PO type data set.</p>"
             }
         },
         "com.amazonaws.m2#PortList": {
@@ -4942,6 +5186,49 @@
             },
             "traits": {
                 "smithy.api#documentation": "<p>The primary key for a KSDS data set.</p>"
+            }
+        },
+        "com.amazonaws.m2#PsAttributes": {
+            "type": "structure",
+            "members": {
+                "format": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The format of the data set records.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "encoding": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The character set encoding of the data set.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>The supported properties for a PS type data set.</p>"
+            }
+        },
+        "com.amazonaws.m2#PsDetailAttributes": {
+            "type": "structure",
+            "members": {
+                "format": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The format of the data set records.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "encoding": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The character set encoding of the data set.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>The supported properties for a PS type data set.</p>"
             }
         },
         "com.amazonaws.m2#RecordLength": {
@@ -4994,6 +5281,34 @@
                 "smithy.api#documentation": "<p>The specified resource was not found.</p>",
                 "smithy.api#error": "client",
                 "smithy.api#httpError": 404
+            }
+        },
+        "com.amazonaws.m2#S3BatchJobIdentifier": {
+            "type": "structure",
+            "members": {
+                "bucket": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The Amazon S3 bucket that contains the batch job definitions.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "keyPrefix": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The key prefix that specifies the path to the folder in the S3 bucket that has the batch job definitions.</p>"
+                    }
+                },
+                "identifier": {
+                    "target": "com.amazonaws.m2#JobIdentifier",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Identifies the batch job definition. This identifier can also point to any batch job definition that already exists in the application or to one of the batch job definitions within the directory that is specified in <code>keyPrefix</code>.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>A batch job identifier in which the batch jobs to run are identified by an Amazon S3 location.</p>"
             }
         },
         "com.amazonaws.m2#ScriptBatchJobDefinition": {
@@ -5064,6 +5379,23 @@
                 "smithy.api#documentation": "<p>One or more quotas for Amazon Web Services Mainframe Modernization exceeds the limit.</p>",
                 "smithy.api#error": "client",
                 "smithy.api#httpError": 402
+            }
+        },
+        "com.amazonaws.m2#ServiceUnavailableException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>Server cannot process the request at the moment.</p>",
+                "smithy.api#error": "server",
+                "smithy.api#httpError": 503,
+                "smithy.api#retryable": {}
             }
         },
         "com.amazonaws.m2#StartApplication": {
@@ -5309,6 +5641,18 @@
                 "smithy.api#pattern": "^\\S{1,2000}$"
             }
         },
+        "com.amazonaws.m2#String20List": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.m2#String20"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 10
+                }
+            }
+        },
         "com.amazonaws.m2#String50": {
             "type": "string",
             "traits": {
@@ -5454,7 +5798,7 @@
                 "quotaCode": {
                     "target": "smithy.api#String",
                     "traits": {
-                        "smithy.api#documentation": "<p>The identifier of the throttled reuqest.</p>"
+                        "smithy.api#documentation": "<p>The identifier of the throttled request.</p>"
                     }
                 },
                 "retryAfterSeconds": {
@@ -5683,7 +6027,7 @@
                     "target": "com.amazonaws.m2#CapacityValue",
                     "traits": {
                         "smithy.api#default": null,
-                        "smithy.api#documentation": "<p>The desired capacity for the runtime environment to update.</p>"
+                        "smithy.api#documentation": "<p>The desired capacity for the runtime environment to update. The minimum possible value is 0 and the maximum is 100.</p>"
                     }
                 },
                 "instanceType": {
@@ -5701,14 +6045,21 @@
                 "preferredMaintenanceWindow": {
                     "target": "smithy.api#String",
                     "traits": {
-                        "smithy.api#documentation": "<p>Configures the maintenance window you want for the runtime environment. If you do not provide a\n         value, a random system-generated value will be assigned.</p>"
+                        "smithy.api#documentation": "<p>Configures the maintenance window that you want for the runtime environment. The maintenance window must have the format <code>ddd:hh24:mi-ddd:hh24:mi</code> and must be less than 24 hours. The following two examples are valid maintenance windows: <code>sun:23:45-mon:00:15</code> or <code>sat:01:00-sat:03:00</code>. </p>\n         <p>If you do not provide a value, a random system-generated value will be assigned.</p>"
                     }
                 },
                 "applyDuringMaintenanceWindow": {
                     "target": "com.amazonaws.m2#Boolean",
                     "traits": {
                         "smithy.api#default": false,
-                        "smithy.api#documentation": "<p>Indicates whether to update the runtime environment during the maintenance window. The default\n         is false. Currently, Amazon Web Services Mainframe Modernization accepts the <code>engineVersion</code> parameter only if\n            <code>applyDuringMaintenanceWindow</code> is true. If any parameter other than\n            <code>engineVersion</code> is provided in <code>UpdateEnvironmentRequest</code>, it will\n         fail if <code>applyDuringMaintenanceWindow</code> is set to true.</p>"
+                        "smithy.api#documentation": "<p>Indicates whether to update the runtime environment during the maintenance window. The\n         default is false. Currently, Amazon Web Services Mainframe Modernization accepts the <code>engineVersion</code> parameter\n         only if <code>applyDuringMaintenanceWindow</code> is true. If any parameter other than\n            <code>engineVersion</code> is provided in <code>UpdateEnvironmentRequest</code>, it will\n         fail if <code>applyDuringMaintenanceWindow</code> is set to true.</p>"
+                    }
+                },
+                "forceUpdate": {
+                    "target": "com.amazonaws.m2#Boolean",
+                    "traits": {
+                        "smithy.api#default": false,
+                        "smithy.api#documentation": "<p>Forces the updates on the environment. This option is needed if the applications in the environment are not stopped or if there are ongoing application-related activities in the environment.</p>\n         <p>If you use this option, be aware that it could lead to data corruption in the applications, and that you might need to perform repair and recovery procedures for the applications.</p>\n         <p>This option is not needed if the attribute being updated is <code>preferredMaintenanceWindow</code>.</p>"
                     }
                 }
             }

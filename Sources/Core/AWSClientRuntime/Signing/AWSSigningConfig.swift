@@ -4,12 +4,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
+
 import AwsCommonRuntimeKit
 import Foundation
 
 public struct AWSSigningConfig {
     public let credentials: AWSCredentials?
-    public let credentialsProvider: AWSCredentialsProvider?
+    public let credentialsProvider: CredentialsProviding?
     public let expiration: TimeInterval
     public let signedBodyHeader: AWSSignedBodyHeader
     public let signedBodyValue: AWSSignedBodyValue
@@ -23,7 +24,7 @@ public struct AWSSigningConfig {
 
     public init(
         credentials: AWSCredentials? = nil,
-        credentialsProvider: AWSCredentialsProvider? = nil,
+        credentialsProvider: CredentialsProviding? = nil,
         expiration: TimeInterval = 0,
         signedBodyHeader: AWSSignedBodyHeader = .none,
         signedBodyValue: AWSSignedBodyValue,
@@ -58,8 +59,8 @@ extension AWSSigningConfig {
             service: service,
             region: region,
             date: date,
-            credentials: try credentials?.toCRTType(),
-            credentialsProvider: credentialsProvider?.crtCredentialsProvider,
+            credentials: try credentials.map { try CRTCredentials(credentials: $0) },
+            credentialsProvider: try credentialsProvider?.getCRTCredentialsProvider(),
             expiration: expiration,
             signedBodyHeader: signedBodyHeader.toCRTType(),
             signedBodyValue: signedBodyValue.toCRTType(),

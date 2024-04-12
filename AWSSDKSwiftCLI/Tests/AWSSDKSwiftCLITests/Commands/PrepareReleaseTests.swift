@@ -41,10 +41,16 @@ class PrepareReleaseTests: CLITestCase {
         let versionFromFile = try! Version.fromFile("Package.version")
         XCTAssertEqual(versionFromFile, newVersion)
         
-        XCTAssertEqual(commands.count, 3)
+        let releaseManifest = try! ReleaseManifest.fromFile("release-manifest.json")
+        XCTAssertEqual(releaseManifest.name, "\(newVersion)")
+        XCTAssertEqual(releaseManifest.tagName, "\(newVersion)")
+        
+        XCTAssertEqual(commands.count, 5)
         XCTAssertTrue(commands[0].contains("git add"))
         XCTAssertTrue(commands[1].contains("git commit"))
         XCTAssertTrue(commands[2].contains("git tag"))
+        XCTAssertTrue(commands[3].contains("git log"))
+        XCTAssertTrue(commands[4].contains("git status"))
     }
     
     func testRunBailsEarlyIfThereAreNoChanges() {
@@ -98,7 +104,7 @@ class PrepareReleaseTests: CLITestCase {
         ProcessRunner.testRunner = runner
         let subject = PrepareRelease.mock(repoType: .awsSdkSwift)
         try! subject.stageFiles()
-        XCTAssertTrue(command.hasSuffix("git add Package.swift Package.version Core/Services Tests/Services"))
+        XCTAssertTrue(command.hasSuffix("git add Package.swift Package.version packageDependencies.plist Sources/Services Tests/Services Sources/Core/AWSSDKForSwift/Documentation.docc/AWSSDKForSwift.md"))
     }
     
     func testStageFilesForSmithySwift() {
@@ -119,11 +125,14 @@ extension PrepareRelease {
     static func mock(
         repoType: PrepareRelease.Repo = .awsSdkSwift,
         repoPath: String = ".",
+        sourceCodeArtifactId: String = "source-code-artifact-id",
         diffChecker: @escaping DiffChecker = { _,_ in true }
     ) -> Self {
         PrepareRelease(
             repoType: repoType,
+            repoOrg: .awslabs,
             repoPath: repoPath,
+            sourceCodeArtifactId: sourceCodeArtifactId,
             diffChecker: diffChecker
         )
     }

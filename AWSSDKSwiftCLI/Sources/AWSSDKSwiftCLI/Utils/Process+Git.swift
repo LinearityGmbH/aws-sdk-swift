@@ -7,6 +7,7 @@
 
 import Foundation
 import PackageDescription
+import struct ArgumentParser.ExitCode
 
 extension Process {
     /// A struct to create processes for executing git commands.
@@ -14,6 +15,11 @@ extension Process {
         /// Returns a process for executing git commands.
         private func gitProcess(_ args: [String]) -> Process {
             Process(["git"] + args)
+        }
+        
+        /// Returns a process for executing `git status`
+        func status() -> Process {
+            gitProcess(["status"])
         }
         
         /// Returns a process for executing `git diff <a>..<b> --quiet`
@@ -31,13 +37,13 @@ extension Process {
         /// Returns a process for executing `git commit -m <message>`
         /// This is used for committing changes with the provided message
         func commit(_ message: String) -> Process {
-            gitProcess(["commit", "-m", message.wrappedInQuotes()])
+            gitProcess(["commit", "-m", message])
         }
         
         /// Returns a process for executing `git tag -a <version> -m <message>`
         /// This is used for creating a tag with the provided version and message.
         func tag(_ version: Version, _ message: String) -> Process {
-            gitProcess(["tag", "-a", "\(version)", "-m", message.wrappedInQuotes()])
+            gitProcess(["tag", "-a", "\(version)", "-m", message])
         }
         
         /// Returns a process for executing `git update-index --refresh`
@@ -52,6 +58,12 @@ extension Process {
         func diffIndex() -> Process {
             gitProcess(["diff-index", "--quiet", "HEAD", "--"])
         }
+        
+        /// Returns a process for executing `git log <a>..<b> --pretty=format:<format>`
+        /// This is used returning the list of commits between two tags.
+        func log(_ a: String, _ b: String, format: String) -> Process {
+            gitProcess(["log", "\(a)...\(b)", "--pretty=format:\(format)"])
+        }
     }
     
     static var git: Git { Git() }
@@ -61,20 +73,31 @@ extension Process.Git {
     /// Returns true if the provided commits/branches/trees are different, otherwise returns false
     func diffHasChanges(_ a: String, _ b: String) throws -> Bool {
         let task = diff(a, b)
-        try _run(task)
-        task.waitUntilExit()
-        return task.terminationStatus != 0
+        do {
+            try _run(task)
+        } catch let exitCode as ExitCode where exitCode.rawValue == 1 {
+            return true
+        }
+        return false
     }
     
     /// Returns true if the local working copy has unstaged or uncommitted changes, otherwise returns false.
     func hasLocalChanges() throws -> Bool {
         let updateIndexTask = updateIndex()
-        try _run(updateIndexTask)
-        updateIndexTask.waitUntilExit()
+        try? _run(updateIndexTask)
         
-        let diffIndexTask = diffIndex()
-        try _run(diffIndexTask)
-        diffIndexTask.waitUntilExit()
-        return diffIndexTask.terminationStatus != 0
+        do {
+            let diffIndexTask = diffIndex()
+            try _run(diffIndexTask)
+        } catch let exitCode as ExitCode where exitCode.rawValue == 1 {
+            return true
+        }
+        return false
+    }
+    
+    func listOfCommitsBetween(_ a: String, _ b: String) throws -> [String] {
+        let log = log(a, b, format: "%s")
+        let result = try _runReturningStdOut(log)
+        return result?.components(separatedBy: .newlines) ?? []
     }
 }

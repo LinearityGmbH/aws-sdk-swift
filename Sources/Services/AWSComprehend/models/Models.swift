@@ -69,7 +69,7 @@ extension ComprehendClientTypes.AugmentedManifestsListItem: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -117,7 +117,7 @@ extension ComprehendClientTypes {
         /// The purpose of the data you've provided in the augmented manifest. You can either train or test this data. If you don't specify, the default is train. TRAIN - all of the documents in the manifest will be used for training. If no test documents are provided, Amazon Comprehend will automatically reserve a portion of the training documents for testing. TEST - all of the documents in the manifest will be used for testing.
         public var split: ComprehendClientTypes.Split?
 
-        public init (
+        public init(
             annotationDataS3Uri: Swift.String? = nil,
             attributeNames: [Swift.String]? = nil,
             documentType: ComprehendClientTypes.AugmentedManifestsDocumentTypeFormat? = nil,
@@ -158,8 +158,9 @@ extension BatchDetectDominantLanguageInput: Swift.Encodable {
     }
 }
 
-extension BatchDetectDominantLanguageInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension BatchDetectDominantLanguageInput {
+
+    static func urlPathProvider(_ value: BatchDetectDominantLanguageInput) -> Swift.String? {
         return "/"
     }
 }
@@ -169,7 +170,7 @@ public struct BatchDetectDominantLanguageInput: Swift.Equatable {
     /// This member is required.
     public var textList: [Swift.String]?
 
-    public init (
+    public init(
         textList: [Swift.String]? = nil
     )
     {
@@ -186,7 +187,7 @@ extension BatchDetectDominantLanguageInputBody: Swift.Decodable {
         case textList = "TextList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textListContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .textList)
         var textListDecoded0:[Swift.String]? = nil
@@ -221,7 +222,7 @@ extension ComprehendClientTypes.BatchDetectDominantLanguageItemResult: Swift.Cod
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let indexDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .index)
         index = indexDecoded
@@ -247,7 +248,7 @@ extension ComprehendClientTypes {
         /// One or more [DominantLanguage] objects describing the dominant languages in the document.
         public var languages: [ComprehendClientTypes.DominantLanguage]?
 
-        public init (
+        public init(
             index: Swift.Int? = nil,
             languages: [ComprehendClientTypes.DominantLanguage]? = nil
         )
@@ -259,46 +260,17 @@ extension ComprehendClientTypes {
 
 }
 
-extension BatchDetectDominantLanguageOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension BatchDetectDominantLanguageOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "BatchSizeLimitExceededException" : self = .batchSizeLimitExceededException(try BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum BatchDetectDominantLanguageOutputError: Swift.Error, Swift.Equatable {
-    case batchSizeLimitExceededException(BatchSizeLimitExceededException)
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension BatchDetectDominantLanguageOutputResponse: Swift.CustomDebugStringConvertible {
+extension BatchDetectDominantLanguageOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension BatchDetectDominantLanguageOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension BatchDetectDominantLanguageOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: BatchDetectDominantLanguageOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: BatchDetectDominantLanguageOutputBody = try responseDecoder.decode(responseBody: data)
             self.errorList = output.errorList
             self.resultList = output.resultList
         } else {
@@ -308,7 +280,7 @@ extension BatchDetectDominantLanguageOutputResponse: ClientRuntime.HttpResponseB
     }
 }
 
-public struct BatchDetectDominantLanguageOutputResponse: Swift.Equatable {
+public struct BatchDetectDominantLanguageOutput: Swift.Equatable {
     /// A list containing one object for each document that contained an error. The results are sorted in ascending order by the Index field and match the order of the documents in the input list. If there are no errors in the batch, the ErrorList is empty.
     /// This member is required.
     public var errorList: [ComprehendClientTypes.BatchItemError]?
@@ -316,7 +288,7 @@ public struct BatchDetectDominantLanguageOutputResponse: Swift.Equatable {
     /// This member is required.
     public var resultList: [ComprehendClientTypes.BatchDetectDominantLanguageItemResult]?
 
-    public init (
+    public init(
         errorList: [ComprehendClientTypes.BatchItemError]? = nil,
         resultList: [ComprehendClientTypes.BatchDetectDominantLanguageItemResult]? = nil
     )
@@ -326,18 +298,18 @@ public struct BatchDetectDominantLanguageOutputResponse: Swift.Equatable {
     }
 }
 
-struct BatchDetectDominantLanguageOutputResponseBody: Swift.Equatable {
+struct BatchDetectDominantLanguageOutputBody: Swift.Equatable {
     let resultList: [ComprehendClientTypes.BatchDetectDominantLanguageItemResult]?
     let errorList: [ComprehendClientTypes.BatchItemError]?
 }
 
-extension BatchDetectDominantLanguageOutputResponseBody: Swift.Decodable {
+extension BatchDetectDominantLanguageOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case errorList = "ErrorList"
         case resultList = "ResultList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resultListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.BatchDetectDominantLanguageItemResult?].self, forKey: .resultList)
         var resultListDecoded0:[ComprehendClientTypes.BatchDetectDominantLanguageItemResult]? = nil
@@ -361,6 +333,20 @@ extension BatchDetectDominantLanguageOutputResponseBody: Swift.Decodable {
             }
         }
         errorList = errorListDecoded0
+    }
+}
+
+enum BatchDetectDominantLanguageOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "BatchSizeLimitExceededException": return try await BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -389,8 +375,9 @@ extension BatchDetectEntitiesInput: Swift.Encodable {
     }
 }
 
-extension BatchDetectEntitiesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension BatchDetectEntitiesInput {
+
+    static func urlPathProvider(_ value: BatchDetectEntitiesInput) -> Swift.String? {
         return "/"
     }
 }
@@ -403,7 +390,7 @@ public struct BatchDetectEntitiesInput: Swift.Equatable {
     /// This member is required.
     public var textList: [Swift.String]?
 
-    public init (
+    public init(
         languageCode: ComprehendClientTypes.LanguageCode? = nil,
         textList: [Swift.String]? = nil
     )
@@ -424,7 +411,7 @@ extension BatchDetectEntitiesInputBody: Swift.Decodable {
         case textList = "TextList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textListContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .textList)
         var textListDecoded0:[Swift.String]? = nil
@@ -461,7 +448,7 @@ extension ComprehendClientTypes.BatchDetectEntitiesItemResult: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let indexDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .index)
         index = indexDecoded
@@ -487,7 +474,7 @@ extension ComprehendClientTypes {
         /// The zero-based index of the document in the input list.
         public var index: Swift.Int?
 
-        public init (
+        public init(
             entities: [ComprehendClientTypes.Entity]? = nil,
             index: Swift.Int? = nil
         )
@@ -499,48 +486,17 @@ extension ComprehendClientTypes {
 
 }
 
-extension BatchDetectEntitiesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension BatchDetectEntitiesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "BatchSizeLimitExceededException" : self = .batchSizeLimitExceededException(try BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum BatchDetectEntitiesOutputError: Swift.Error, Swift.Equatable {
-    case batchSizeLimitExceededException(BatchSizeLimitExceededException)
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension BatchDetectEntitiesOutputResponse: Swift.CustomDebugStringConvertible {
+extension BatchDetectEntitiesOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension BatchDetectEntitiesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension BatchDetectEntitiesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: BatchDetectEntitiesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: BatchDetectEntitiesOutputBody = try responseDecoder.decode(responseBody: data)
             self.errorList = output.errorList
             self.resultList = output.resultList
         } else {
@@ -550,7 +506,7 @@ extension BatchDetectEntitiesOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct BatchDetectEntitiesOutputResponse: Swift.Equatable {
+public struct BatchDetectEntitiesOutput: Swift.Equatable {
     /// A list containing one object for each document that contained an error. The results are sorted in ascending order by the Index field and match the order of the documents in the input list. If there are no errors in the batch, the ErrorList is empty.
     /// This member is required.
     public var errorList: [ComprehendClientTypes.BatchItemError]?
@@ -558,7 +514,7 @@ public struct BatchDetectEntitiesOutputResponse: Swift.Equatable {
     /// This member is required.
     public var resultList: [ComprehendClientTypes.BatchDetectEntitiesItemResult]?
 
-    public init (
+    public init(
         errorList: [ComprehendClientTypes.BatchItemError]? = nil,
         resultList: [ComprehendClientTypes.BatchDetectEntitiesItemResult]? = nil
     )
@@ -568,18 +524,18 @@ public struct BatchDetectEntitiesOutputResponse: Swift.Equatable {
     }
 }
 
-struct BatchDetectEntitiesOutputResponseBody: Swift.Equatable {
+struct BatchDetectEntitiesOutputBody: Swift.Equatable {
     let resultList: [ComprehendClientTypes.BatchDetectEntitiesItemResult]?
     let errorList: [ComprehendClientTypes.BatchItemError]?
 }
 
-extension BatchDetectEntitiesOutputResponseBody: Swift.Decodable {
+extension BatchDetectEntitiesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case errorList = "ErrorList"
         case resultList = "ResultList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resultListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.BatchDetectEntitiesItemResult?].self, forKey: .resultList)
         var resultListDecoded0:[ComprehendClientTypes.BatchDetectEntitiesItemResult]? = nil
@@ -603,6 +559,21 @@ extension BatchDetectEntitiesOutputResponseBody: Swift.Decodable {
             }
         }
         errorList = errorListDecoded0
+    }
+}
+
+enum BatchDetectEntitiesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "BatchSizeLimitExceededException": return try await BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -631,8 +602,9 @@ extension BatchDetectKeyPhrasesInput: Swift.Encodable {
     }
 }
 
-extension BatchDetectKeyPhrasesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension BatchDetectKeyPhrasesInput {
+
+    static func urlPathProvider(_ value: BatchDetectKeyPhrasesInput) -> Swift.String? {
         return "/"
     }
 }
@@ -645,7 +617,7 @@ public struct BatchDetectKeyPhrasesInput: Swift.Equatable {
     /// This member is required.
     public var textList: [Swift.String]?
 
-    public init (
+    public init(
         languageCode: ComprehendClientTypes.LanguageCode? = nil,
         textList: [Swift.String]? = nil
     )
@@ -666,7 +638,7 @@ extension BatchDetectKeyPhrasesInputBody: Swift.Decodable {
         case textList = "TextList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textListContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .textList)
         var textListDecoded0:[Swift.String]? = nil
@@ -703,7 +675,7 @@ extension ComprehendClientTypes.BatchDetectKeyPhrasesItemResult: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let indexDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .index)
         index = indexDecoded
@@ -729,7 +701,7 @@ extension ComprehendClientTypes {
         /// One or more [KeyPhrase] objects, one for each key phrase detected in the document.
         public var keyPhrases: [ComprehendClientTypes.KeyPhrase]?
 
-        public init (
+        public init(
             index: Swift.Int? = nil,
             keyPhrases: [ComprehendClientTypes.KeyPhrase]? = nil
         )
@@ -741,48 +713,17 @@ extension ComprehendClientTypes {
 
 }
 
-extension BatchDetectKeyPhrasesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension BatchDetectKeyPhrasesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "BatchSizeLimitExceededException" : self = .batchSizeLimitExceededException(try BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum BatchDetectKeyPhrasesOutputError: Swift.Error, Swift.Equatable {
-    case batchSizeLimitExceededException(BatchSizeLimitExceededException)
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension BatchDetectKeyPhrasesOutputResponse: Swift.CustomDebugStringConvertible {
+extension BatchDetectKeyPhrasesOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension BatchDetectKeyPhrasesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension BatchDetectKeyPhrasesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: BatchDetectKeyPhrasesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: BatchDetectKeyPhrasesOutputBody = try responseDecoder.decode(responseBody: data)
             self.errorList = output.errorList
             self.resultList = output.resultList
         } else {
@@ -792,7 +733,7 @@ extension BatchDetectKeyPhrasesOutputResponse: ClientRuntime.HttpResponseBinding
     }
 }
 
-public struct BatchDetectKeyPhrasesOutputResponse: Swift.Equatable {
+public struct BatchDetectKeyPhrasesOutput: Swift.Equatable {
     /// A list containing one object for each document that contained an error. The results are sorted in ascending order by the Index field and match the order of the documents in the input list. If there are no errors in the batch, the ErrorList is empty.
     /// This member is required.
     public var errorList: [ComprehendClientTypes.BatchItemError]?
@@ -800,7 +741,7 @@ public struct BatchDetectKeyPhrasesOutputResponse: Swift.Equatable {
     /// This member is required.
     public var resultList: [ComprehendClientTypes.BatchDetectKeyPhrasesItemResult]?
 
-    public init (
+    public init(
         errorList: [ComprehendClientTypes.BatchItemError]? = nil,
         resultList: [ComprehendClientTypes.BatchDetectKeyPhrasesItemResult]? = nil
     )
@@ -810,18 +751,18 @@ public struct BatchDetectKeyPhrasesOutputResponse: Swift.Equatable {
     }
 }
 
-struct BatchDetectKeyPhrasesOutputResponseBody: Swift.Equatable {
+struct BatchDetectKeyPhrasesOutputBody: Swift.Equatable {
     let resultList: [ComprehendClientTypes.BatchDetectKeyPhrasesItemResult]?
     let errorList: [ComprehendClientTypes.BatchItemError]?
 }
 
-extension BatchDetectKeyPhrasesOutputResponseBody: Swift.Decodable {
+extension BatchDetectKeyPhrasesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case errorList = "ErrorList"
         case resultList = "ResultList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resultListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.BatchDetectKeyPhrasesItemResult?].self, forKey: .resultList)
         var resultListDecoded0:[ComprehendClientTypes.BatchDetectKeyPhrasesItemResult]? = nil
@@ -845,6 +786,21 @@ extension BatchDetectKeyPhrasesOutputResponseBody: Swift.Decodable {
             }
         }
         errorList = errorListDecoded0
+    }
+}
+
+enum BatchDetectKeyPhrasesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "BatchSizeLimitExceededException": return try await BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -873,8 +829,9 @@ extension BatchDetectSentimentInput: Swift.Encodable {
     }
 }
 
-extension BatchDetectSentimentInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension BatchDetectSentimentInput {
+
+    static func urlPathProvider(_ value: BatchDetectSentimentInput) -> Swift.String? {
         return "/"
     }
 }
@@ -887,7 +844,7 @@ public struct BatchDetectSentimentInput: Swift.Equatable {
     /// This member is required.
     public var textList: [Swift.String]?
 
-    public init (
+    public init(
         languageCode: ComprehendClientTypes.LanguageCode? = nil,
         textList: [Swift.String]? = nil
     )
@@ -908,7 +865,7 @@ extension BatchDetectSentimentInputBody: Swift.Decodable {
         case textList = "TextList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textListContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .textList)
         var textListDecoded0:[Swift.String]? = nil
@@ -946,7 +903,7 @@ extension ComprehendClientTypes.BatchDetectSentimentItemResult: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let indexDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .index)
         index = indexDecoded
@@ -967,7 +924,7 @@ extension ComprehendClientTypes {
         /// The level of confidence that Amazon Comprehend has in the accuracy of its sentiment detection.
         public var sentimentScore: ComprehendClientTypes.SentimentScore?
 
-        public init (
+        public init(
             index: Swift.Int? = nil,
             sentiment: ComprehendClientTypes.SentimentType? = nil,
             sentimentScore: ComprehendClientTypes.SentimentScore? = nil
@@ -981,48 +938,17 @@ extension ComprehendClientTypes {
 
 }
 
-extension BatchDetectSentimentOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension BatchDetectSentimentOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "BatchSizeLimitExceededException" : self = .batchSizeLimitExceededException(try BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum BatchDetectSentimentOutputError: Swift.Error, Swift.Equatable {
-    case batchSizeLimitExceededException(BatchSizeLimitExceededException)
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension BatchDetectSentimentOutputResponse: Swift.CustomDebugStringConvertible {
+extension BatchDetectSentimentOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension BatchDetectSentimentOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension BatchDetectSentimentOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: BatchDetectSentimentOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: BatchDetectSentimentOutputBody = try responseDecoder.decode(responseBody: data)
             self.errorList = output.errorList
             self.resultList = output.resultList
         } else {
@@ -1032,7 +958,7 @@ extension BatchDetectSentimentOutputResponse: ClientRuntime.HttpResponseBinding 
     }
 }
 
-public struct BatchDetectSentimentOutputResponse: Swift.Equatable {
+public struct BatchDetectSentimentOutput: Swift.Equatable {
     /// A list containing one object for each document that contained an error. The results are sorted in ascending order by the Index field and match the order of the documents in the input list. If there are no errors in the batch, the ErrorList is empty.
     /// This member is required.
     public var errorList: [ComprehendClientTypes.BatchItemError]?
@@ -1040,7 +966,7 @@ public struct BatchDetectSentimentOutputResponse: Swift.Equatable {
     /// This member is required.
     public var resultList: [ComprehendClientTypes.BatchDetectSentimentItemResult]?
 
-    public init (
+    public init(
         errorList: [ComprehendClientTypes.BatchItemError]? = nil,
         resultList: [ComprehendClientTypes.BatchDetectSentimentItemResult]? = nil
     )
@@ -1050,18 +976,18 @@ public struct BatchDetectSentimentOutputResponse: Swift.Equatable {
     }
 }
 
-struct BatchDetectSentimentOutputResponseBody: Swift.Equatable {
+struct BatchDetectSentimentOutputBody: Swift.Equatable {
     let resultList: [ComprehendClientTypes.BatchDetectSentimentItemResult]?
     let errorList: [ComprehendClientTypes.BatchItemError]?
 }
 
-extension BatchDetectSentimentOutputResponseBody: Swift.Decodable {
+extension BatchDetectSentimentOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case errorList = "ErrorList"
         case resultList = "ResultList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resultListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.BatchDetectSentimentItemResult?].self, forKey: .resultList)
         var resultListDecoded0:[ComprehendClientTypes.BatchDetectSentimentItemResult]? = nil
@@ -1085,6 +1011,21 @@ extension BatchDetectSentimentOutputResponseBody: Swift.Decodable {
             }
         }
         errorList = errorListDecoded0
+    }
+}
+
+enum BatchDetectSentimentOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "BatchSizeLimitExceededException": return try await BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -1113,8 +1054,9 @@ extension BatchDetectSyntaxInput: Swift.Encodable {
     }
 }
 
-extension BatchDetectSyntaxInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension BatchDetectSyntaxInput {
+
+    static func urlPathProvider(_ value: BatchDetectSyntaxInput) -> Swift.String? {
         return "/"
     }
 }
@@ -1127,7 +1069,7 @@ public struct BatchDetectSyntaxInput: Swift.Equatable {
     /// This member is required.
     public var textList: [Swift.String]?
 
-    public init (
+    public init(
         languageCode: ComprehendClientTypes.SyntaxLanguageCode? = nil,
         textList: [Swift.String]? = nil
     )
@@ -1148,7 +1090,7 @@ extension BatchDetectSyntaxInputBody: Swift.Decodable {
         case textList = "TextList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textListContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .textList)
         var textListDecoded0:[Swift.String]? = nil
@@ -1185,7 +1127,7 @@ extension ComprehendClientTypes.BatchDetectSyntaxItemResult: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let indexDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .index)
         index = indexDecoded
@@ -1211,7 +1153,7 @@ extension ComprehendClientTypes {
         /// The syntax tokens for the words in the document, one token for each word.
         public var syntaxTokens: [ComprehendClientTypes.SyntaxToken]?
 
-        public init (
+        public init(
             index: Swift.Int? = nil,
             syntaxTokens: [ComprehendClientTypes.SyntaxToken]? = nil
         )
@@ -1223,48 +1165,17 @@ extension ComprehendClientTypes {
 
 }
 
-extension BatchDetectSyntaxOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension BatchDetectSyntaxOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "BatchSizeLimitExceededException" : self = .batchSizeLimitExceededException(try BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum BatchDetectSyntaxOutputError: Swift.Error, Swift.Equatable {
-    case batchSizeLimitExceededException(BatchSizeLimitExceededException)
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension BatchDetectSyntaxOutputResponse: Swift.CustomDebugStringConvertible {
+extension BatchDetectSyntaxOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension BatchDetectSyntaxOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension BatchDetectSyntaxOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: BatchDetectSyntaxOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: BatchDetectSyntaxOutputBody = try responseDecoder.decode(responseBody: data)
             self.errorList = output.errorList
             self.resultList = output.resultList
         } else {
@@ -1274,7 +1185,7 @@ extension BatchDetectSyntaxOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct BatchDetectSyntaxOutputResponse: Swift.Equatable {
+public struct BatchDetectSyntaxOutput: Swift.Equatable {
     /// A list containing one object for each document that contained an error. The results are sorted in ascending order by the Index field and match the order of the documents in the input list. If there are no errors in the batch, the ErrorList is empty.
     /// This member is required.
     public var errorList: [ComprehendClientTypes.BatchItemError]?
@@ -1282,7 +1193,7 @@ public struct BatchDetectSyntaxOutputResponse: Swift.Equatable {
     /// This member is required.
     public var resultList: [ComprehendClientTypes.BatchDetectSyntaxItemResult]?
 
-    public init (
+    public init(
         errorList: [ComprehendClientTypes.BatchItemError]? = nil,
         resultList: [ComprehendClientTypes.BatchDetectSyntaxItemResult]? = nil
     )
@@ -1292,18 +1203,18 @@ public struct BatchDetectSyntaxOutputResponse: Swift.Equatable {
     }
 }
 
-struct BatchDetectSyntaxOutputResponseBody: Swift.Equatable {
+struct BatchDetectSyntaxOutputBody: Swift.Equatable {
     let resultList: [ComprehendClientTypes.BatchDetectSyntaxItemResult]?
     let errorList: [ComprehendClientTypes.BatchItemError]?
 }
 
-extension BatchDetectSyntaxOutputResponseBody: Swift.Decodable {
+extension BatchDetectSyntaxOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case errorList = "ErrorList"
         case resultList = "ResultList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resultListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.BatchDetectSyntaxItemResult?].self, forKey: .resultList)
         var resultListDecoded0:[ComprehendClientTypes.BatchDetectSyntaxItemResult]? = nil
@@ -1327,6 +1238,21 @@ extension BatchDetectSyntaxOutputResponseBody: Swift.Decodable {
             }
         }
         errorList = errorListDecoded0
+    }
+}
+
+enum BatchDetectSyntaxOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "BatchSizeLimitExceededException": return try await BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -1355,8 +1281,9 @@ extension BatchDetectTargetedSentimentInput: Swift.Encodable {
     }
 }
 
-extension BatchDetectTargetedSentimentInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension BatchDetectTargetedSentimentInput {
+
+    static func urlPathProvider(_ value: BatchDetectTargetedSentimentInput) -> Swift.String? {
         return "/"
     }
 }
@@ -1369,7 +1296,7 @@ public struct BatchDetectTargetedSentimentInput: Swift.Equatable {
     /// This member is required.
     public var textList: [Swift.String]?
 
-    public init (
+    public init(
         languageCode: ComprehendClientTypes.LanguageCode? = nil,
         textList: [Swift.String]? = nil
     )
@@ -1390,7 +1317,7 @@ extension BatchDetectTargetedSentimentInputBody: Swift.Decodable {
         case textList = "TextList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textListContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .textList)
         var textListDecoded0:[Swift.String]? = nil
@@ -1427,7 +1354,7 @@ extension ComprehendClientTypes.BatchDetectTargetedSentimentItemResult: Swift.Co
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let indexDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .index)
         index = indexDecoded
@@ -1453,7 +1380,7 @@ extension ComprehendClientTypes {
         /// The zero-based index of this result in the input list.
         public var index: Swift.Int?
 
-        public init (
+        public init(
             entities: [ComprehendClientTypes.TargetedSentimentEntity]? = nil,
             index: Swift.Int? = nil
         )
@@ -1465,48 +1392,17 @@ extension ComprehendClientTypes {
 
 }
 
-extension BatchDetectTargetedSentimentOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension BatchDetectTargetedSentimentOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "BatchSizeLimitExceededException" : self = .batchSizeLimitExceededException(try BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum BatchDetectTargetedSentimentOutputError: Swift.Error, Swift.Equatable {
-    case batchSizeLimitExceededException(BatchSizeLimitExceededException)
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension BatchDetectTargetedSentimentOutputResponse: Swift.CustomDebugStringConvertible {
+extension BatchDetectTargetedSentimentOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension BatchDetectTargetedSentimentOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension BatchDetectTargetedSentimentOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: BatchDetectTargetedSentimentOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: BatchDetectTargetedSentimentOutputBody = try responseDecoder.decode(responseBody: data)
             self.errorList = output.errorList
             self.resultList = output.resultList
         } else {
@@ -1516,7 +1412,7 @@ extension BatchDetectTargetedSentimentOutputResponse: ClientRuntime.HttpResponse
     }
 }
 
-public struct BatchDetectTargetedSentimentOutputResponse: Swift.Equatable {
+public struct BatchDetectTargetedSentimentOutput: Swift.Equatable {
     /// List of errors that the operation can return.
     /// This member is required.
     public var errorList: [ComprehendClientTypes.BatchItemError]?
@@ -1524,7 +1420,7 @@ public struct BatchDetectTargetedSentimentOutputResponse: Swift.Equatable {
     /// This member is required.
     public var resultList: [ComprehendClientTypes.BatchDetectTargetedSentimentItemResult]?
 
-    public init (
+    public init(
         errorList: [ComprehendClientTypes.BatchItemError]? = nil,
         resultList: [ComprehendClientTypes.BatchDetectTargetedSentimentItemResult]? = nil
     )
@@ -1534,18 +1430,18 @@ public struct BatchDetectTargetedSentimentOutputResponse: Swift.Equatable {
     }
 }
 
-struct BatchDetectTargetedSentimentOutputResponseBody: Swift.Equatable {
+struct BatchDetectTargetedSentimentOutputBody: Swift.Equatable {
     let resultList: [ComprehendClientTypes.BatchDetectTargetedSentimentItemResult]?
     let errorList: [ComprehendClientTypes.BatchItemError]?
 }
 
-extension BatchDetectTargetedSentimentOutputResponseBody: Swift.Decodable {
+extension BatchDetectTargetedSentimentOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case errorList = "ErrorList"
         case resultList = "ResultList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resultListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.BatchDetectTargetedSentimentItemResult?].self, forKey: .resultList)
         var resultListDecoded0:[ComprehendClientTypes.BatchDetectTargetedSentimentItemResult]? = nil
@@ -1572,6 +1468,21 @@ extension BatchDetectTargetedSentimentOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum BatchDetectTargetedSentimentOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "BatchSizeLimitExceededException": return try await BatchSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension ComprehendClientTypes.BatchItemError: Swift.Codable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case errorCode = "ErrorCode"
@@ -1592,7 +1503,7 @@ extension ComprehendClientTypes.BatchItemError: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let indexDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .index)
         index = indexDecoded
@@ -1613,7 +1524,7 @@ extension ComprehendClientTypes {
         /// The zero-based index of the document in the input list.
         public var index: Swift.Int?
 
-        public init (
+        public init(
             errorCode: Swift.String? = nil,
             errorMessage: Swift.String? = nil,
             index: Swift.Int? = nil
@@ -1628,38 +1539,41 @@ extension ComprehendClientTypes {
 }
 
 extension BatchSizeLimitExceededException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: BatchSizeLimitExceededExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The number of documents in the request exceeds the limit of 25. Try your request again with fewer documents.
-public struct BatchSizeLimitExceededException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct BatchSizeLimitExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "BatchSizeLimitExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -1672,7 +1586,7 @@ extension BatchSizeLimitExceededExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -1714,7 +1628,7 @@ extension ComprehendClientTypes.Block: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let idDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .id)
         id = idDecoded
@@ -1760,7 +1674,7 @@ extension ComprehendClientTypes {
         /// The word or line of text extracted from the block.
         public var text: Swift.String?
 
-        public init (
+        public init(
             blockType: ComprehendClientTypes.BlockType? = nil,
             geometry: ComprehendClientTypes.Geometry? = nil,
             id: Swift.String? = nil,
@@ -1807,7 +1721,7 @@ extension ComprehendClientTypes.BlockReference: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let blockIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .blockId)
         blockId = blockIdDecoded
@@ -1841,7 +1755,7 @@ extension ComprehendClientTypes {
         /// Offset of the end of the block within its parent block.
         public var endOffset: Swift.Int?
 
-        public init (
+        public init(
             beginOffset: Swift.Int? = nil,
             blockId: Swift.String? = nil,
             childBlocks: [ComprehendClientTypes.ChildBlock]? = nil,
@@ -1913,7 +1827,7 @@ extension ComprehendClientTypes.BoundingBox: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let heightDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .height)
         height = heightDecoded
@@ -1938,7 +1852,7 @@ extension ComprehendClientTypes {
         /// The width of the bounding box as a ratio of the overall document page width.
         public var width: Swift.Float?
 
-        public init (
+        public init(
             height: Swift.Float? = nil,
             `left`: Swift.Float? = nil,
             top: Swift.Float? = nil,
@@ -1974,7 +1888,7 @@ extension ComprehendClientTypes.ChildBlock: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let childBlockIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .childBlockId)
         childBlockId = childBlockIdDecoded
@@ -1995,7 +1909,7 @@ extension ComprehendClientTypes {
         /// Offset of the end of the child block within its parent block.
         public var endOffset: Swift.Int?
 
-        public init (
+        public init(
             beginOffset: Swift.Int? = nil,
             childBlockId: Swift.String? = nil,
             endOffset: Swift.Int? = nil
@@ -2049,7 +1963,7 @@ extension ComprehendClientTypes.ClassifierEvaluationMetrics: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let accuracyDecoded = try containerValues.decodeIfPresent(Swift.Double.self, forKey: .accuracy)
         accuracy = accuracyDecoded
@@ -2090,7 +2004,7 @@ extension ComprehendClientTypes {
         /// A measure of how complete the classifier results are for the test data. High recall means that the classifier returned most of the relevant results.
         public var recall: Swift.Double?
 
-        public init (
+        public init(
             accuracy: Swift.Double? = nil,
             f1Score: Swift.Double? = nil,
             hammingLoss: Swift.Double? = nil,
@@ -2138,7 +2052,7 @@ extension ComprehendClientTypes.ClassifierMetadata: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let numberOfLabelsDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .numberOfLabels)
         numberOfLabels = numberOfLabelsDecoded
@@ -2169,7 +2083,7 @@ extension ComprehendClientTypes {
         /// The number of documents in the input data that were used to train the classifier. Typically this is 80 to 90 percent of the input documents.
         public var numberOfTrainedDocuments: Swift.Int?
 
-        public init (
+        public init(
             evaluationMetrics: ComprehendClientTypes.ClassifierEvaluationMetrics? = nil,
             numberOfLabels: Swift.Int? = nil,
             numberOfTestDocuments: Swift.Int? = nil,
@@ -2215,24 +2129,25 @@ extension ClassifyDocumentInput: Swift.Encodable {
     }
 }
 
-extension ClassifyDocumentInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ClassifyDocumentInput {
+
+    static func urlPathProvider(_ value: ClassifyDocumentInput) -> Swift.String? {
         return "/"
     }
 }
 
 public struct ClassifyDocumentInput: Swift.Equatable {
-    /// Use the Bytes parameter to input a text, PDF, Word or image file. You can also use the Bytes parameter to input an Amazon Textract DetectDocumentText or AnalyzeDocument output file. Provide the input document as a sequence of base64-encoded bytes. If your code uses an Amazon Web Services SDK to classify documents, the SDK may encode the document file bytes for you. The maximum length of this field depends on the input document type. For details, see [ Inputs for real-time custom analysis](https://docs.aws.amazon.com/comprehend/latest/dg/idp-inputs-sync.html) in the Comprehend Developer Guide. If you use the Bytes parameter, do not use the Text parameter.
+    /// Use the Bytes parameter to input a text, PDF, Word or image file. When you classify a document using a custom model, you can also use the Bytes parameter to input an Amazon Textract DetectDocumentText or AnalyzeDocument output file. To classify a document using the prompt safety classifier, use the Text parameter for input. Provide the input document as a sequence of base64-encoded bytes. If your code uses an Amazon Web Services SDK to classify documents, the SDK may encode the document file bytes for you. The maximum length of this field depends on the input document type. For details, see [ Inputs for real-time custom analysis](https://docs.aws.amazon.com/comprehend/latest/dg/idp-inputs-sync.html) in the Comprehend Developer Guide. If you use the Bytes parameter, do not use the Text parameter.
     public var bytes: ClientRuntime.Data?
     /// Provides configuration parameters to override the default actions for extracting text from PDF documents and image files.
     public var documentReaderConfig: ComprehendClientTypes.DocumentReaderConfig?
-    /// The Amazon Resource Number (ARN) of the endpoint. For information about endpoints, see [Managing endpoints](https://docs.aws.amazon.com/comprehend/latest/dg/manage-endpoints.html).
+    /// The Amazon Resource Number (ARN) of the endpoint. For prompt safety classification, Amazon Comprehend provides the endpoint ARN. For more information about prompt safety classifiers, see [Prompt safety classification](https://docs.aws.amazon.com/comprehend/latest/dg/trust-safety.html#prompt-classification) in the Amazon Comprehend Developer Guide For custom classification, you create an endpoint for your custom model. For more information, see [Using Amazon Comprehend endpoints](https://docs.aws.amazon.com/comprehend/latest/dg/using-endpoints.html).
     /// This member is required.
     public var endpointArn: Swift.String?
     /// The document text to be analyzed. If you enter text using this parameter, do not use the Bytes parameter.
     public var text: Swift.String?
 
-    public init (
+    public init(
         bytes: ClientRuntime.Data? = nil,
         documentReaderConfig: ComprehendClientTypes.DocumentReaderConfig? = nil,
         endpointArn: Swift.String? = nil,
@@ -2261,7 +2176,7 @@ extension ClassifyDocumentInputBody: Swift.Decodable {
         case text = "Text"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -2274,63 +2189,36 @@ extension ClassifyDocumentInputBody: Swift.Decodable {
     }
 }
 
-extension ClassifyDocumentOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ClassifyDocumentOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceUnavailableException" : self = .resourceUnavailableException(try ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ClassifyDocumentOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceUnavailableException(ResourceUnavailableException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ClassifyDocumentOutputResponse: Swift.CustomDebugStringConvertible {
+extension ClassifyDocumentOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension ClassifyDocumentOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ClassifyDocumentOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ClassifyDocumentOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ClassifyDocumentOutputBody = try responseDecoder.decode(responseBody: data)
             self.classes = output.classes
             self.documentMetadata = output.documentMetadata
             self.documentType = output.documentType
             self.errors = output.errors
             self.labels = output.labels
+            self.warnings = output.warnings
         } else {
             self.classes = nil
             self.documentMetadata = nil
             self.documentType = nil
             self.errors = nil
             self.labels = nil
+            self.warnings = nil
         }
     }
 }
 
-public struct ClassifyDocumentOutputResponse: Swift.Equatable {
-    /// The classes used by the document being analyzed. These are used for multi-class trained models. Individual classes are mutually exclusive and each document is expected to have only a single class assigned to it. For example, an animal can be a dog or a cat, but not both at the same time.
+public struct ClassifyDocumentOutput: Swift.Equatable {
+    /// The classes used by the document being analyzed. These are used for models trained in multi-class mode. Individual classes are mutually exclusive and each document is expected to have only a single class assigned to it. For example, an animal can be a dog or a cat, but not both at the same time. For prompt safety classification, the response includes only two classes (SAFE_PROMPT and UNSAFE_PROMPT), along with a confidence score for each class. The value range of the score is zero to one, where one is the highest confidence.
     public var classes: [ComprehendClientTypes.DocumentClass]?
     /// Extraction information about the document. This field is present in the response only if your request includes the Byte parameter.
     public var documentMetadata: ComprehendClientTypes.DocumentMetadata?
@@ -2338,15 +2226,18 @@ public struct ClassifyDocumentOutputResponse: Swift.Equatable {
     public var documentType: [ComprehendClientTypes.DocumentTypeListItem]?
     /// Page-level errors that the system detected while processing the input document. The field is empty if the system encountered no errors.
     public var errors: [ComprehendClientTypes.ErrorsListItem]?
-    /// The labels used the document being analyzed. These are used for multi-label trained models. Individual labels represent different categories that are related in some manner and are not mutually exclusive. For example, a movie can be just an action movie, or it can be an action movie, a science fiction movie, and a comedy, all at the same time.
+    /// The labels used in the document being analyzed. These are used for multi-label trained models. Individual labels represent different categories that are related in some manner and are not mutually exclusive. For example, a movie can be just an action movie, or it can be an action movie, a science fiction movie, and a comedy, all at the same time.
     public var labels: [ComprehendClientTypes.DocumentLabel]?
+    /// Warnings detected while processing the input document. The response includes a warning if there is a mismatch between the input document type and the model type associated with the endpoint that you specified. The response can also include warnings for individual pages that have a mismatch. The field is empty if the system generated no warnings.
+    public var warnings: [ComprehendClientTypes.WarningsListItem]?
 
-    public init (
+    public init(
         classes: [ComprehendClientTypes.DocumentClass]? = nil,
         documentMetadata: ComprehendClientTypes.DocumentMetadata? = nil,
         documentType: [ComprehendClientTypes.DocumentTypeListItem]? = nil,
         errors: [ComprehendClientTypes.ErrorsListItem]? = nil,
-        labels: [ComprehendClientTypes.DocumentLabel]? = nil
+        labels: [ComprehendClientTypes.DocumentLabel]? = nil,
+        warnings: [ComprehendClientTypes.WarningsListItem]? = nil
     )
     {
         self.classes = classes
@@ -2354,27 +2245,30 @@ public struct ClassifyDocumentOutputResponse: Swift.Equatable {
         self.documentType = documentType
         self.errors = errors
         self.labels = labels
+        self.warnings = warnings
     }
 }
 
-struct ClassifyDocumentOutputResponseBody: Swift.Equatable {
+struct ClassifyDocumentOutputBody: Swift.Equatable {
     let classes: [ComprehendClientTypes.DocumentClass]?
     let labels: [ComprehendClientTypes.DocumentLabel]?
     let documentMetadata: ComprehendClientTypes.DocumentMetadata?
     let documentType: [ComprehendClientTypes.DocumentTypeListItem]?
     let errors: [ComprehendClientTypes.ErrorsListItem]?
+    let warnings: [ComprehendClientTypes.WarningsListItem]?
 }
 
-extension ClassifyDocumentOutputResponseBody: Swift.Decodable {
+extension ClassifyDocumentOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case classes = "Classes"
         case documentMetadata = "DocumentMetadata"
         case documentType = "DocumentType"
         case errors = "Errors"
         case labels = "Labels"
+        case warnings = "Warnings"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let classesContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.DocumentClass?].self, forKey: .classes)
         var classesDecoded0:[ComprehendClientTypes.DocumentClass]? = nil
@@ -2422,42 +2316,72 @@ extension ClassifyDocumentOutputResponseBody: Swift.Decodable {
             }
         }
         errors = errorsDecoded0
+        let warningsContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.WarningsListItem?].self, forKey: .warnings)
+        var warningsDecoded0:[ComprehendClientTypes.WarningsListItem]? = nil
+        if let warningsContainer = warningsContainer {
+            warningsDecoded0 = [ComprehendClientTypes.WarningsListItem]()
+            for structure0 in warningsContainer {
+                if let structure0 = structure0 {
+                    warningsDecoded0?.append(structure0)
+                }
+            }
+        }
+        warnings = warningsDecoded0
     }
 }
 
-extension ConcurrentModificationException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
-            let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ConcurrentModificationExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
-        } else {
-            self.message = nil
+enum ClassifyDocumentOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceUnavailableException": return try await ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+    }
+}
+
+public enum ComprehendClientTypes {}
+
+extension ConcurrentModificationException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: ConcurrentModificationExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.message = output.message
+        } else {
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Concurrent modification of the tags associated with an Amazon Comprehend resource is not supported.
-public struct ConcurrentModificationException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct ConcurrentModificationException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ConcurrentModificationException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -2470,7 +2394,7 @@ extension ConcurrentModificationExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -2494,21 +2418,22 @@ extension ContainsPiiEntitiesInput: Swift.Encodable {
     }
 }
 
-extension ContainsPiiEntitiesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ContainsPiiEntitiesInput {
+
+    static func urlPathProvider(_ value: ContainsPiiEntitiesInput) -> Swift.String? {
         return "/"
     }
 }
 
 public struct ContainsPiiEntitiesInput: Swift.Equatable {
-    /// The language of the input documents. Currently, English is the only valid language.
+    /// The language of the input documents.
     /// This member is required.
     public var languageCode: ComprehendClientTypes.LanguageCode?
     /// A UTF-8 text string. The maximum string size is 100 KB.
     /// This member is required.
     public var text: Swift.String?
 
-    public init (
+    public init(
         languageCode: ComprehendClientTypes.LanguageCode? = nil,
         text: Swift.String? = nil
     )
@@ -2529,7 +2454,7 @@ extension ContainsPiiEntitiesInputBody: Swift.Decodable {
         case text = "Text"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -2538,40 +2463,11 @@ extension ContainsPiiEntitiesInputBody: Swift.Decodable {
     }
 }
 
-extension ContainsPiiEntitiesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ContainsPiiEntitiesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ContainsPiiEntitiesOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ContainsPiiEntitiesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ContainsPiiEntitiesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ContainsPiiEntitiesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ContainsPiiEntitiesOutputBody = try responseDecoder.decode(responseBody: data)
             self.labels = output.labels
         } else {
             self.labels = nil
@@ -2579,11 +2475,11 @@ extension ContainsPiiEntitiesOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct ContainsPiiEntitiesOutputResponse: Swift.Equatable {
+public struct ContainsPiiEntitiesOutput: Swift.Equatable {
     /// The labels used in the document being analyzed. Individual labels represent personally identifiable information (PII) entity types.
     public var labels: [ComprehendClientTypes.EntityLabel]?
 
-    public init (
+    public init(
         labels: [ComprehendClientTypes.EntityLabel]? = nil
     )
     {
@@ -2591,16 +2487,16 @@ public struct ContainsPiiEntitiesOutputResponse: Swift.Equatable {
     }
 }
 
-struct ContainsPiiEntitiesOutputResponseBody: Swift.Equatable {
+struct ContainsPiiEntitiesOutputBody: Swift.Equatable {
     let labels: [ComprehendClientTypes.EntityLabel]?
 }
 
-extension ContainsPiiEntitiesOutputResponseBody: Swift.Decodable {
+extension ContainsPiiEntitiesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case labels = "Labels"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let labelsContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.EntityLabel?].self, forKey: .labels)
         var labelsDecoded0:[ComprehendClientTypes.EntityLabel]? = nil
@@ -2613,6 +2509,20 @@ extension ContainsPiiEntitiesOutputResponseBody: Swift.Decodable {
             }
         }
         labels = labelsDecoded0
+    }
+}
+
+enum ContainsPiiEntitiesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -2656,8 +2566,9 @@ extension CreateDatasetInput: Swift.Encodable {
     }
 }
 
-extension CreateDatasetInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension CreateDatasetInput {
+
+    static func urlPathProvider(_ value: CreateDatasetInput) -> Swift.String? {
         return "/"
     }
 }
@@ -2681,7 +2592,7 @@ public struct CreateDatasetInput: Swift.Equatable {
     /// Tags for the dataset.
     public var tags: [ComprehendClientTypes.Tag]?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         datasetName: Swift.String? = nil,
         datasetType: ComprehendClientTypes.DatasetType? = nil,
@@ -2722,7 +2633,7 @@ extension CreateDatasetInputBody: Swift.Decodable {
         case tags = "Tags"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
@@ -2750,46 +2661,11 @@ extension CreateDatasetInputBody: Swift.Decodable {
     }
 }
 
-extension CreateDatasetOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension CreateDatasetOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceLimitExceededException" : self = .resourceLimitExceededException(try ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum CreateDatasetOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceLimitExceededException(ResourceLimitExceededException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension CreateDatasetOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension CreateDatasetOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: CreateDatasetOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: CreateDatasetOutputBody = try responseDecoder.decode(responseBody: data)
             self.datasetArn = output.datasetArn
         } else {
             self.datasetArn = nil
@@ -2797,11 +2673,11 @@ extension CreateDatasetOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct CreateDatasetOutputResponse: Swift.Equatable {
+public struct CreateDatasetOutput: Swift.Equatable {
     /// The ARN of the dataset.
     public var datasetArn: Swift.String?
 
-    public init (
+    public init(
         datasetArn: Swift.String? = nil
     )
     {
@@ -2809,19 +2685,36 @@ public struct CreateDatasetOutputResponse: Swift.Equatable {
     }
 }
 
-struct CreateDatasetOutputResponseBody: Swift.Equatable {
+struct CreateDatasetOutputBody: Swift.Equatable {
     let datasetArn: Swift.String?
 }
 
-extension CreateDatasetOutputResponseBody: Swift.Decodable {
+extension CreateDatasetOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case datasetArn = "DatasetArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let datasetArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .datasetArn)
         datasetArn = datasetArnDecoded
+    }
+}
+
+enum CreateDatasetOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceLimitExceededException": return try await ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -2889,8 +2782,9 @@ extension CreateDocumentClassifierInput: Swift.Encodable {
     }
 }
 
-extension CreateDocumentClassifierInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension CreateDocumentClassifierInput {
+
+    static func urlPathProvider(_ value: CreateDocumentClassifierInput) -> Swift.String? {
         return "/"
     }
 }
@@ -2910,7 +2804,7 @@ public struct CreateDocumentClassifierInput: Swift.Equatable {
     /// The language of the input documents. You can specify any of the languages supported by Amazon Comprehend. All documents must be in the same language.
     /// This member is required.
     public var languageCode: ComprehendClientTypes.LanguageCode?
-    /// Indicates the mode in which the classifier will be trained. The classifier can be trained in multi-class mode, which identifies one and only one class for each document, or multi-label mode, which identifies one or more labels for each document. In multi-label mode, multiple labels for an individual document are separated by a delimiter. The default delimiter between labels is a pipe (|).
+    /// Indicates the mode in which the classifier will be trained. The classifier can be trained in multi-class (single-label) mode or multi-label mode. Multi-class mode identifies a single class label for each document and multi-label mode identifies one or more class labels for each document. Multiple labels for an individual document are separated by a delimiter. The default delimiter between labels is a pipe (|).
     public var mode: ComprehendClientTypes.DocumentClassifierMode?
     /// ID for the KMS key that Amazon Comprehend uses to encrypt trained custom models. The ModelKmsKeyId can be either of the following formats:
     ///
@@ -2920,7 +2814,7 @@ public struct CreateDocumentClassifierInput: Swift.Equatable {
     public var modelKmsKeyId: Swift.String?
     /// The resource-based policy to attach to your custom document classifier model. You can use this policy to allow another Amazon Web Services account to import your custom model. Provide your policy as a JSON body that you enter as a UTF-8 encoded string without line breaks. To provide valid JSON, enclose the attribute names and values in double quotes. If the JSON body is also enclosed in double quotes, then you must escape the double quotes that are inside the policy: "{\"attribute\": \"value\", \"attribute\": [\"value\"]}" To avoid escaping quotes, you can use single quotes to enclose the policy and double quotes to enclose the JSON names and values: '{"attribute": "value", "attribute": ["value"]}'
     public var modelPolicy: Swift.String?
-    /// Enables the addition of output results configuration parameters for custom classifier jobs.
+    /// Specifies the location for the output files from a custom classifier job. This parameter is required for a request that creates a native document model.
     public var outputDataConfig: ComprehendClientTypes.DocumentClassifierOutputDataConfig?
     /// Tags to associate with the document classifier. A tag is a key-value pair that adds as a metadata to a resource used by Amazon Comprehend. For example, a tag with "Sales" as the key might be added to a resource to indicate its use by the sales department.
     public var tags: [ComprehendClientTypes.Tag]?
@@ -2935,7 +2829,7 @@ public struct CreateDocumentClassifierInput: Swift.Equatable {
     /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for your custom classifier. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
     public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         documentClassifierName: Swift.String? = nil,
@@ -3000,7 +2894,7 @@ extension CreateDocumentClassifierInputBody: Swift.Decodable {
         case vpcConfig = "VpcConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassifierNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .documentClassifierName)
         documentClassifierName = documentClassifierNameDecoded
@@ -3040,48 +2934,11 @@ extension CreateDocumentClassifierInputBody: Swift.Decodable {
     }
 }
 
-extension CreateDocumentClassifierOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension CreateDocumentClassifierOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceLimitExceededException" : self = .resourceLimitExceededException(try ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum CreateDocumentClassifierOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceLimitExceededException(ResourceLimitExceededException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension CreateDocumentClassifierOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension CreateDocumentClassifierOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: CreateDocumentClassifierOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: CreateDocumentClassifierOutputBody = try responseDecoder.decode(responseBody: data)
             self.documentClassifierArn = output.documentClassifierArn
         } else {
             self.documentClassifierArn = nil
@@ -3089,11 +2946,11 @@ extension CreateDocumentClassifierOutputResponse: ClientRuntime.HttpResponseBind
     }
 }
 
-public struct CreateDocumentClassifierOutputResponse: Swift.Equatable {
+public struct CreateDocumentClassifierOutput: Swift.Equatable {
     /// The Amazon Resource Name (ARN) that identifies the document classifier.
     public var documentClassifierArn: Swift.String?
 
-    public init (
+    public init(
         documentClassifierArn: Swift.String? = nil
     )
     {
@@ -3101,19 +2958,37 @@ public struct CreateDocumentClassifierOutputResponse: Swift.Equatable {
     }
 }
 
-struct CreateDocumentClassifierOutputResponseBody: Swift.Equatable {
+struct CreateDocumentClassifierOutputBody: Swift.Equatable {
     let documentClassifierArn: Swift.String?
 }
 
-extension CreateDocumentClassifierOutputResponseBody: Swift.Decodable {
+extension CreateDocumentClassifierOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case documentClassifierArn = "DocumentClassifierArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassifierArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .documentClassifierArn)
         documentClassifierArn = documentClassifierArnDecoded
+    }
+}
+
+enum CreateDocumentClassifierOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceLimitExceededException": return try await ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -3157,8 +3032,9 @@ extension CreateEndpointInput: Swift.Encodable {
     }
 }
 
-extension CreateEndpointInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension CreateEndpointInput {
+
+    static func urlPathProvider(_ value: CreateEndpointInput) -> Swift.String? {
         return "/"
     }
 }
@@ -3181,7 +3057,7 @@ public struct CreateEndpointInput: Swift.Equatable {
     /// Tags to associate with the endpoint. A tag is a key-value pair that adds metadata to the endpoint. For example, a tag with "Sales" as the key might be added to an endpoint to indicate its use by the sales department.
     public var tags: [ComprehendClientTypes.Tag]?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         desiredInferenceUnits: Swift.Int? = nil,
@@ -3222,7 +3098,7 @@ extension CreateEndpointInputBody: Swift.Decodable {
         case tags = "Tags"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let endpointNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .endpointName)
         endpointName = endpointNameDecoded
@@ -3250,48 +3126,11 @@ extension CreateEndpointInputBody: Swift.Decodable {
     }
 }
 
-extension CreateEndpointOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension CreateEndpointOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceLimitExceededException" : self = .resourceLimitExceededException(try ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceUnavailableException" : self = .resourceUnavailableException(try ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum CreateEndpointOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceLimitExceededException(ResourceLimitExceededException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case resourceUnavailableException(ResourceUnavailableException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension CreateEndpointOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension CreateEndpointOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: CreateEndpointOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: CreateEndpointOutputBody = try responseDecoder.decode(responseBody: data)
             self.endpointArn = output.endpointArn
             self.modelArn = output.modelArn
         } else {
@@ -3301,13 +3140,13 @@ extension CreateEndpointOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct CreateEndpointOutputResponse: Swift.Equatable {
+public struct CreateEndpointOutput: Swift.Equatable {
     /// The Amazon Resource Number (ARN) of the endpoint being created.
     public var endpointArn: Swift.String?
     /// The Amazon Resource Number (ARN) of the model to which the endpoint is attached.
     public var modelArn: Swift.String?
 
-    public init (
+    public init(
         endpointArn: Swift.String? = nil,
         modelArn: Swift.String? = nil
     )
@@ -3317,23 +3156,41 @@ public struct CreateEndpointOutputResponse: Swift.Equatable {
     }
 }
 
-struct CreateEndpointOutputResponseBody: Swift.Equatable {
+struct CreateEndpointOutputBody: Swift.Equatable {
     let endpointArn: Swift.String?
     let modelArn: Swift.String?
 }
 
-extension CreateEndpointOutputResponseBody: Swift.Decodable {
+extension CreateEndpointOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case endpointArn = "EndpointArn"
         case modelArn = "ModelArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let endpointArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .endpointArn)
         endpointArn = endpointArnDecoded
         let modelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .modelArn)
         modelArn = modelArnDecoded
+    }
+}
+
+enum CreateEndpointOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceLimitExceededException": return try await ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceUnavailableException": return try await ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -3393,8 +3250,9 @@ extension CreateEntityRecognizerInput: Swift.Encodable {
     }
 }
 
-extension CreateEntityRecognizerInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension CreateEntityRecognizerInput {
+
+    static func urlPathProvider(_ value: CreateEntityRecognizerInput) -> Swift.String? {
         return "/"
     }
 }
@@ -3435,7 +3293,7 @@ public struct CreateEntityRecognizerInput: Swift.Equatable {
     /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for your custom entity recognizer. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
     public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         inputDataConfig: ComprehendClientTypes.EntityRecognizerInputDataConfig? = nil,
@@ -3492,7 +3350,7 @@ extension CreateEntityRecognizerInputBody: Swift.Decodable {
         case vpcConfig = "VpcConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let recognizerNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .recognizerName)
         recognizerName = recognizerNameDecoded
@@ -3528,48 +3386,11 @@ extension CreateEntityRecognizerInputBody: Swift.Decodable {
     }
 }
 
-extension CreateEntityRecognizerOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension CreateEntityRecognizerOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceLimitExceededException" : self = .resourceLimitExceededException(try ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum CreateEntityRecognizerOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceLimitExceededException(ResourceLimitExceededException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension CreateEntityRecognizerOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension CreateEntityRecognizerOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: CreateEntityRecognizerOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: CreateEntityRecognizerOutputBody = try responseDecoder.decode(responseBody: data)
             self.entityRecognizerArn = output.entityRecognizerArn
         } else {
             self.entityRecognizerArn = nil
@@ -3577,11 +3398,11 @@ extension CreateEntityRecognizerOutputResponse: ClientRuntime.HttpResponseBindin
     }
 }
 
-public struct CreateEntityRecognizerOutputResponse: Swift.Equatable {
+public struct CreateEntityRecognizerOutput: Swift.Equatable {
     /// The Amazon Resource Name (ARN) that identifies the entity recognizer.
     public var entityRecognizerArn: Swift.String?
 
-    public init (
+    public init(
         entityRecognizerArn: Swift.String? = nil
     )
     {
@@ -3589,19 +3410,37 @@ public struct CreateEntityRecognizerOutputResponse: Swift.Equatable {
     }
 }
 
-struct CreateEntityRecognizerOutputResponseBody: Swift.Equatable {
+struct CreateEntityRecognizerOutputBody: Swift.Equatable {
     let entityRecognizerArn: Swift.String?
 }
 
-extension CreateEntityRecognizerOutputResponseBody: Swift.Decodable {
+extension CreateEntityRecognizerOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case entityRecognizerArn = "EntityRecognizerArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entityRecognizerArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .entityRecognizerArn)
         entityRecognizerArn = entityRecognizerArnDecoded
+    }
+}
+
+enum CreateEntityRecognizerOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceLimitExceededException": return try await ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -3653,14 +3492,15 @@ extension CreateFlywheelInput: Swift.Encodable {
     }
 }
 
-extension CreateFlywheelInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension CreateFlywheelInput {
+
+    static func urlPathProvider(_ value: CreateFlywheelInput) -> Swift.String? {
         return "/"
     }
 }
 
 public struct CreateFlywheelInput: Swift.Equatable {
-    /// To associate an existing model with the flywheel, specify the Amazon Resource Number (ARN) of the model version.
+    /// To associate an existing model with the flywheel, specify the Amazon Resource Number (ARN) of the model version. Do not set TaskConfig or ModelType if you specify an ActiveModelArn.
     public var activeModelArn: Swift.String?
     /// A unique identifier for the request. If you don't set the client request token, Amazon Comprehend generates one.
     public var clientRequestToken: Swift.String?
@@ -3675,14 +3515,14 @@ public struct CreateFlywheelInput: Swift.Equatable {
     /// Name for the flywheel.
     /// This member is required.
     public var flywheelName: Swift.String?
-    /// The model type.
+    /// The model type. You need to set ModelType if you are creating a flywheel for a new model.
     public var modelType: ComprehendClientTypes.ModelType?
     /// The tags to associate with this flywheel.
     public var tags: [ComprehendClientTypes.Tag]?
-    /// Configuration about the custom classifier associated with the flywheel.
+    /// Configuration about the model associated with the flywheel. You need to set TaskConfig if you are creating a flywheel for a new model.
     public var taskConfig: ComprehendClientTypes.TaskConfig?
 
-    public init (
+    public init(
         activeModelArn: Swift.String? = nil,
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
@@ -3731,7 +3571,7 @@ extension CreateFlywheelInputBody: Swift.Decodable {
         case taskConfig = "TaskConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelName)
         flywheelName = flywheelNameDecoded
@@ -3763,52 +3603,11 @@ extension CreateFlywheelInputBody: Swift.Decodable {
     }
 }
 
-extension CreateFlywheelOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension CreateFlywheelOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceLimitExceededException" : self = .resourceLimitExceededException(try ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceUnavailableException" : self = .resourceUnavailableException(try ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum CreateFlywheelOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceLimitExceededException(ResourceLimitExceededException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case resourceUnavailableException(ResourceUnavailableException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension CreateFlywheelOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension CreateFlywheelOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: CreateFlywheelOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: CreateFlywheelOutputBody = try responseDecoder.decode(responseBody: data)
             self.activeModelArn = output.activeModelArn
             self.flywheelArn = output.flywheelArn
         } else {
@@ -3818,13 +3617,13 @@ extension CreateFlywheelOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct CreateFlywheelOutputResponse: Swift.Equatable {
+public struct CreateFlywheelOutput: Swift.Equatable {
     /// The Amazon Resource Number (ARN) of the active model version.
     public var activeModelArn: Swift.String?
     /// The Amazon Resource Number (ARN) of the flywheel.
     public var flywheelArn: Swift.String?
 
-    public init (
+    public init(
         activeModelArn: Swift.String? = nil,
         flywheelArn: Swift.String? = nil
     )
@@ -3834,23 +3633,43 @@ public struct CreateFlywheelOutputResponse: Swift.Equatable {
     }
 }
 
-struct CreateFlywheelOutputResponseBody: Swift.Equatable {
+struct CreateFlywheelOutputBody: Swift.Equatable {
     let flywheelArn: Swift.String?
     let activeModelArn: Swift.String?
 }
 
-extension CreateFlywheelOutputResponseBody: Swift.Decodable {
+extension CreateFlywheelOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case activeModelArn = "ActiveModelArn"
         case flywheelArn = "FlywheelArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
         let activeModelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .activeModelArn)
         activeModelArn = activeModelArnDecoded
+    }
+}
+
+enum CreateFlywheelOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceLimitExceededException": return try await ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceUnavailableException": return try await ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -3878,7 +3697,7 @@ extension ComprehendClientTypes.DataSecurityConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let modelKmsKeyIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .modelKmsKeyId)
         modelKmsKeyId = modelKmsKeyIdDecoded
@@ -3907,7 +3726,7 @@ extension ComprehendClientTypes {
         /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for the job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
         public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-        public init (
+        public init(
             dataLakeKmsKeyId: Swift.String? = nil,
             modelKmsKeyId: Swift.String? = nil,
             volumeKmsKeyId: Swift.String? = nil,
@@ -3954,7 +3773,7 @@ extension ComprehendClientTypes.DatasetAugmentedManifestsListItem: Swift.Codable
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let attributeNamesContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .attributeNames)
         var attributeNamesDecoded0:[Swift.String]? = nil
@@ -3994,7 +3813,7 @@ extension ComprehendClientTypes {
         /// The S3 prefix to the source files (PDFs) that are referred to in the augmented manifest file.
         public var sourceDocumentsS3Uri: Swift.String?
 
-        public init (
+        public init(
             annotationDataS3Uri: Swift.String? = nil,
             attributeNames: [Swift.String]? = nil,
             documentType: ComprehendClientTypes.AugmentedManifestsDocumentTypeFormat? = nil,
@@ -4060,7 +3879,7 @@ extension ComprehendClientTypes.DatasetDocumentClassifierInputDataConfig: Swift.
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -4078,7 +3897,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var s3Uri: Swift.String?
 
-        public init (
+        public init(
             labelDelimiter: Swift.String? = nil,
             s3Uri: Swift.String? = nil
         )
@@ -4102,7 +3921,7 @@ extension ComprehendClientTypes.DatasetEntityRecognizerAnnotations: Swift.Codabl
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -4116,7 +3935,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var s3Uri: Swift.String?
 
-        public init (
+        public init(
             s3Uri: Swift.String? = nil
         )
         {
@@ -4142,7 +3961,7 @@ extension ComprehendClientTypes.DatasetEntityRecognizerDocuments: Swift.Codable 
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -4160,7 +3979,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var s3Uri: Swift.String?
 
-        public init (
+        public init(
             inputFormat: ComprehendClientTypes.InputFormat? = nil,
             s3Uri: Swift.String? = nil
         )
@@ -4184,7 +4003,7 @@ extension ComprehendClientTypes.DatasetEntityRecognizerEntityList: Swift.Codable
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -4198,7 +4017,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var s3Uri: Swift.String?
 
-        public init (
+        public init(
             s3Uri: Swift.String? = nil
         )
         {
@@ -4228,7 +4047,7 @@ extension ComprehendClientTypes.DatasetEntityRecognizerInputDataConfig: Swift.Co
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let annotationsDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DatasetEntityRecognizerAnnotations.self, forKey: .annotations)
         annotations = annotationsDecoded
@@ -4250,7 +4069,7 @@ extension ComprehendClientTypes {
         /// The S3 location of the entity list for your custom entity recognizer.
         public var entityList: ComprehendClientTypes.DatasetEntityRecognizerEntityList?
 
-        public init (
+        public init(
             annotations: ComprehendClientTypes.DatasetEntityRecognizerAnnotations? = nil,
             documents: ComprehendClientTypes.DatasetEntityRecognizerDocuments? = nil,
             entityList: ComprehendClientTypes.DatasetEntityRecognizerEntityList? = nil
@@ -4288,7 +4107,7 @@ extension ComprehendClientTypes.DatasetFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let statusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DatasetStatus.self, forKey: .status)
         status = statusDecoded
@@ -4313,7 +4132,7 @@ extension ComprehendClientTypes {
         /// Filter the datasets based on the dataset status.
         public var status: ComprehendClientTypes.DatasetStatus?
 
-        public init (
+        public init(
             creationTimeAfter: ClientRuntime.Date? = nil,
             creationTimeBefore: ClientRuntime.Date? = nil,
             datasetType: ComprehendClientTypes.DatasetType? = nil,
@@ -4356,7 +4175,7 @@ extension ComprehendClientTypes.DatasetInputDataConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let augmentedManifestsContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.DatasetAugmentedManifestsListItem?].self, forKey: .augmentedManifests)
         var augmentedManifestsDecoded0:[ComprehendClientTypes.DatasetAugmentedManifestsListItem]? = nil
@@ -4390,7 +4209,7 @@ extension ComprehendClientTypes {
         /// The input properties for training an entity recognizer model.
         public var entityRecognizerInputDataConfig: ComprehendClientTypes.DatasetEntityRecognizerInputDataConfig?
 
-        public init (
+        public init(
             augmentedManifests: [ComprehendClientTypes.DatasetAugmentedManifestsListItem]? = nil,
             dataFormat: ComprehendClientTypes.DatasetDataFormat? = nil,
             documentClassifierInputDataConfig: ComprehendClientTypes.DatasetDocumentClassifierInputDataConfig? = nil,
@@ -4454,7 +4273,7 @@ extension ComprehendClientTypes.DatasetProperties: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let datasetArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .datasetArn)
         datasetArn = datasetArnDecoded
@@ -4503,7 +4322,7 @@ extension ComprehendClientTypes {
         /// The dataset status. While the system creates the dataset, the status is CREATING. When the dataset is ready to use, the status changes to COMPLETED.
         public var status: ComprehendClientTypes.DatasetStatus?
 
-        public init (
+        public init(
             creationTime: ClientRuntime.Date? = nil,
             datasetArn: Swift.String? = nil,
             datasetName: Swift.String? = nil,
@@ -4611,8 +4430,9 @@ extension DeleteDocumentClassifierInput: Swift.Encodable {
     }
 }
 
-extension DeleteDocumentClassifierInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DeleteDocumentClassifierInput {
+
+    static func urlPathProvider(_ value: DeleteDocumentClassifierInput) -> Swift.String? {
         return "/"
     }
 }
@@ -4622,7 +4442,7 @@ public struct DeleteDocumentClassifierInput: Swift.Equatable {
     /// This member is required.
     public var documentClassifierArn: Swift.String?
 
-    public init (
+    public init(
         documentClassifierArn: Swift.String? = nil
     )
     {
@@ -4639,53 +4459,37 @@ extension DeleteDocumentClassifierInputBody: Swift.Decodable {
         case documentClassifierArn = "DocumentClassifierArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassifierArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .documentClassifierArn)
         documentClassifierArn = documentClassifierArnDecoded
     }
 }
 
-extension DeleteDocumentClassifierOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension DeleteDocumentClassifierOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension DeleteDocumentClassifierOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceUnavailableException" : self = .resourceUnavailableException(try ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct DeleteDocumentClassifierOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum DeleteDocumentClassifierOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceUnavailableException": return try await ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum DeleteDocumentClassifierOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case resourceUnavailableException(ResourceUnavailableException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DeleteDocumentClassifierOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct DeleteDocumentClassifierOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension DeleteEndpointInput: Swift.Encodable {
@@ -4701,8 +4505,9 @@ extension DeleteEndpointInput: Swift.Encodable {
     }
 }
 
-extension DeleteEndpointInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DeleteEndpointInput {
+
+    static func urlPathProvider(_ value: DeleteEndpointInput) -> Swift.String? {
         return "/"
     }
 }
@@ -4712,7 +4517,7 @@ public struct DeleteEndpointInput: Swift.Equatable {
     /// This member is required.
     public var endpointArn: Swift.String?
 
-    public init (
+    public init(
         endpointArn: Swift.String? = nil
     )
     {
@@ -4729,51 +4534,36 @@ extension DeleteEndpointInputBody: Swift.Decodable {
         case endpointArn = "EndpointArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let endpointArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .endpointArn)
         endpointArn = endpointArnDecoded
     }
 }
 
-extension DeleteEndpointOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension DeleteEndpointOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension DeleteEndpointOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct DeleteEndpointOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum DeleteEndpointOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum DeleteEndpointOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DeleteEndpointOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct DeleteEndpointOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension DeleteEntityRecognizerInput: Swift.Encodable {
@@ -4789,8 +4579,9 @@ extension DeleteEntityRecognizerInput: Swift.Encodable {
     }
 }
 
-extension DeleteEntityRecognizerInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DeleteEntityRecognizerInput {
+
+    static func urlPathProvider(_ value: DeleteEntityRecognizerInput) -> Swift.String? {
         return "/"
     }
 }
@@ -4800,7 +4591,7 @@ public struct DeleteEntityRecognizerInput: Swift.Equatable {
     /// This member is required.
     public var entityRecognizerArn: Swift.String?
 
-    public init (
+    public init(
         entityRecognizerArn: Swift.String? = nil
     )
     {
@@ -4817,53 +4608,37 @@ extension DeleteEntityRecognizerInputBody: Swift.Decodable {
         case entityRecognizerArn = "EntityRecognizerArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entityRecognizerArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .entityRecognizerArn)
         entityRecognizerArn = entityRecognizerArnDecoded
     }
 }
 
-extension DeleteEntityRecognizerOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension DeleteEntityRecognizerOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension DeleteEntityRecognizerOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceUnavailableException" : self = .resourceUnavailableException(try ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct DeleteEntityRecognizerOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum DeleteEntityRecognizerOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceUnavailableException": return try await ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum DeleteEntityRecognizerOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case resourceUnavailableException(ResourceUnavailableException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DeleteEntityRecognizerOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct DeleteEntityRecognizerOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension DeleteFlywheelInput: Swift.Encodable {
@@ -4879,8 +4654,9 @@ extension DeleteFlywheelInput: Swift.Encodable {
     }
 }
 
-extension DeleteFlywheelInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DeleteFlywheelInput {
+
+    static func urlPathProvider(_ value: DeleteFlywheelInput) -> Swift.String? {
         return "/"
     }
 }
@@ -4890,7 +4666,7 @@ public struct DeleteFlywheelInput: Swift.Equatable {
     /// This member is required.
     public var flywheelArn: Swift.String?
 
-    public init (
+    public init(
         flywheelArn: Swift.String? = nil
     )
     {
@@ -4907,53 +4683,37 @@ extension DeleteFlywheelInputBody: Swift.Decodable {
         case flywheelArn = "FlywheelArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
     }
 }
 
-extension DeleteFlywheelOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension DeleteFlywheelOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension DeleteFlywheelOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceUnavailableException" : self = .resourceUnavailableException(try ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct DeleteFlywheelOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum DeleteFlywheelOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceUnavailableException": return try await ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum DeleteFlywheelOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case resourceUnavailableException(ResourceUnavailableException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DeleteFlywheelOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct DeleteFlywheelOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension DeleteResourcePolicyInput: Swift.Encodable {
@@ -4973,8 +4733,9 @@ extension DeleteResourcePolicyInput: Swift.Encodable {
     }
 }
 
-extension DeleteResourcePolicyInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DeleteResourcePolicyInput {
+
+    static func urlPathProvider(_ value: DeleteResourcePolicyInput) -> Swift.String? {
         return "/"
     }
 }
@@ -4986,7 +4747,7 @@ public struct DeleteResourcePolicyInput: Swift.Equatable {
     /// This member is required.
     public var resourceArn: Swift.String?
 
-    public init (
+    public init(
         policyRevisionId: Swift.String? = nil,
         resourceArn: Swift.String? = nil
     )
@@ -5007,7 +4768,7 @@ extension DeleteResourcePolicyInputBody: Swift.Decodable {
         case resourceArn = "ResourceArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourceArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceArn)
         resourceArn = resourceArnDecoded
@@ -5016,40 +4777,27 @@ extension DeleteResourcePolicyInputBody: Swift.Decodable {
     }
 }
 
-extension DeleteResourcePolicyOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension DeleteResourcePolicyOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension DeleteResourcePolicyOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct DeleteResourcePolicyOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum DeleteResourcePolicyOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum DeleteResourcePolicyOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DeleteResourcePolicyOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct DeleteResourcePolicyOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension DescribeDatasetInput: Swift.Encodable {
@@ -5065,8 +4813,9 @@ extension DescribeDatasetInput: Swift.Encodable {
     }
 }
 
-extension DescribeDatasetInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeDatasetInput {
+
+    static func urlPathProvider(_ value: DescribeDatasetInput) -> Swift.String? {
         return "/"
     }
 }
@@ -5076,7 +4825,7 @@ public struct DescribeDatasetInput: Swift.Equatable {
     /// This member is required.
     public var datasetArn: Swift.String?
 
-    public init (
+    public init(
         datasetArn: Swift.String? = nil
     )
     {
@@ -5093,47 +4842,18 @@ extension DescribeDatasetInputBody: Swift.Decodable {
         case datasetArn = "DatasetArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let datasetArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .datasetArn)
         datasetArn = datasetArnDecoded
     }
 }
 
-extension DescribeDatasetOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeDatasetOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeDatasetOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeDatasetOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeDatasetOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeDatasetOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeDatasetOutputBody = try responseDecoder.decode(responseBody: data)
             self.datasetProperties = output.datasetProperties
         } else {
             self.datasetProperties = nil
@@ -5141,11 +4861,11 @@ extension DescribeDatasetOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct DescribeDatasetOutputResponse: Swift.Equatable {
+public struct DescribeDatasetOutput: Swift.Equatable {
     /// The dataset properties.
     public var datasetProperties: ComprehendClientTypes.DatasetProperties?
 
-    public init (
+    public init(
         datasetProperties: ComprehendClientTypes.DatasetProperties? = nil
     )
     {
@@ -5153,19 +4873,33 @@ public struct DescribeDatasetOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeDatasetOutputResponseBody: Swift.Equatable {
+struct DescribeDatasetOutputBody: Swift.Equatable {
     let datasetProperties: ComprehendClientTypes.DatasetProperties?
 }
 
-extension DescribeDatasetOutputResponseBody: Swift.Decodable {
+extension DescribeDatasetOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case datasetProperties = "DatasetProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let datasetPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DatasetProperties.self, forKey: .datasetProperties)
         datasetProperties = datasetPropertiesDecoded
+    }
+}
+
+enum DescribeDatasetOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -5182,8 +4916,9 @@ extension DescribeDocumentClassificationJobInput: Swift.Encodable {
     }
 }
 
-extension DescribeDocumentClassificationJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeDocumentClassificationJobInput {
+
+    static func urlPathProvider(_ value: DescribeDocumentClassificationJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -5193,7 +4928,7 @@ public struct DescribeDocumentClassificationJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -5210,47 +4945,18 @@ extension DescribeDocumentClassificationJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension DescribeDocumentClassificationJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeDocumentClassificationJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeDocumentClassificationJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeDocumentClassificationJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeDocumentClassificationJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeDocumentClassificationJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeDocumentClassificationJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.documentClassificationJobProperties = output.documentClassificationJobProperties
         } else {
             self.documentClassificationJobProperties = nil
@@ -5258,11 +4964,11 @@ extension DescribeDocumentClassificationJobOutputResponse: ClientRuntime.HttpRes
     }
 }
 
-public struct DescribeDocumentClassificationJobOutputResponse: Swift.Equatable {
+public struct DescribeDocumentClassificationJobOutput: Swift.Equatable {
     /// An object that describes the properties associated with the document classification job.
     public var documentClassificationJobProperties: ComprehendClientTypes.DocumentClassificationJobProperties?
 
-    public init (
+    public init(
         documentClassificationJobProperties: ComprehendClientTypes.DocumentClassificationJobProperties? = nil
     )
     {
@@ -5270,19 +4976,33 @@ public struct DescribeDocumentClassificationJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeDocumentClassificationJobOutputResponseBody: Swift.Equatable {
+struct DescribeDocumentClassificationJobOutputBody: Swift.Equatable {
     let documentClassificationJobProperties: ComprehendClientTypes.DocumentClassificationJobProperties?
 }
 
-extension DescribeDocumentClassificationJobOutputResponseBody: Swift.Decodable {
+extension DescribeDocumentClassificationJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case documentClassificationJobProperties = "DocumentClassificationJobProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassificationJobPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DocumentClassificationJobProperties.self, forKey: .documentClassificationJobProperties)
         documentClassificationJobProperties = documentClassificationJobPropertiesDecoded
+    }
+}
+
+enum DescribeDocumentClassificationJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -5299,8 +5019,9 @@ extension DescribeDocumentClassifierInput: Swift.Encodable {
     }
 }
 
-extension DescribeDocumentClassifierInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeDocumentClassifierInput {
+
+    static func urlPathProvider(_ value: DescribeDocumentClassifierInput) -> Swift.String? {
         return "/"
     }
 }
@@ -5310,7 +5031,7 @@ public struct DescribeDocumentClassifierInput: Swift.Equatable {
     /// This member is required.
     public var documentClassifierArn: Swift.String?
 
-    public init (
+    public init(
         documentClassifierArn: Swift.String? = nil
     )
     {
@@ -5327,47 +5048,18 @@ extension DescribeDocumentClassifierInputBody: Swift.Decodable {
         case documentClassifierArn = "DocumentClassifierArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassifierArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .documentClassifierArn)
         documentClassifierArn = documentClassifierArnDecoded
     }
 }
 
-extension DescribeDocumentClassifierOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeDocumentClassifierOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeDocumentClassifierOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeDocumentClassifierOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeDocumentClassifierOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeDocumentClassifierOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeDocumentClassifierOutputBody = try responseDecoder.decode(responseBody: data)
             self.documentClassifierProperties = output.documentClassifierProperties
         } else {
             self.documentClassifierProperties = nil
@@ -5375,11 +5067,11 @@ extension DescribeDocumentClassifierOutputResponse: ClientRuntime.HttpResponseBi
     }
 }
 
-public struct DescribeDocumentClassifierOutputResponse: Swift.Equatable {
+public struct DescribeDocumentClassifierOutput: Swift.Equatable {
     /// An object that contains the properties associated with a document classifier.
     public var documentClassifierProperties: ComprehendClientTypes.DocumentClassifierProperties?
 
-    public init (
+    public init(
         documentClassifierProperties: ComprehendClientTypes.DocumentClassifierProperties? = nil
     )
     {
@@ -5387,19 +5079,33 @@ public struct DescribeDocumentClassifierOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeDocumentClassifierOutputResponseBody: Swift.Equatable {
+struct DescribeDocumentClassifierOutputBody: Swift.Equatable {
     let documentClassifierProperties: ComprehendClientTypes.DocumentClassifierProperties?
 }
 
-extension DescribeDocumentClassifierOutputResponseBody: Swift.Decodable {
+extension DescribeDocumentClassifierOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case documentClassifierProperties = "DocumentClassifierProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassifierPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DocumentClassifierProperties.self, forKey: .documentClassifierProperties)
         documentClassifierProperties = documentClassifierPropertiesDecoded
+    }
+}
+
+enum DescribeDocumentClassifierOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -5416,8 +5122,9 @@ extension DescribeDominantLanguageDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension DescribeDominantLanguageDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeDominantLanguageDetectionJobInput {
+
+    static func urlPathProvider(_ value: DescribeDominantLanguageDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -5427,7 +5134,7 @@ public struct DescribeDominantLanguageDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -5444,47 +5151,18 @@ extension DescribeDominantLanguageDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension DescribeDominantLanguageDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeDominantLanguageDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeDominantLanguageDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeDominantLanguageDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeDominantLanguageDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeDominantLanguageDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeDominantLanguageDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.dominantLanguageDetectionJobProperties = output.dominantLanguageDetectionJobProperties
         } else {
             self.dominantLanguageDetectionJobProperties = nil
@@ -5492,11 +5170,11 @@ extension DescribeDominantLanguageDetectionJobOutputResponse: ClientRuntime.Http
     }
 }
 
-public struct DescribeDominantLanguageDetectionJobOutputResponse: Swift.Equatable {
+public struct DescribeDominantLanguageDetectionJobOutput: Swift.Equatable {
     /// An object that contains the properties associated with a dominant language detection job.
     public var dominantLanguageDetectionJobProperties: ComprehendClientTypes.DominantLanguageDetectionJobProperties?
 
-    public init (
+    public init(
         dominantLanguageDetectionJobProperties: ComprehendClientTypes.DominantLanguageDetectionJobProperties? = nil
     )
     {
@@ -5504,19 +5182,33 @@ public struct DescribeDominantLanguageDetectionJobOutputResponse: Swift.Equatabl
     }
 }
 
-struct DescribeDominantLanguageDetectionJobOutputResponseBody: Swift.Equatable {
+struct DescribeDominantLanguageDetectionJobOutputBody: Swift.Equatable {
     let dominantLanguageDetectionJobProperties: ComprehendClientTypes.DominantLanguageDetectionJobProperties?
 }
 
-extension DescribeDominantLanguageDetectionJobOutputResponseBody: Swift.Decodable {
+extension DescribeDominantLanguageDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case dominantLanguageDetectionJobProperties = "DominantLanguageDetectionJobProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let dominantLanguageDetectionJobPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DominantLanguageDetectionJobProperties.self, forKey: .dominantLanguageDetectionJobProperties)
         dominantLanguageDetectionJobProperties = dominantLanguageDetectionJobPropertiesDecoded
+    }
+}
+
+enum DescribeDominantLanguageDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -5533,8 +5225,9 @@ extension DescribeEndpointInput: Swift.Encodable {
     }
 }
 
-extension DescribeEndpointInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeEndpointInput {
+
+    static func urlPathProvider(_ value: DescribeEndpointInput) -> Swift.String? {
         return "/"
     }
 }
@@ -5544,7 +5237,7 @@ public struct DescribeEndpointInput: Swift.Equatable {
     /// This member is required.
     public var endpointArn: Swift.String?
 
-    public init (
+    public init(
         endpointArn: Swift.String? = nil
     )
     {
@@ -5561,47 +5254,18 @@ extension DescribeEndpointInputBody: Swift.Decodable {
         case endpointArn = "EndpointArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let endpointArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .endpointArn)
         endpointArn = endpointArnDecoded
     }
 }
 
-extension DescribeEndpointOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeEndpointOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeEndpointOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeEndpointOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeEndpointOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeEndpointOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeEndpointOutputBody = try responseDecoder.decode(responseBody: data)
             self.endpointProperties = output.endpointProperties
         } else {
             self.endpointProperties = nil
@@ -5609,11 +5273,11 @@ extension DescribeEndpointOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct DescribeEndpointOutputResponse: Swift.Equatable {
+public struct DescribeEndpointOutput: Swift.Equatable {
     /// Describes information associated with the specific endpoint.
     public var endpointProperties: ComprehendClientTypes.EndpointProperties?
 
-    public init (
+    public init(
         endpointProperties: ComprehendClientTypes.EndpointProperties? = nil
     )
     {
@@ -5621,19 +5285,33 @@ public struct DescribeEndpointOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeEndpointOutputResponseBody: Swift.Equatable {
+struct DescribeEndpointOutputBody: Swift.Equatable {
     let endpointProperties: ComprehendClientTypes.EndpointProperties?
 }
 
-extension DescribeEndpointOutputResponseBody: Swift.Decodable {
+extension DescribeEndpointOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case endpointProperties = "EndpointProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let endpointPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.EndpointProperties.self, forKey: .endpointProperties)
         endpointProperties = endpointPropertiesDecoded
+    }
+}
+
+enum DescribeEndpointOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -5650,8 +5328,9 @@ extension DescribeEntitiesDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension DescribeEntitiesDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeEntitiesDetectionJobInput {
+
+    static func urlPathProvider(_ value: DescribeEntitiesDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -5661,7 +5340,7 @@ public struct DescribeEntitiesDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -5678,47 +5357,18 @@ extension DescribeEntitiesDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension DescribeEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeEntitiesDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeEntitiesDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeEntitiesDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeEntitiesDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeEntitiesDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeEntitiesDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.entitiesDetectionJobProperties = output.entitiesDetectionJobProperties
         } else {
             self.entitiesDetectionJobProperties = nil
@@ -5726,11 +5376,11 @@ extension DescribeEntitiesDetectionJobOutputResponse: ClientRuntime.HttpResponse
     }
 }
 
-public struct DescribeEntitiesDetectionJobOutputResponse: Swift.Equatable {
+public struct DescribeEntitiesDetectionJobOutput: Swift.Equatable {
     /// An object that contains the properties associated with an entities detection job.
     public var entitiesDetectionJobProperties: ComprehendClientTypes.EntitiesDetectionJobProperties?
 
-    public init (
+    public init(
         entitiesDetectionJobProperties: ComprehendClientTypes.EntitiesDetectionJobProperties? = nil
     )
     {
@@ -5738,19 +5388,33 @@ public struct DescribeEntitiesDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeEntitiesDetectionJobOutputResponseBody: Swift.Equatable {
+struct DescribeEntitiesDetectionJobOutputBody: Swift.Equatable {
     let entitiesDetectionJobProperties: ComprehendClientTypes.EntitiesDetectionJobProperties?
 }
 
-extension DescribeEntitiesDetectionJobOutputResponseBody: Swift.Decodable {
+extension DescribeEntitiesDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case entitiesDetectionJobProperties = "EntitiesDetectionJobProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entitiesDetectionJobPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.EntitiesDetectionJobProperties.self, forKey: .entitiesDetectionJobProperties)
         entitiesDetectionJobProperties = entitiesDetectionJobPropertiesDecoded
+    }
+}
+
+enum DescribeEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -5767,8 +5431,9 @@ extension DescribeEntityRecognizerInput: Swift.Encodable {
     }
 }
 
-extension DescribeEntityRecognizerInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeEntityRecognizerInput {
+
+    static func urlPathProvider(_ value: DescribeEntityRecognizerInput) -> Swift.String? {
         return "/"
     }
 }
@@ -5778,7 +5443,7 @@ public struct DescribeEntityRecognizerInput: Swift.Equatable {
     /// This member is required.
     public var entityRecognizerArn: Swift.String?
 
-    public init (
+    public init(
         entityRecognizerArn: Swift.String? = nil
     )
     {
@@ -5795,47 +5460,18 @@ extension DescribeEntityRecognizerInputBody: Swift.Decodable {
         case entityRecognizerArn = "EntityRecognizerArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entityRecognizerArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .entityRecognizerArn)
         entityRecognizerArn = entityRecognizerArnDecoded
     }
 }
 
-extension DescribeEntityRecognizerOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeEntityRecognizerOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeEntityRecognizerOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeEntityRecognizerOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeEntityRecognizerOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeEntityRecognizerOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeEntityRecognizerOutputBody = try responseDecoder.decode(responseBody: data)
             self.entityRecognizerProperties = output.entityRecognizerProperties
         } else {
             self.entityRecognizerProperties = nil
@@ -5843,11 +5479,11 @@ extension DescribeEntityRecognizerOutputResponse: ClientRuntime.HttpResponseBind
     }
 }
 
-public struct DescribeEntityRecognizerOutputResponse: Swift.Equatable {
+public struct DescribeEntityRecognizerOutput: Swift.Equatable {
     /// Describes information associated with an entity recognizer.
     public var entityRecognizerProperties: ComprehendClientTypes.EntityRecognizerProperties?
 
-    public init (
+    public init(
         entityRecognizerProperties: ComprehendClientTypes.EntityRecognizerProperties? = nil
     )
     {
@@ -5855,19 +5491,33 @@ public struct DescribeEntityRecognizerOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeEntityRecognizerOutputResponseBody: Swift.Equatable {
+struct DescribeEntityRecognizerOutputBody: Swift.Equatable {
     let entityRecognizerProperties: ComprehendClientTypes.EntityRecognizerProperties?
 }
 
-extension DescribeEntityRecognizerOutputResponseBody: Swift.Decodable {
+extension DescribeEntityRecognizerOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case entityRecognizerProperties = "EntityRecognizerProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entityRecognizerPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.EntityRecognizerProperties.self, forKey: .entityRecognizerProperties)
         entityRecognizerProperties = entityRecognizerPropertiesDecoded
+    }
+}
+
+enum DescribeEntityRecognizerOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -5884,8 +5534,9 @@ extension DescribeEventsDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension DescribeEventsDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeEventsDetectionJobInput {
+
+    static func urlPathProvider(_ value: DescribeEventsDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -5895,7 +5546,7 @@ public struct DescribeEventsDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -5912,47 +5563,18 @@ extension DescribeEventsDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension DescribeEventsDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeEventsDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeEventsDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeEventsDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeEventsDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeEventsDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeEventsDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.eventsDetectionJobProperties = output.eventsDetectionJobProperties
         } else {
             self.eventsDetectionJobProperties = nil
@@ -5960,11 +5582,11 @@ extension DescribeEventsDetectionJobOutputResponse: ClientRuntime.HttpResponseBi
     }
 }
 
-public struct DescribeEventsDetectionJobOutputResponse: Swift.Equatable {
+public struct DescribeEventsDetectionJobOutput: Swift.Equatable {
     /// An object that contains the properties associated with an event detection job.
     public var eventsDetectionJobProperties: ComprehendClientTypes.EventsDetectionJobProperties?
 
-    public init (
+    public init(
         eventsDetectionJobProperties: ComprehendClientTypes.EventsDetectionJobProperties? = nil
     )
     {
@@ -5972,19 +5594,33 @@ public struct DescribeEventsDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeEventsDetectionJobOutputResponseBody: Swift.Equatable {
+struct DescribeEventsDetectionJobOutputBody: Swift.Equatable {
     let eventsDetectionJobProperties: ComprehendClientTypes.EventsDetectionJobProperties?
 }
 
-extension DescribeEventsDetectionJobOutputResponseBody: Swift.Decodable {
+extension DescribeEventsDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case eventsDetectionJobProperties = "EventsDetectionJobProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let eventsDetectionJobPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.EventsDetectionJobProperties.self, forKey: .eventsDetectionJobProperties)
         eventsDetectionJobProperties = eventsDetectionJobPropertiesDecoded
+    }
+}
+
+enum DescribeEventsDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -6001,8 +5637,9 @@ extension DescribeFlywheelInput: Swift.Encodable {
     }
 }
 
-extension DescribeFlywheelInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeFlywheelInput {
+
+    static func urlPathProvider(_ value: DescribeFlywheelInput) -> Swift.String? {
         return "/"
     }
 }
@@ -6012,7 +5649,7 @@ public struct DescribeFlywheelInput: Swift.Equatable {
     /// This member is required.
     public var flywheelArn: Swift.String?
 
-    public init (
+    public init(
         flywheelArn: Swift.String? = nil
     )
     {
@@ -6029,7 +5666,7 @@ extension DescribeFlywheelInputBody: Swift.Decodable {
         case flywheelArn = "FlywheelArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
@@ -6053,8 +5690,9 @@ extension DescribeFlywheelIterationInput: Swift.Encodable {
     }
 }
 
-extension DescribeFlywheelIterationInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeFlywheelIterationInput {
+
+    static func urlPathProvider(_ value: DescribeFlywheelIterationInput) -> Swift.String? {
         return "/"
     }
 }
@@ -6067,7 +5705,7 @@ public struct DescribeFlywheelIterationInput: Swift.Equatable {
     /// This member is required.
     public var flywheelIterationId: Swift.String?
 
-    public init (
+    public init(
         flywheelArn: Swift.String? = nil,
         flywheelIterationId: Swift.String? = nil
     )
@@ -6088,7 +5726,7 @@ extension DescribeFlywheelIterationInputBody: Swift.Decodable {
         case flywheelIterationId = "FlywheelIterationId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
@@ -6097,40 +5735,11 @@ extension DescribeFlywheelIterationInputBody: Swift.Decodable {
     }
 }
 
-extension DescribeFlywheelIterationOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeFlywheelIterationOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeFlywheelIterationOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeFlywheelIterationOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeFlywheelIterationOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeFlywheelIterationOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeFlywheelIterationOutputBody = try responseDecoder.decode(responseBody: data)
             self.flywheelIterationProperties = output.flywheelIterationProperties
         } else {
             self.flywheelIterationProperties = nil
@@ -6138,11 +5747,11 @@ extension DescribeFlywheelIterationOutputResponse: ClientRuntime.HttpResponseBin
     }
 }
 
-public struct DescribeFlywheelIterationOutputResponse: Swift.Equatable {
+public struct DescribeFlywheelIterationOutput: Swift.Equatable {
     /// The configuration properties of a flywheel iteration.
     public var flywheelIterationProperties: ComprehendClientTypes.FlywheelIterationProperties?
 
-    public init (
+    public init(
         flywheelIterationProperties: ComprehendClientTypes.FlywheelIterationProperties? = nil
     )
     {
@@ -6150,56 +5759,41 @@ public struct DescribeFlywheelIterationOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeFlywheelIterationOutputResponseBody: Swift.Equatable {
+struct DescribeFlywheelIterationOutputBody: Swift.Equatable {
     let flywheelIterationProperties: ComprehendClientTypes.FlywheelIterationProperties?
 }
 
-extension DescribeFlywheelIterationOutputResponseBody: Swift.Decodable {
+extension DescribeFlywheelIterationOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case flywheelIterationProperties = "FlywheelIterationProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelIterationPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.FlywheelIterationProperties.self, forKey: .flywheelIterationProperties)
         flywheelIterationProperties = flywheelIterationPropertiesDecoded
     }
 }
 
-extension DescribeFlywheelOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeFlywheelOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+enum DescribeFlywheelIterationOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
 }
 
-public enum DescribeFlywheelOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeFlywheelOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeFlywheelOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeFlywheelOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeFlywheelOutputBody = try responseDecoder.decode(responseBody: data)
             self.flywheelProperties = output.flywheelProperties
         } else {
             self.flywheelProperties = nil
@@ -6207,11 +5801,11 @@ extension DescribeFlywheelOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct DescribeFlywheelOutputResponse: Swift.Equatable {
+public struct DescribeFlywheelOutput: Swift.Equatable {
     /// The flywheel properties.
     public var flywheelProperties: ComprehendClientTypes.FlywheelProperties?
 
-    public init (
+    public init(
         flywheelProperties: ComprehendClientTypes.FlywheelProperties? = nil
     )
     {
@@ -6219,19 +5813,33 @@ public struct DescribeFlywheelOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeFlywheelOutputResponseBody: Swift.Equatable {
+struct DescribeFlywheelOutputBody: Swift.Equatable {
     let flywheelProperties: ComprehendClientTypes.FlywheelProperties?
 }
 
-extension DescribeFlywheelOutputResponseBody: Swift.Decodable {
+extension DescribeFlywheelOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case flywheelProperties = "FlywheelProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.FlywheelProperties.self, forKey: .flywheelProperties)
         flywheelProperties = flywheelPropertiesDecoded
+    }
+}
+
+enum DescribeFlywheelOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -6248,8 +5856,9 @@ extension DescribeKeyPhrasesDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension DescribeKeyPhrasesDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeKeyPhrasesDetectionJobInput {
+
+    static func urlPathProvider(_ value: DescribeKeyPhrasesDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -6259,7 +5868,7 @@ public struct DescribeKeyPhrasesDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -6276,47 +5885,18 @@ extension DescribeKeyPhrasesDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension DescribeKeyPhrasesDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeKeyPhrasesDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeKeyPhrasesDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeKeyPhrasesDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeKeyPhrasesDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeKeyPhrasesDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeKeyPhrasesDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.keyPhrasesDetectionJobProperties = output.keyPhrasesDetectionJobProperties
         } else {
             self.keyPhrasesDetectionJobProperties = nil
@@ -6324,11 +5904,11 @@ extension DescribeKeyPhrasesDetectionJobOutputResponse: ClientRuntime.HttpRespon
     }
 }
 
-public struct DescribeKeyPhrasesDetectionJobOutputResponse: Swift.Equatable {
+public struct DescribeKeyPhrasesDetectionJobOutput: Swift.Equatable {
     /// An object that contains the properties associated with a key phrases detection job.
     public var keyPhrasesDetectionJobProperties: ComprehendClientTypes.KeyPhrasesDetectionJobProperties?
 
-    public init (
+    public init(
         keyPhrasesDetectionJobProperties: ComprehendClientTypes.KeyPhrasesDetectionJobProperties? = nil
     )
     {
@@ -6336,19 +5916,33 @@ public struct DescribeKeyPhrasesDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeKeyPhrasesDetectionJobOutputResponseBody: Swift.Equatable {
+struct DescribeKeyPhrasesDetectionJobOutputBody: Swift.Equatable {
     let keyPhrasesDetectionJobProperties: ComprehendClientTypes.KeyPhrasesDetectionJobProperties?
 }
 
-extension DescribeKeyPhrasesDetectionJobOutputResponseBody: Swift.Decodable {
+extension DescribeKeyPhrasesDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case keyPhrasesDetectionJobProperties = "KeyPhrasesDetectionJobProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let keyPhrasesDetectionJobPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.KeyPhrasesDetectionJobProperties.self, forKey: .keyPhrasesDetectionJobProperties)
         keyPhrasesDetectionJobProperties = keyPhrasesDetectionJobPropertiesDecoded
+    }
+}
+
+enum DescribeKeyPhrasesDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -6365,8 +5959,9 @@ extension DescribePiiEntitiesDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension DescribePiiEntitiesDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribePiiEntitiesDetectionJobInput {
+
+    static func urlPathProvider(_ value: DescribePiiEntitiesDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -6376,7 +5971,7 @@ public struct DescribePiiEntitiesDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -6393,47 +5988,18 @@ extension DescribePiiEntitiesDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension DescribePiiEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribePiiEntitiesDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribePiiEntitiesDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribePiiEntitiesDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribePiiEntitiesDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribePiiEntitiesDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribePiiEntitiesDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.piiEntitiesDetectionJobProperties = output.piiEntitiesDetectionJobProperties
         } else {
             self.piiEntitiesDetectionJobProperties = nil
@@ -6441,11 +6007,11 @@ extension DescribePiiEntitiesDetectionJobOutputResponse: ClientRuntime.HttpRespo
     }
 }
 
-public struct DescribePiiEntitiesDetectionJobOutputResponse: Swift.Equatable {
+public struct DescribePiiEntitiesDetectionJobOutput: Swift.Equatable {
     /// Provides information about a PII entities detection job.
     public var piiEntitiesDetectionJobProperties: ComprehendClientTypes.PiiEntitiesDetectionJobProperties?
 
-    public init (
+    public init(
         piiEntitiesDetectionJobProperties: ComprehendClientTypes.PiiEntitiesDetectionJobProperties? = nil
     )
     {
@@ -6453,19 +6019,33 @@ public struct DescribePiiEntitiesDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribePiiEntitiesDetectionJobOutputResponseBody: Swift.Equatable {
+struct DescribePiiEntitiesDetectionJobOutputBody: Swift.Equatable {
     let piiEntitiesDetectionJobProperties: ComprehendClientTypes.PiiEntitiesDetectionJobProperties?
 }
 
-extension DescribePiiEntitiesDetectionJobOutputResponseBody: Swift.Decodable {
+extension DescribePiiEntitiesDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case piiEntitiesDetectionJobProperties = "PiiEntitiesDetectionJobProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let piiEntitiesDetectionJobPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.PiiEntitiesDetectionJobProperties.self, forKey: .piiEntitiesDetectionJobProperties)
         piiEntitiesDetectionJobProperties = piiEntitiesDetectionJobPropertiesDecoded
+    }
+}
+
+enum DescribePiiEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -6482,8 +6062,9 @@ extension DescribeResourcePolicyInput: Swift.Encodable {
     }
 }
 
-extension DescribeResourcePolicyInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeResourcePolicyInput {
+
+    static func urlPathProvider(_ value: DescribeResourcePolicyInput) -> Swift.String? {
         return "/"
     }
 }
@@ -6493,7 +6074,7 @@ public struct DescribeResourcePolicyInput: Swift.Equatable {
     /// This member is required.
     public var resourceArn: Swift.String?
 
-    public init (
+    public init(
         resourceArn: Swift.String? = nil
     )
     {
@@ -6510,45 +6091,18 @@ extension DescribeResourcePolicyInputBody: Swift.Decodable {
         case resourceArn = "ResourceArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourceArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceArn)
         resourceArn = resourceArnDecoded
     }
 }
 
-extension DescribeResourcePolicyOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeResourcePolicyOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeResourcePolicyOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeResourcePolicyOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeResourcePolicyOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeResourcePolicyOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeResourcePolicyOutputBody = try responseDecoder.decode(responseBody: data)
             self.creationTime = output.creationTime
             self.lastModifiedTime = output.lastModifiedTime
             self.policyRevisionId = output.policyRevisionId
@@ -6562,7 +6116,7 @@ extension DescribeResourcePolicyOutputResponse: ClientRuntime.HttpResponseBindin
     }
 }
 
-public struct DescribeResourcePolicyOutputResponse: Swift.Equatable {
+public struct DescribeResourcePolicyOutput: Swift.Equatable {
     /// The time at which the policy was created.
     public var creationTime: ClientRuntime.Date?
     /// The time at which the policy was last modified.
@@ -6572,7 +6126,7 @@ public struct DescribeResourcePolicyOutputResponse: Swift.Equatable {
     /// The JSON body of the resource-based policy.
     public var resourcePolicy: Swift.String?
 
-    public init (
+    public init(
         creationTime: ClientRuntime.Date? = nil,
         lastModifiedTime: ClientRuntime.Date? = nil,
         policyRevisionId: Swift.String? = nil,
@@ -6586,14 +6140,14 @@ public struct DescribeResourcePolicyOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeResourcePolicyOutputResponseBody: Swift.Equatable {
+struct DescribeResourcePolicyOutputBody: Swift.Equatable {
     let resourcePolicy: Swift.String?
     let creationTime: ClientRuntime.Date?
     let lastModifiedTime: ClientRuntime.Date?
     let policyRevisionId: Swift.String?
 }
 
-extension DescribeResourcePolicyOutputResponseBody: Swift.Decodable {
+extension DescribeResourcePolicyOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case creationTime = "CreationTime"
         case lastModifiedTime = "LastModifiedTime"
@@ -6601,7 +6155,7 @@ extension DescribeResourcePolicyOutputResponseBody: Swift.Decodable {
         case resourcePolicy = "ResourcePolicy"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourcePolicyDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourcePolicy)
         resourcePolicy = resourcePolicyDecoded
@@ -6611,6 +6165,19 @@ extension DescribeResourcePolicyOutputResponseBody: Swift.Decodable {
         lastModifiedTime = lastModifiedTimeDecoded
         let policyRevisionIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .policyRevisionId)
         policyRevisionId = policyRevisionIdDecoded
+    }
+}
+
+enum DescribeResourcePolicyOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -6627,8 +6194,9 @@ extension DescribeSentimentDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension DescribeSentimentDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeSentimentDetectionJobInput {
+
+    static func urlPathProvider(_ value: DescribeSentimentDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -6638,7 +6206,7 @@ public struct DescribeSentimentDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -6655,47 +6223,18 @@ extension DescribeSentimentDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension DescribeSentimentDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeSentimentDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeSentimentDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeSentimentDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeSentimentDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeSentimentDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeSentimentDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.sentimentDetectionJobProperties = output.sentimentDetectionJobProperties
         } else {
             self.sentimentDetectionJobProperties = nil
@@ -6703,11 +6242,11 @@ extension DescribeSentimentDetectionJobOutputResponse: ClientRuntime.HttpRespons
     }
 }
 
-public struct DescribeSentimentDetectionJobOutputResponse: Swift.Equatable {
+public struct DescribeSentimentDetectionJobOutput: Swift.Equatable {
     /// An object that contains the properties associated with a sentiment detection job.
     public var sentimentDetectionJobProperties: ComprehendClientTypes.SentimentDetectionJobProperties?
 
-    public init (
+    public init(
         sentimentDetectionJobProperties: ComprehendClientTypes.SentimentDetectionJobProperties? = nil
     )
     {
@@ -6715,19 +6254,33 @@ public struct DescribeSentimentDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeSentimentDetectionJobOutputResponseBody: Swift.Equatable {
+struct DescribeSentimentDetectionJobOutputBody: Swift.Equatable {
     let sentimentDetectionJobProperties: ComprehendClientTypes.SentimentDetectionJobProperties?
 }
 
-extension DescribeSentimentDetectionJobOutputResponseBody: Swift.Decodable {
+extension DescribeSentimentDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case sentimentDetectionJobProperties = "SentimentDetectionJobProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let sentimentDetectionJobPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.SentimentDetectionJobProperties.self, forKey: .sentimentDetectionJobProperties)
         sentimentDetectionJobProperties = sentimentDetectionJobPropertiesDecoded
+    }
+}
+
+enum DescribeSentimentDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -6744,8 +6297,9 @@ extension DescribeTargetedSentimentDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension DescribeTargetedSentimentDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeTargetedSentimentDetectionJobInput {
+
+    static func urlPathProvider(_ value: DescribeTargetedSentimentDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -6755,7 +6309,7 @@ public struct DescribeTargetedSentimentDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -6772,47 +6326,18 @@ extension DescribeTargetedSentimentDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension DescribeTargetedSentimentDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeTargetedSentimentDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeTargetedSentimentDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeTargetedSentimentDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeTargetedSentimentDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeTargetedSentimentDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeTargetedSentimentDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.targetedSentimentDetectionJobProperties = output.targetedSentimentDetectionJobProperties
         } else {
             self.targetedSentimentDetectionJobProperties = nil
@@ -6820,11 +6345,11 @@ extension DescribeTargetedSentimentDetectionJobOutputResponse: ClientRuntime.Htt
     }
 }
 
-public struct DescribeTargetedSentimentDetectionJobOutputResponse: Swift.Equatable {
+public struct DescribeTargetedSentimentDetectionJobOutput: Swift.Equatable {
     /// An object that contains the properties associated with a targeted sentiment detection job.
     public var targetedSentimentDetectionJobProperties: ComprehendClientTypes.TargetedSentimentDetectionJobProperties?
 
-    public init (
+    public init(
         targetedSentimentDetectionJobProperties: ComprehendClientTypes.TargetedSentimentDetectionJobProperties? = nil
     )
     {
@@ -6832,19 +6357,33 @@ public struct DescribeTargetedSentimentDetectionJobOutputResponse: Swift.Equatab
     }
 }
 
-struct DescribeTargetedSentimentDetectionJobOutputResponseBody: Swift.Equatable {
+struct DescribeTargetedSentimentDetectionJobOutputBody: Swift.Equatable {
     let targetedSentimentDetectionJobProperties: ComprehendClientTypes.TargetedSentimentDetectionJobProperties?
 }
 
-extension DescribeTargetedSentimentDetectionJobOutputResponseBody: Swift.Decodable {
+extension DescribeTargetedSentimentDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case targetedSentimentDetectionJobProperties = "TargetedSentimentDetectionJobProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let targetedSentimentDetectionJobPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.TargetedSentimentDetectionJobProperties.self, forKey: .targetedSentimentDetectionJobProperties)
         targetedSentimentDetectionJobProperties = targetedSentimentDetectionJobPropertiesDecoded
+    }
+}
+
+enum DescribeTargetedSentimentDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -6861,8 +6400,9 @@ extension DescribeTopicsDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension DescribeTopicsDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeTopicsDetectionJobInput {
+
+    static func urlPathProvider(_ value: DescribeTopicsDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -6872,7 +6412,7 @@ public struct DescribeTopicsDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -6889,47 +6429,18 @@ extension DescribeTopicsDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension DescribeTopicsDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeTopicsDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeTopicsDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeTopicsDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeTopicsDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeTopicsDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeTopicsDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.topicsDetectionJobProperties = output.topicsDetectionJobProperties
         } else {
             self.topicsDetectionJobProperties = nil
@@ -6937,11 +6448,11 @@ extension DescribeTopicsDetectionJobOutputResponse: ClientRuntime.HttpResponseBi
     }
 }
 
-public struct DescribeTopicsDetectionJobOutputResponse: Swift.Equatable {
+public struct DescribeTopicsDetectionJobOutput: Swift.Equatable {
     /// The list of properties for the requested job.
     public var topicsDetectionJobProperties: ComprehendClientTypes.TopicsDetectionJobProperties?
 
-    public init (
+    public init(
         topicsDetectionJobProperties: ComprehendClientTypes.TopicsDetectionJobProperties? = nil
     )
     {
@@ -6949,19 +6460,33 @@ public struct DescribeTopicsDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeTopicsDetectionJobOutputResponseBody: Swift.Equatable {
+struct DescribeTopicsDetectionJobOutputBody: Swift.Equatable {
     let topicsDetectionJobProperties: ComprehendClientTypes.TopicsDetectionJobProperties?
 }
 
-extension DescribeTopicsDetectionJobOutputResponseBody: Swift.Decodable {
+extension DescribeTopicsDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case topicsDetectionJobProperties = "TopicsDetectionJobProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let topicsDetectionJobPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.TopicsDetectionJobProperties.self, forKey: .topicsDetectionJobProperties)
         topicsDetectionJobProperties = topicsDetectionJobPropertiesDecoded
+    }
+}
+
+enum DescribeTopicsDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -6983,8 +6508,9 @@ extension DetectDominantLanguageInput: Swift.Encodable {
     }
 }
 
-extension DetectDominantLanguageInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DetectDominantLanguageInput {
+
+    static func urlPathProvider(_ value: DetectDominantLanguageInput) -> Swift.String? {
         return "/"
     }
 }
@@ -6994,7 +6520,7 @@ public struct DetectDominantLanguageInput: Swift.Equatable {
     /// This member is required.
     public var text: Swift.String?
 
-    public init (
+    public init(
         text: Swift.String? = nil
     )
     {
@@ -7011,51 +6537,24 @@ extension DetectDominantLanguageInputBody: Swift.Decodable {
         case text = "Text"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
     }
 }
 
-extension DetectDominantLanguageOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DetectDominantLanguageOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DetectDominantLanguageOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DetectDominantLanguageOutputResponse: Swift.CustomDebugStringConvertible {
+extension DetectDominantLanguageOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension DetectDominantLanguageOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DetectDominantLanguageOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DetectDominantLanguageOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DetectDominantLanguageOutputBody = try responseDecoder.decode(responseBody: data)
             self.languages = output.languages
         } else {
             self.languages = nil
@@ -7063,11 +6562,11 @@ extension DetectDominantLanguageOutputResponse: ClientRuntime.HttpResponseBindin
     }
 }
 
-public struct DetectDominantLanguageOutputResponse: Swift.Equatable {
+public struct DetectDominantLanguageOutput: Swift.Equatable {
     /// Array of languages that Amazon Comprehend detected in the input text. The array is sorted in descending order of the score (the dominant language is always the first element in the array). For each language, the response returns the RFC 5646 language code and the level of confidence that Amazon Comprehend has in the accuracy of its inference. For more information about RFC 5646, see [Tags for Identifying Languages](https://tools.ietf.org/html/rfc5646) on the IETF Tools web site.
     public var languages: [ComprehendClientTypes.DominantLanguage]?
 
-    public init (
+    public init(
         languages: [ComprehendClientTypes.DominantLanguage]? = nil
     )
     {
@@ -7075,16 +6574,16 @@ public struct DetectDominantLanguageOutputResponse: Swift.Equatable {
     }
 }
 
-struct DetectDominantLanguageOutputResponseBody: Swift.Equatable {
+struct DetectDominantLanguageOutputBody: Swift.Equatable {
     let languages: [ComprehendClientTypes.DominantLanguage]?
 }
 
-extension DetectDominantLanguageOutputResponseBody: Swift.Decodable {
+extension DetectDominantLanguageOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case languages = "Languages"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let languagesContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.DominantLanguage?].self, forKey: .languages)
         var languagesDecoded0:[ComprehendClientTypes.DominantLanguage]? = nil
@@ -7097,6 +6596,19 @@ extension DetectDominantLanguageOutputResponseBody: Swift.Decodable {
             }
         }
         languages = languagesDecoded0
+    }
+}
+
+enum DetectDominantLanguageOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -7134,8 +6646,9 @@ extension DetectEntitiesInput: Swift.Encodable {
     }
 }
 
-extension DetectEntitiesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DetectEntitiesInput {
+
+    static func urlPathProvider(_ value: DetectEntitiesInput) -> Swift.String? {
         return "/"
     }
 }
@@ -7152,7 +6665,7 @@ public struct DetectEntitiesInput: Swift.Equatable {
     /// A UTF-8 text string. The maximum string size is 100 KB. If you enter text using this parameter, do not use the Bytes parameter.
     public var text: Swift.String?
 
-    public init (
+    public init(
         bytes: ClientRuntime.Data? = nil,
         documentReaderConfig: ComprehendClientTypes.DocumentReaderConfig? = nil,
         endpointArn: Swift.String? = nil,
@@ -7185,7 +6698,7 @@ extension DetectEntitiesInputBody: Swift.Decodable {
         case text = "Text"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -7200,48 +6713,17 @@ extension DetectEntitiesInputBody: Swift.Decodable {
     }
 }
 
-extension DetectEntitiesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DetectEntitiesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceUnavailableException" : self = .resourceUnavailableException(try ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DetectEntitiesOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceUnavailableException(ResourceUnavailableException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DetectEntitiesOutputResponse: Swift.CustomDebugStringConvertible {
+extension DetectEntitiesOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension DetectEntitiesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DetectEntitiesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DetectEntitiesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DetectEntitiesOutputBody = try responseDecoder.decode(responseBody: data)
             self.blocks = output.blocks
             self.documentMetadata = output.documentMetadata
             self.documentType = output.documentType
@@ -7257,7 +6739,7 @@ extension DetectEntitiesOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct DetectEntitiesOutputResponse: Swift.Equatable {
+public struct DetectEntitiesOutput: Swift.Equatable {
     /// Information about each block of text in the input document. Blocks are nested. A page block contains a block for each line of text, which contains a block for each word. The Block content for a Word input document does not include a Geometry field. The Block field is not present in the response for plain-text inputs.
     public var blocks: [ComprehendClientTypes.Block]?
     /// Information about the document, discovered during text extraction. This field is present in the response only if your request used the Byte parameter.
@@ -7269,7 +6751,7 @@ public struct DetectEntitiesOutputResponse: Swift.Equatable {
     /// Page-level errors that the system detected while processing the input document. The field is empty if the system encountered no errors.
     public var errors: [ComprehendClientTypes.ErrorsListItem]?
 
-    public init (
+    public init(
         blocks: [ComprehendClientTypes.Block]? = nil,
         documentMetadata: ComprehendClientTypes.DocumentMetadata? = nil,
         documentType: [ComprehendClientTypes.DocumentTypeListItem]? = nil,
@@ -7285,7 +6767,7 @@ public struct DetectEntitiesOutputResponse: Swift.Equatable {
     }
 }
 
-struct DetectEntitiesOutputResponseBody: Swift.Equatable {
+struct DetectEntitiesOutputBody: Swift.Equatable {
     let entities: [ComprehendClientTypes.Entity]?
     let documentMetadata: ComprehendClientTypes.DocumentMetadata?
     let documentType: [ComprehendClientTypes.DocumentTypeListItem]?
@@ -7293,7 +6775,7 @@ struct DetectEntitiesOutputResponseBody: Swift.Equatable {
     let errors: [ComprehendClientTypes.ErrorsListItem]?
 }
 
-extension DetectEntitiesOutputResponseBody: Swift.Decodable {
+extension DetectEntitiesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case blocks = "Blocks"
         case documentMetadata = "DocumentMetadata"
@@ -7302,7 +6784,7 @@ extension DetectEntitiesOutputResponseBody: Swift.Decodable {
         case errors = "Errors"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entitiesContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.Entity?].self, forKey: .entities)
         var entitiesDecoded0:[ComprehendClientTypes.Entity]? = nil
@@ -7353,6 +6835,21 @@ extension DetectEntitiesOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum DetectEntitiesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceUnavailableException": return try await ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension DetectKeyPhrasesInput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "DetectKeyPhrasesInput(languageCode: \(Swift.String(describing: languageCode)), text: \"CONTENT_REDACTED\")"}
@@ -7375,8 +6872,9 @@ extension DetectKeyPhrasesInput: Swift.Encodable {
     }
 }
 
-extension DetectKeyPhrasesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DetectKeyPhrasesInput {
+
+    static func urlPathProvider(_ value: DetectKeyPhrasesInput) -> Swift.String? {
         return "/"
     }
 }
@@ -7389,7 +6887,7 @@ public struct DetectKeyPhrasesInput: Swift.Equatable {
     /// This member is required.
     public var text: Swift.String?
 
-    public init (
+    public init(
         languageCode: ComprehendClientTypes.LanguageCode? = nil,
         text: Swift.String? = nil
     )
@@ -7410,7 +6908,7 @@ extension DetectKeyPhrasesInputBody: Swift.Decodable {
         case text = "Text"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -7419,46 +6917,17 @@ extension DetectKeyPhrasesInputBody: Swift.Decodable {
     }
 }
 
-extension DetectKeyPhrasesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DetectKeyPhrasesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DetectKeyPhrasesOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DetectKeyPhrasesOutputResponse: Swift.CustomDebugStringConvertible {
+extension DetectKeyPhrasesOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension DetectKeyPhrasesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DetectKeyPhrasesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DetectKeyPhrasesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DetectKeyPhrasesOutputBody = try responseDecoder.decode(responseBody: data)
             self.keyPhrases = output.keyPhrases
         } else {
             self.keyPhrases = nil
@@ -7466,11 +6935,11 @@ extension DetectKeyPhrasesOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct DetectKeyPhrasesOutputResponse: Swift.Equatable {
+public struct DetectKeyPhrasesOutput: Swift.Equatable {
     /// A collection of key phrases that Amazon Comprehend identified in the input text. For each key phrase, the response provides the text of the key phrase, where the key phrase begins and ends, and the level of confidence that Amazon Comprehend has in the accuracy of the detection.
     public var keyPhrases: [ComprehendClientTypes.KeyPhrase]?
 
-    public init (
+    public init(
         keyPhrases: [ComprehendClientTypes.KeyPhrase]? = nil
     )
     {
@@ -7478,16 +6947,16 @@ public struct DetectKeyPhrasesOutputResponse: Swift.Equatable {
     }
 }
 
-struct DetectKeyPhrasesOutputResponseBody: Swift.Equatable {
+struct DetectKeyPhrasesOutputBody: Swift.Equatable {
     let keyPhrases: [ComprehendClientTypes.KeyPhrase]?
 }
 
-extension DetectKeyPhrasesOutputResponseBody: Swift.Decodable {
+extension DetectKeyPhrasesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case keyPhrases = "KeyPhrases"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let keyPhrasesContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.KeyPhrase?].self, forKey: .keyPhrases)
         var keyPhrasesDecoded0:[ComprehendClientTypes.KeyPhrase]? = nil
@@ -7500,6 +6969,20 @@ extension DetectKeyPhrasesOutputResponseBody: Swift.Decodable {
             }
         }
         keyPhrases = keyPhrasesDecoded0
+    }
+}
+
+enum DetectKeyPhrasesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -7520,21 +7003,22 @@ extension DetectPiiEntitiesInput: Swift.Encodable {
     }
 }
 
-extension DetectPiiEntitiesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DetectPiiEntitiesInput {
+
+    static func urlPathProvider(_ value: DetectPiiEntitiesInput) -> Swift.String? {
         return "/"
     }
 }
 
 public struct DetectPiiEntitiesInput: Swift.Equatable {
-    /// The language of the input documents. Currently, English is the only valid language.
+    /// The language of the input text. Enter the language code for English (en) or Spanish (es).
     /// This member is required.
     public var languageCode: ComprehendClientTypes.LanguageCode?
     /// A UTF-8 text string. The maximum string size is 100 KB.
     /// This member is required.
     public var text: Swift.String?
 
-    public init (
+    public init(
         languageCode: ComprehendClientTypes.LanguageCode? = nil,
         text: Swift.String? = nil
     )
@@ -7555,7 +7039,7 @@ extension DetectPiiEntitiesInputBody: Swift.Decodable {
         case text = "Text"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -7564,40 +7048,11 @@ extension DetectPiiEntitiesInputBody: Swift.Decodable {
     }
 }
 
-extension DetectPiiEntitiesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DetectPiiEntitiesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DetectPiiEntitiesOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DetectPiiEntitiesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DetectPiiEntitiesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DetectPiiEntitiesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DetectPiiEntitiesOutputBody = try responseDecoder.decode(responseBody: data)
             self.entities = output.entities
         } else {
             self.entities = nil
@@ -7605,11 +7060,11 @@ extension DetectPiiEntitiesOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct DetectPiiEntitiesOutputResponse: Swift.Equatable {
+public struct DetectPiiEntitiesOutput: Swift.Equatable {
     /// A collection of PII entities identified in the input text. For each entity, the response provides the entity type, where the entity text begins and ends, and the level of confidence that Amazon Comprehend has in the detection.
     public var entities: [ComprehendClientTypes.PiiEntity]?
 
-    public init (
+    public init(
         entities: [ComprehendClientTypes.PiiEntity]? = nil
     )
     {
@@ -7617,16 +7072,16 @@ public struct DetectPiiEntitiesOutputResponse: Swift.Equatable {
     }
 }
 
-struct DetectPiiEntitiesOutputResponseBody: Swift.Equatable {
+struct DetectPiiEntitiesOutputBody: Swift.Equatable {
     let entities: [ComprehendClientTypes.PiiEntity]?
 }
 
-extension DetectPiiEntitiesOutputResponseBody: Swift.Decodable {
+extension DetectPiiEntitiesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case entities = "Entities"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entitiesContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.PiiEntity?].self, forKey: .entities)
         var entitiesDecoded0:[ComprehendClientTypes.PiiEntity]? = nil
@@ -7639,6 +7094,20 @@ extension DetectPiiEntitiesOutputResponseBody: Swift.Decodable {
             }
         }
         entities = entitiesDecoded0
+    }
+}
+
+enum DetectPiiEntitiesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -7664,8 +7133,9 @@ extension DetectSentimentInput: Swift.Encodable {
     }
 }
 
-extension DetectSentimentInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DetectSentimentInput {
+
+    static func urlPathProvider(_ value: DetectSentimentInput) -> Swift.String? {
         return "/"
     }
 }
@@ -7678,7 +7148,7 @@ public struct DetectSentimentInput: Swift.Equatable {
     /// This member is required.
     public var text: Swift.String?
 
-    public init (
+    public init(
         languageCode: ComprehendClientTypes.LanguageCode? = nil,
         text: Swift.String? = nil
     )
@@ -7699,7 +7169,7 @@ extension DetectSentimentInputBody: Swift.Decodable {
         case text = "Text"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -7708,46 +7178,17 @@ extension DetectSentimentInputBody: Swift.Decodable {
     }
 }
 
-extension DetectSentimentOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DetectSentimentOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DetectSentimentOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DetectSentimentOutputResponse: Swift.CustomDebugStringConvertible {
+extension DetectSentimentOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension DetectSentimentOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DetectSentimentOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DetectSentimentOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DetectSentimentOutputBody = try responseDecoder.decode(responseBody: data)
             self.sentiment = output.sentiment
             self.sentimentScore = output.sentimentScore
         } else {
@@ -7757,13 +7198,13 @@ extension DetectSentimentOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct DetectSentimentOutputResponse: Swift.Equatable {
+public struct DetectSentimentOutput: Swift.Equatable {
     /// The inferred sentiment that Amazon Comprehend has the highest level of confidence in.
     public var sentiment: ComprehendClientTypes.SentimentType?
     /// An object that lists the sentiments, and their corresponding confidence levels.
     public var sentimentScore: ComprehendClientTypes.SentimentScore?
 
-    public init (
+    public init(
         sentiment: ComprehendClientTypes.SentimentType? = nil,
         sentimentScore: ComprehendClientTypes.SentimentScore? = nil
     )
@@ -7773,23 +7214,37 @@ public struct DetectSentimentOutputResponse: Swift.Equatable {
     }
 }
 
-struct DetectSentimentOutputResponseBody: Swift.Equatable {
+struct DetectSentimentOutputBody: Swift.Equatable {
     let sentiment: ComprehendClientTypes.SentimentType?
     let sentimentScore: ComprehendClientTypes.SentimentScore?
 }
 
-extension DetectSentimentOutputResponseBody: Swift.Decodable {
+extension DetectSentimentOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case sentiment = "Sentiment"
         case sentimentScore = "SentimentScore"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let sentimentDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.SentimentType.self, forKey: .sentiment)
         sentiment = sentimentDecoded
         let sentimentScoreDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.SentimentScore.self, forKey: .sentimentScore)
         sentimentScore = sentimentScoreDecoded
+    }
+}
+
+enum DetectSentimentOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -7815,8 +7270,9 @@ extension DetectSyntaxInput: Swift.Encodable {
     }
 }
 
-extension DetectSyntaxInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DetectSyntaxInput {
+
+    static func urlPathProvider(_ value: DetectSyntaxInput) -> Swift.String? {
         return "/"
     }
 }
@@ -7829,7 +7285,7 @@ public struct DetectSyntaxInput: Swift.Equatable {
     /// This member is required.
     public var text: Swift.String?
 
-    public init (
+    public init(
         languageCode: ComprehendClientTypes.SyntaxLanguageCode? = nil,
         text: Swift.String? = nil
     )
@@ -7850,7 +7306,7 @@ extension DetectSyntaxInputBody: Swift.Decodable {
         case text = "Text"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -7859,46 +7315,17 @@ extension DetectSyntaxInputBody: Swift.Decodable {
     }
 }
 
-extension DetectSyntaxOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DetectSyntaxOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DetectSyntaxOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DetectSyntaxOutputResponse: Swift.CustomDebugStringConvertible {
+extension DetectSyntaxOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension DetectSyntaxOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DetectSyntaxOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DetectSyntaxOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DetectSyntaxOutputBody = try responseDecoder.decode(responseBody: data)
             self.syntaxTokens = output.syntaxTokens
         } else {
             self.syntaxTokens = nil
@@ -7906,11 +7333,11 @@ extension DetectSyntaxOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct DetectSyntaxOutputResponse: Swift.Equatable {
+public struct DetectSyntaxOutput: Swift.Equatable {
     /// A collection of syntax tokens describing the text. For each token, the response provides the text, the token type, where the text begins and ends, and the level of confidence that Amazon Comprehend has that the token is correct. For a list of token types, see [Syntax](https://docs.aws.amazon.com/comprehend/latest/dg/how-syntax.html) in the Comprehend Developer Guide.
     public var syntaxTokens: [ComprehendClientTypes.SyntaxToken]?
 
-    public init (
+    public init(
         syntaxTokens: [ComprehendClientTypes.SyntaxToken]? = nil
     )
     {
@@ -7918,16 +7345,16 @@ public struct DetectSyntaxOutputResponse: Swift.Equatable {
     }
 }
 
-struct DetectSyntaxOutputResponseBody: Swift.Equatable {
+struct DetectSyntaxOutputBody: Swift.Equatable {
     let syntaxTokens: [ComprehendClientTypes.SyntaxToken]?
 }
 
-extension DetectSyntaxOutputResponseBody: Swift.Decodable {
+extension DetectSyntaxOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case syntaxTokens = "SyntaxTokens"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let syntaxTokensContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.SyntaxToken?].self, forKey: .syntaxTokens)
         var syntaxTokensDecoded0:[ComprehendClientTypes.SyntaxToken]? = nil
@@ -7940,6 +7367,20 @@ extension DetectSyntaxOutputResponseBody: Swift.Decodable {
             }
         }
         syntaxTokens = syntaxTokensDecoded0
+    }
+}
+
+enum DetectSyntaxOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -7965,8 +7406,9 @@ extension DetectTargetedSentimentInput: Swift.Encodable {
     }
 }
 
-extension DetectTargetedSentimentInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DetectTargetedSentimentInput {
+
+    static func urlPathProvider(_ value: DetectTargetedSentimentInput) -> Swift.String? {
         return "/"
     }
 }
@@ -7979,7 +7421,7 @@ public struct DetectTargetedSentimentInput: Swift.Equatable {
     /// This member is required.
     public var text: Swift.String?
 
-    public init (
+    public init(
         languageCode: ComprehendClientTypes.LanguageCode? = nil,
         text: Swift.String? = nil
     )
@@ -8000,7 +7442,7 @@ extension DetectTargetedSentimentInputBody: Swift.Decodable {
         case text = "Text"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
         text = textDecoded
@@ -8009,46 +7451,17 @@ extension DetectTargetedSentimentInputBody: Swift.Decodable {
     }
 }
 
-extension DetectTargetedSentimentOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DetectTargetedSentimentOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextSizeLimitExceededException" : self = .textSizeLimitExceededException(try TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedLanguageException" : self = .unsupportedLanguageException(try UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DetectTargetedSentimentOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case textSizeLimitExceededException(TextSizeLimitExceededException)
-    case unsupportedLanguageException(UnsupportedLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DetectTargetedSentimentOutputResponse: Swift.CustomDebugStringConvertible {
+extension DetectTargetedSentimentOutput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "CONTENT_REDACTED"
     }
 }
 
-extension DetectTargetedSentimentOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DetectTargetedSentimentOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DetectTargetedSentimentOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DetectTargetedSentimentOutputBody = try responseDecoder.decode(responseBody: data)
             self.entities = output.entities
         } else {
             self.entities = nil
@@ -8056,11 +7469,11 @@ extension DetectTargetedSentimentOutputResponse: ClientRuntime.HttpResponseBindi
     }
 }
 
-public struct DetectTargetedSentimentOutputResponse: Swift.Equatable {
+public struct DetectTargetedSentimentOutput: Swift.Equatable {
     /// Targeted sentiment analysis for each of the entities identified in the input text.
     public var entities: [ComprehendClientTypes.TargetedSentimentEntity]?
 
-    public init (
+    public init(
         entities: [ComprehendClientTypes.TargetedSentimentEntity]? = nil
     )
     {
@@ -8068,16 +7481,16 @@ public struct DetectTargetedSentimentOutputResponse: Swift.Equatable {
     }
 }
 
-struct DetectTargetedSentimentOutputResponseBody: Swift.Equatable {
+struct DetectTargetedSentimentOutputBody: Swift.Equatable {
     let entities: [ComprehendClientTypes.TargetedSentimentEntity]?
 }
 
-extension DetectTargetedSentimentOutputResponseBody: Swift.Decodable {
+extension DetectTargetedSentimentOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case entities = "Entities"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entitiesContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.TargetedSentimentEntity?].self, forKey: .entities)
         var entitiesDecoded0:[ComprehendClientTypes.TargetedSentimentEntity]? = nil
@@ -8090,6 +7503,162 @@ extension DetectTargetedSentimentOutputResponseBody: Swift.Decodable {
             }
         }
         entities = entitiesDecoded0
+    }
+}
+
+enum DetectTargetedSentimentOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
+extension DetectToxicContentInput: Swift.CustomDebugStringConvertible {
+    public var debugDescription: Swift.String {
+        "DetectToxicContentInput(languageCode: \(Swift.String(describing: languageCode)), textSegments: \"CONTENT_REDACTED\")"}
+}
+
+extension DetectToxicContentInput: Swift.Encodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case languageCode = "LanguageCode"
+        case textSegments = "TextSegments"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let languageCode = self.languageCode {
+            try encodeContainer.encode(languageCode.rawValue, forKey: .languageCode)
+        }
+        if let textSegments = textSegments {
+            var textSegmentsContainer = encodeContainer.nestedUnkeyedContainer(forKey: .textSegments)
+            for textsegment0 in textSegments {
+                try textSegmentsContainer.encode(textsegment0)
+            }
+        }
+    }
+}
+
+extension DetectToxicContentInput {
+
+    static func urlPathProvider(_ value: DetectToxicContentInput) -> Swift.String? {
+        return "/"
+    }
+}
+
+public struct DetectToxicContentInput: Swift.Equatable {
+    /// The language of the input text. Currently, English is the only supported language.
+    /// This member is required.
+    public var languageCode: ComprehendClientTypes.LanguageCode?
+    /// A list of up to 10 text strings. Each string has a maximum size of 1 KB, and the maximum size of the list is 10 KB.
+    /// This member is required.
+    public var textSegments: [ComprehendClientTypes.TextSegment]?
+
+    public init(
+        languageCode: ComprehendClientTypes.LanguageCode? = nil,
+        textSegments: [ComprehendClientTypes.TextSegment]? = nil
+    )
+    {
+        self.languageCode = languageCode
+        self.textSegments = textSegments
+    }
+}
+
+struct DetectToxicContentInputBody: Swift.Equatable {
+    let textSegments: [ComprehendClientTypes.TextSegment]?
+    let languageCode: ComprehendClientTypes.LanguageCode?
+}
+
+extension DetectToxicContentInputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case languageCode = "LanguageCode"
+        case textSegments = "TextSegments"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let textSegmentsContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.TextSegment?].self, forKey: .textSegments)
+        var textSegmentsDecoded0:[ComprehendClientTypes.TextSegment]? = nil
+        if let textSegmentsContainer = textSegmentsContainer {
+            textSegmentsDecoded0 = [ComprehendClientTypes.TextSegment]()
+            for structure0 in textSegmentsContainer {
+                if let structure0 = structure0 {
+                    textSegmentsDecoded0?.append(structure0)
+                }
+            }
+        }
+        textSegments = textSegmentsDecoded0
+        let languageCodeDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.LanguageCode.self, forKey: .languageCode)
+        languageCode = languageCodeDecoded
+    }
+}
+
+extension DetectToxicContentOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: DetectToxicContentOutputBody = try responseDecoder.decode(responseBody: data)
+            self.resultList = output.resultList
+        } else {
+            self.resultList = nil
+        }
+    }
+}
+
+public struct DetectToxicContentOutput: Swift.Equatable {
+    /// Results of the content moderation analysis. Each entry in the results list contains a list of toxic content types identified in the text, along with a confidence score for each content type. The results list also includes a toxicity score for each entry in the results list.
+    public var resultList: [ComprehendClientTypes.ToxicLabels]?
+
+    public init(
+        resultList: [ComprehendClientTypes.ToxicLabels]? = nil
+    )
+    {
+        self.resultList = resultList
+    }
+}
+
+struct DetectToxicContentOutputBody: Swift.Equatable {
+    let resultList: [ComprehendClientTypes.ToxicLabels]?
+}
+
+extension DetectToxicContentOutputBody: Swift.Decodable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case resultList = "ResultList"
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let resultListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.ToxicLabels?].self, forKey: .resultList)
+        var resultListDecoded0:[ComprehendClientTypes.ToxicLabels]? = nil
+        if let resultListContainer = resultListContainer {
+            resultListDecoded0 = [ComprehendClientTypes.ToxicLabels]()
+            for structure0 in resultListContainer {
+                if let structure0 = structure0 {
+                    resultListDecoded0?.append(structure0)
+                }
+            }
+        }
+        resultList = resultListDecoded0
+    }
+}
+
+enum DetectToxicContentOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextSizeLimitExceededException": return try await TextSizeLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedLanguageException": return try await UnsupportedLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -8113,7 +7682,7 @@ extension ComprehendClientTypes.DocumentClass: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let nameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .name)
         name = nameDecoded
@@ -8134,7 +7703,7 @@ extension ComprehendClientTypes {
         /// The confidence score that Amazon Comprehend has this class correctly attributed.
         public var score: Swift.Float?
 
-        public init (
+        public init(
             name: Swift.String? = nil,
             page: Swift.Int? = nil,
             score: Swift.Float? = nil
@@ -8167,7 +7736,7 @@ extension ComprehendClientTypes.DocumentClassificationConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let modeDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DocumentClassifierMode.self, forKey: .mode)
         mode = modeDecoded
@@ -8186,7 +7755,7 @@ extension ComprehendClientTypes.DocumentClassificationConfig: Swift.Codable {
 }
 
 extension ComprehendClientTypes {
-    /// Configuration required for a custom classification model.
+    /// Configuration required for a document classification model.
     public struct DocumentClassificationConfig: Swift.Equatable {
         /// One or more labels to associate with the custom classifier.
         public var labels: [Swift.String]?
@@ -8194,7 +7763,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var mode: ComprehendClientTypes.DocumentClassifierMode?
 
-        public init (
+        public init(
             labels: [Swift.String]? = nil,
             mode: ComprehendClientTypes.DocumentClassifierMode? = nil
         )
@@ -8230,7 +7799,7 @@ extension ComprehendClientTypes.DocumentClassificationJobFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobName)
         jobName = jobNameDecoded
@@ -8255,7 +7824,7 @@ extension ComprehendClientTypes {
         /// Filters the list of jobs based on the time that the job was submitted for processing. Returns only jobs submitted before the specified time. Jobs are returned in ascending order, oldest to newest.
         public var submitTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             jobName: Swift.String? = nil,
             jobStatus: ComprehendClientTypes.JobStatus? = nil,
             submitTimeAfter: ClientRuntime.Date? = nil,
@@ -8335,7 +7904,7 @@ extension ComprehendClientTypes.DocumentClassificationJobProperties: Swift.Codab
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -8401,10 +7970,10 @@ extension ComprehendClientTypes {
         ///
         /// * Amazon Resource Name (ARN) of a KMS Key: "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
         public var volumeKmsKeyId: Swift.String?
-        /// Configuration parameters for a private Virtual Private Cloud (VPC) containing the resources you are using for your document classification job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vppc/latest/userguide/what-is-amazon-vpc.html).
+        /// Configuration parameters for a private Virtual Private Cloud (VPC) containing the resources you are using for your document classification job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
         public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-        public init (
+        public init(
             dataAccessRoleArn: Swift.String? = nil,
             documentClassifierArn: Swift.String? = nil,
             endTime: ClientRuntime.Date? = nil,
@@ -8472,6 +8041,84 @@ extension ComprehendClientTypes {
     }
 }
 
+extension ComprehendClientTypes {
+    public enum DocumentClassifierDocumentTypeFormat: Swift.Equatable, Swift.RawRepresentable, Swift.CaseIterable, Swift.Codable, Swift.Hashable {
+        case plainTextDocument
+        case semiStructuredDocument
+        case sdkUnknown(Swift.String)
+
+        public static var allCases: [DocumentClassifierDocumentTypeFormat] {
+            return [
+                .plainTextDocument,
+                .semiStructuredDocument,
+                .sdkUnknown("")
+            ]
+        }
+        public init?(rawValue: Swift.String) {
+            let value = Self.allCases.first(where: { $0.rawValue == rawValue })
+            self = value ?? Self.sdkUnknown(rawValue)
+        }
+        public var rawValue: Swift.String {
+            switch self {
+            case .plainTextDocument: return "PLAIN_TEXT_DOCUMENT"
+            case .semiStructuredDocument: return "SEMI_STRUCTURED_DOCUMENT"
+            case let .sdkUnknown(s): return s
+            }
+        }
+        public init(from decoder: Swift.Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(RawValue.self)
+            self = DocumentClassifierDocumentTypeFormat(rawValue: rawValue) ?? DocumentClassifierDocumentTypeFormat.sdkUnknown(rawValue)
+        }
+    }
+}
+
+extension ComprehendClientTypes.DocumentClassifierDocuments: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case s3Uri = "S3Uri"
+        case testS3Uri = "TestS3Uri"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let s3Uri = self.s3Uri {
+            try encodeContainer.encode(s3Uri, forKey: .s3Uri)
+        }
+        if let testS3Uri = self.testS3Uri {
+            try encodeContainer.encode(testS3Uri, forKey: .testS3Uri)
+        }
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
+        s3Uri = s3UriDecoded
+        let testS3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .testS3Uri)
+        testS3Uri = testS3UriDecoded
+    }
+}
+
+extension ComprehendClientTypes {
+    /// The location of the training documents. This parameter is required in a request to create a semi-structured document classification model.
+    public struct DocumentClassifierDocuments: Swift.Equatable {
+        /// The S3 URI location of the training documents specified in the S3Uri CSV file.
+        /// This member is required.
+        public var s3Uri: Swift.String?
+        /// The S3 URI location of the test documents included in the TestS3Uri CSV file. This field is not required if you do not specify a test CSV file.
+        public var testS3Uri: Swift.String?
+
+        public init(
+            s3Uri: Swift.String? = nil,
+            testS3Uri: Swift.String? = nil
+        )
+        {
+            self.s3Uri = s3Uri
+            self.testS3Uri = testS3Uri
+        }
+    }
+
+}
+
 extension ComprehendClientTypes.DocumentClassifierFilter: Swift.Codable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case documentClassifierName = "DocumentClassifierName"
@@ -8496,7 +8143,7 @@ extension ComprehendClientTypes.DocumentClassifierFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let statusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.ModelStatus.self, forKey: .status)
         status = statusDecoded
@@ -8521,7 +8168,7 @@ extension ComprehendClientTypes {
         /// Filters the list of classifiers based on the time that the classifier was submitted for processing. Returns only classifiers submitted before the specified time. Classifiers are returned in ascending order, oldest to newest.
         public var submitTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             documentClassifierName: Swift.String? = nil,
             status: ComprehendClientTypes.ModelStatus? = nil,
             submitTimeAfter: ClientRuntime.Date? = nil,
@@ -8541,6 +8188,9 @@ extension ComprehendClientTypes.DocumentClassifierInputDataConfig: Swift.Codable
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case augmentedManifests = "AugmentedManifests"
         case dataFormat = "DataFormat"
+        case documentReaderConfig = "DocumentReaderConfig"
+        case documentType = "DocumentType"
+        case documents = "Documents"
         case labelDelimiter = "LabelDelimiter"
         case s3Uri = "S3Uri"
         case testS3Uri = "TestS3Uri"
@@ -8557,6 +8207,15 @@ extension ComprehendClientTypes.DocumentClassifierInputDataConfig: Swift.Codable
         if let dataFormat = self.dataFormat {
             try encodeContainer.encode(dataFormat.rawValue, forKey: .dataFormat)
         }
+        if let documentReaderConfig = self.documentReaderConfig {
+            try encodeContainer.encode(documentReaderConfig, forKey: .documentReaderConfig)
+        }
+        if let documentType = self.documentType {
+            try encodeContainer.encode(documentType.rawValue, forKey: .documentType)
+        }
+        if let documents = self.documents {
+            try encodeContainer.encode(documents, forKey: .documents)
+        }
         if let labelDelimiter = self.labelDelimiter {
             try encodeContainer.encode(labelDelimiter, forKey: .labelDelimiter)
         }
@@ -8568,7 +8227,7 @@ extension ComprehendClientTypes.DocumentClassifierInputDataConfig: Swift.Codable
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let dataFormatDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DocumentClassifierDataFormat.self, forKey: .dataFormat)
         dataFormat = dataFormatDecoded
@@ -8589,6 +8248,12 @@ extension ComprehendClientTypes.DocumentClassifierInputDataConfig: Swift.Codable
             }
         }
         augmentedManifests = augmentedManifestsDecoded0
+        let documentTypeDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DocumentClassifierDocumentTypeFormat.self, forKey: .documentType)
+        documentType = documentTypeDecoded
+        let documentsDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DocumentClassifierDocuments.self, forKey: .documents)
+        documents = documentsDecoded
+        let documentReaderConfigDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DocumentReaderConfig.self, forKey: .documentReaderConfig)
+        documentReaderConfig = documentReaderConfigDecoded
     }
 }
 
@@ -8606,16 +8271,34 @@ extension ComprehendClientTypes {
         ///
         /// If you don't specify a value, Amazon Comprehend uses COMPREHEND_CSV as the default.
         public var dataFormat: ComprehendClientTypes.DocumentClassifierDataFormat?
+        /// Provides configuration parameters to override the default actions for extracting text from PDF documents and image files. By default, Amazon Comprehend performs the following actions to extract text from files, based on the input file type:
+        ///
+        /// * Word files - Amazon Comprehend parser extracts the text.
+        ///
+        /// * Digital PDF files - Amazon Comprehend parser extracts the text.
+        ///
+        /// * Image files and scanned PDF files - Amazon Comprehend uses the Amazon Textract DetectDocumentText API to extract the text.
+        ///
+        ///
+        /// DocumentReaderConfig does not apply to plain text files or Word files. For image files and PDF documents, you can override these default actions using the fields listed below. For more information, see [ Setting text extraction options](https://docs.aws.amazon.com/comprehend/latest/dg/idp-set-textract-options.html) in the Comprehend Developer Guide.
+        public var documentReaderConfig: ComprehendClientTypes.DocumentReaderConfig?
+        /// The type of input documents for training the model. Provide plain-text documents to create a plain-text model, and provide semi-structured documents to create a native document model.
+        public var documentType: ComprehendClientTypes.DocumentClassifierDocumentTypeFormat?
+        /// The S3 location of the training documents. This parameter is required in a request to create a native document model.
+        public var documents: ComprehendClientTypes.DocumentClassifierDocuments?
         /// Indicates the delimiter used to separate each label for training a multi-label classifier. The default delimiter between labels is a pipe (|). You can use a different character as a delimiter (if it's an allowed character) by specifying it under Delimiter for labels. If the training documents use a delimiter other than the default or the delimiter you specify, the labels on that line will be combined to make a single unique label, such as LABELLABELLABEL.
         public var labelDelimiter: Swift.String?
         /// The Amazon S3 URI for the input data. The S3 bucket must be in the same Region as the API endpoint that you are calling. The URI can point to a single input file or it can provide the prefix for a collection of input files. For example, if you use the URI S3://bucketName/prefix, if the prefix is a single file, Amazon Comprehend uses that file as input. If more than one file begins with the prefix, Amazon Comprehend uses all of them as input. This parameter is required if you set DataFormat to COMPREHEND_CSV.
         public var s3Uri: Swift.String?
-        /// This specifies the Amazon S3 location where the test annotations for an entity recognizer are located. The URI must be in the same Amazon Web Services Region as the API endpoint that you are calling.
+        /// This specifies the Amazon S3 location that contains the test annotations for the document classifier. The URI must be in the same Amazon Web Services Region as the API endpoint that you are calling.
         public var testS3Uri: Swift.String?
 
-        public init (
+        public init(
             augmentedManifests: [ComprehendClientTypes.AugmentedManifestsListItem]? = nil,
             dataFormat: ComprehendClientTypes.DocumentClassifierDataFormat? = nil,
+            documentReaderConfig: ComprehendClientTypes.DocumentReaderConfig? = nil,
+            documentType: ComprehendClientTypes.DocumentClassifierDocumentTypeFormat? = nil,
+            documents: ComprehendClientTypes.DocumentClassifierDocuments? = nil,
             labelDelimiter: Swift.String? = nil,
             s3Uri: Swift.String? = nil,
             testS3Uri: Swift.String? = nil
@@ -8623,6 +8306,9 @@ extension ComprehendClientTypes {
         {
             self.augmentedManifests = augmentedManifests
             self.dataFormat = dataFormat
+            self.documentReaderConfig = documentReaderConfig
+            self.documentType = documentType
+            self.documents = documents
             self.labelDelimiter = labelDelimiter
             self.s3Uri = s3Uri
             self.testS3Uri = testS3Uri
@@ -8683,7 +8369,7 @@ extension ComprehendClientTypes.DocumentClassifierOutputDataConfig: Swift.Codabl
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -8695,7 +8381,7 @@ extension ComprehendClientTypes.DocumentClassifierOutputDataConfig: Swift.Codabl
 }
 
 extension ComprehendClientTypes {
-    /// Provides output results configuration parameters for custom classifier jobs.
+    /// Provide the location for output data from a custom classifier job. This field is mandatory if you are training a native document model.
     public struct DocumentClassifierOutputDataConfig: Swift.Equatable {
         /// The Amazon S3 prefix for the data lake location of the flywheel statistics.
         public var flywheelStatsS3Prefix: Swift.String?
@@ -8709,10 +8395,10 @@ extension ComprehendClientTypes {
         ///
         /// * ARN of a KMS Key Alias: "arn:aws:kms:us-west-2:111122223333:alias/ExampleAlias"
         public var kmsKeyId: Swift.String?
-        /// When you use the OutputDataConfig object while creating a custom classifier, you specify the Amazon S3 location where you want to write the confusion matrix. The URI must be in the same Region as the API endpoint that you are calling. The location is used as the prefix for the actual location of this output file. When the custom classifier job is finished, the service creates the output file in a directory specific to the job. The S3Uri field contains the location of the output file, called output.tar.gz. It is a compressed archive that contains the confusion matrix.
+        /// When you use the OutputDataConfig object while creating a custom classifier, you specify the Amazon S3 location where you want to write the confusion matrix and other output files. The URI must be in the same Region as the API endpoint that you are calling. The location is used as the prefix for the actual location of this output file. When the custom classifier job is finished, the service creates the output file in a directory specific to the job. The S3Uri field contains the location of the output file, called output.tar.gz. It is a compressed archive that contains the confusion matrix.
         public var s3Uri: Swift.String?
 
-        public init (
+        public init(
             flywheelStatsS3Prefix: Swift.String? = nil,
             kmsKeyId: Swift.String? = nil,
             s3Uri: Swift.String? = nil
@@ -8810,7 +8496,7 @@ extension ComprehendClientTypes.DocumentClassifierProperties: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassifierArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .documentClassifierArn)
         documentClassifierArn = documentClassifierArnDecoded
@@ -8889,7 +8575,7 @@ extension ComprehendClientTypes {
         public var outputDataConfig: ComprehendClientTypes.DocumentClassifierOutputDataConfig?
         /// The Amazon Resource Name (ARN) of the source model. This model was imported from a different Amazon Web Services account to create the document classifier model in your Amazon Web Services account.
         public var sourceModelArn: Swift.String?
-        /// The status of the document classifier. If the status is TRAINED the classifier is ready to use. If the status is FAILED you can see additional information about why the classifier wasn't trained in the Message field.
+        /// The status of the document classifier. If the status is TRAINED the classifier is ready to use. If the status is TRAINED_WITH_WARNINGS the classifier training succeeded, but you should review the warnings returned in the CreateDocumentClassifier response. If the status is FAILED you can see additional information about why the classifier wasn't trained in the Message field.
         public var status: ComprehendClientTypes.ModelStatus?
         /// The time that the document classifier was submitted for training.
         public var submitTime: ClientRuntime.Date?
@@ -8905,10 +8591,10 @@ extension ComprehendClientTypes {
         ///
         /// * Amazon Resource Name (ARN) of a KMS Key: "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
         public var volumeKmsKeyId: Swift.String?
-        /// Configuration parameters for a private Virtual Private Cloud (VPC) containing the resources you are using for your custom classifier. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vppc/latest/userguide/what-is-amazon-vpc.html).
+        /// Configuration parameters for a private Virtual Private Cloud (VPC) containing the resources you are using for your custom classifier. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
         public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-        public init (
+        public init(
             classifierMetadata: ComprehendClientTypes.ClassifierMetadata? = nil,
             dataAccessRoleArn: Swift.String? = nil,
             documentClassifierArn: Swift.String? = nil,
@@ -8982,7 +8668,7 @@ extension ComprehendClientTypes.DocumentClassifierSummary: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassifierNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .documentClassifierName)
         documentClassifierName = documentClassifierNameDecoded
@@ -9011,7 +8697,7 @@ extension ComprehendClientTypes {
         /// The number of versions you created.
         public var numberOfVersions: Swift.Int?
 
-        public init (
+        public init(
             documentClassifierName: Swift.String? = nil,
             latestVersionCreatedAt: ClientRuntime.Date? = nil,
             latestVersionName: Swift.String? = nil,
@@ -9049,7 +8735,7 @@ extension ComprehendClientTypes.DocumentLabel: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let nameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .name)
         name = nameDecoded
@@ -9070,7 +8756,7 @@ extension ComprehendClientTypes {
         /// The confidence score that Amazon Comprehend has this label correctly attributed.
         public var score: Swift.Float?
 
-        public init (
+        public init(
             name: Swift.String? = nil,
             page: Swift.Int? = nil,
             score: Swift.Float? = nil
@@ -9103,7 +8789,7 @@ extension ComprehendClientTypes.DocumentMetadata: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let pagesDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .pages)
         pages = pagesDecoded
@@ -9129,7 +8815,7 @@ extension ComprehendClientTypes {
         /// Number of pages in the document.
         public var pages: Swift.Int?
 
-        public init (
+        public init(
             extractedCharacters: [ComprehendClientTypes.ExtractedCharactersListItem]? = nil,
             pages: Swift.Int? = nil
         )
@@ -9174,11 +8860,7 @@ extension ComprehendClientTypes {
 }
 
 extension ComprehendClientTypes {
-    /// Specifies the type of Amazon Textract features to apply. If you chose TEXTRACT_ANALYZE_DOCUMENT as the read action, you must specify one or both of the following values:
-    ///
-    /// * TABLES - Returns additional information about any tables that are detected in the input document.
-    ///
-    /// * FORMS - Returns additional information about any forms that are detected in the input document.
+    /// TABLES or FORMS
     public enum DocumentReadFeatureTypes: Swift.Equatable, Swift.RawRepresentable, Swift.CaseIterable, Swift.Codable, Swift.Hashable {
         case forms
         case tables
@@ -9265,7 +8947,7 @@ extension ComprehendClientTypes.DocumentReaderConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentReadActionDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DocumentReadAction.self, forKey: .documentReadAction)
         documentReadAction = documentReadActionDecoded
@@ -9295,7 +8977,7 @@ extension ComprehendClientTypes {
     /// * Image files and scanned PDF files - Amazon Comprehend uses the Amazon Textract DetectDocumentText API to extract the text.
     ///
     ///
-    /// DocumentReaderConfig does not apply to plain text files or Word files. For image files and PDF documents, you can override these default actions using the fields listed below. For more information, see [ Setting text extraction options](https://docs.aws.amazon.com/comprehend/latest/dg/detecting-cer.html#detecting-cer-pdf).
+    /// DocumentReaderConfig does not apply to plain text files or Word files. For image files and PDF documents, you can override these default actions using the fields listed below. For more information, see [ Setting text extraction options](https://docs.aws.amazon.com/comprehend/latest/dg/idp-set-textract-options.html) in the Comprehend Developer Guide.
     public struct DocumentReaderConfig: Swift.Equatable {
         /// This field defines the Amazon Textract API operation that Amazon Comprehend uses to extract text from PDF files and image files. Enter one of the following values:
         ///
@@ -9312,12 +8994,12 @@ extension ComprehendClientTypes {
         public var documentReadMode: ComprehendClientTypes.DocumentReadMode?
         /// Specifies the type of Amazon Textract features to apply. If you chose TEXTRACT_ANALYZE_DOCUMENT as the read action, you must specify one or both of the following values:
         ///
-        /// * TABLES - Returns information about any tables that are detected in the input document.
+        /// * TABLES - Returns additional information about any tables that are detected in the input document.
         ///
-        /// * FORMS - Returns information and the data from any forms that are detected in the input document.
+        /// * FORMS - Returns additional information about any forms that are detected in the input document.
         public var featureTypes: [ComprehendClientTypes.DocumentReadFeatureTypes]?
 
-        public init (
+        public init(
             documentReadAction: ComprehendClientTypes.DocumentReadAction? = nil,
             documentReadMode: ComprehendClientTypes.DocumentReadMode? = nil,
             featureTypes: [ComprehendClientTypes.DocumentReadFeatureTypes]? = nil
@@ -9394,7 +9076,7 @@ extension ComprehendClientTypes.DocumentTypeListItem: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let pageDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .page)
         page = pageDecoded
@@ -9411,7 +9093,7 @@ extension ComprehendClientTypes {
         /// Document type.
         public var type: ComprehendClientTypes.DocumentType?
 
-        public init (
+        public init(
             page: Swift.Int? = nil,
             type: ComprehendClientTypes.DocumentType? = nil
         )
@@ -9439,7 +9121,7 @@ extension ComprehendClientTypes.DominantLanguage: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let languageCodeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .languageCode)
         languageCode = languageCodeDecoded
@@ -9456,7 +9138,7 @@ extension ComprehendClientTypes {
         /// The level of confidence that Amazon Comprehend has in the accuracy of the detection.
         public var score: Swift.Float?
 
-        public init (
+        public init(
             languageCode: Swift.String? = nil,
             score: Swift.Float? = nil
         )
@@ -9492,7 +9174,7 @@ extension ComprehendClientTypes.DominantLanguageDetectionJobFilter: Swift.Codabl
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobName)
         jobName = jobNameDecoded
@@ -9517,7 +9199,7 @@ extension ComprehendClientTypes {
         /// Filters the list of jobs based on the time that the job was submitted for processing. Returns only jobs submitted before the specified time. Jobs are returned in ascending order, oldest to newest.
         public var submitTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             jobName: Swift.String? = nil,
             jobStatus: ComprehendClientTypes.JobStatus? = nil,
             submitTimeAfter: ClientRuntime.Date? = nil,
@@ -9589,7 +9271,7 @@ extension ComprehendClientTypes.DominantLanguageDetectionJobProperties: Swift.Co
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -9650,7 +9332,7 @@ extension ComprehendClientTypes {
         /// Configuration parameters for a private Virtual Private Cloud (VPC) containing the resources you are using for your dominant language detection job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
         public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-        public init (
+        public init(
             dataAccessRoleArn: Swift.String? = nil,
             endTime: ClientRuntime.Date? = nil,
             inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -9706,7 +9388,7 @@ extension ComprehendClientTypes.EndpointFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let modelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .modelArn)
         modelArn = modelArnDecoded
@@ -9731,7 +9413,7 @@ extension ComprehendClientTypes {
         /// Specifies the status of the endpoint being returned. Possible values are: Creating, Ready, Updating, Deleting, Failed.
         public var status: ComprehendClientTypes.EndpointStatus?
 
-        public init (
+        public init(
             creationTimeAfter: ClientRuntime.Date? = nil,
             creationTimeBefore: ClientRuntime.Date? = nil,
             modelArn: Swift.String? = nil,
@@ -9803,7 +9485,7 @@ extension ComprehendClientTypes.EndpointProperties: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let endpointArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .endpointArn)
         endpointArn = endpointArnDecoded
@@ -9860,7 +9542,7 @@ extension ComprehendClientTypes {
         /// Specifies the status of the endpoint. Because the endpoint updates and creation are asynchronous, so customers will need to wait for the endpoint to be Ready status before making inference requests.
         public var status: ComprehendClientTypes.EndpointStatus?
 
-        public init (
+        public init(
             creationTime: ClientRuntime.Date? = nil,
             currentInferenceUnits: Swift.Int? = nil,
             dataAccessRoleArn: Swift.String? = nil,
@@ -9957,7 +9639,7 @@ extension ComprehendClientTypes.EntitiesDetectionJobFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobName)
         jobName = jobNameDecoded
@@ -9982,7 +9664,7 @@ extension ComprehendClientTypes {
         /// Filters the list of jobs based on the time that the job was submitted for processing. Returns only jobs submitted before the specified time. Jobs are returned in ascending order, oldest to newest.
         public var submitTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             jobName: Swift.String? = nil,
             jobStatus: ComprehendClientTypes.JobStatus? = nil,
             submitTimeAfter: ClientRuntime.Date? = nil,
@@ -10066,7 +9748,7 @@ extension ComprehendClientTypes.EntitiesDetectionJobProperties: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -10139,7 +9821,7 @@ extension ComprehendClientTypes {
         /// Configuration parameters for a private Virtual Private Cloud (VPC) containing the resources you are using for your entity detection job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
         public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-        public init (
+        public init(
             dataAccessRoleArn: Swift.String? = nil,
             endTime: ClientRuntime.Date? = nil,
             entityRecognizerArn: Swift.String? = nil,
@@ -10212,7 +9894,7 @@ extension ComprehendClientTypes.Entity: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let scoreDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .score)
         score = scoreDecoded
@@ -10254,7 +9936,7 @@ extension ComprehendClientTypes {
         /// The entity type. For entity detection using the built-in model, this field contains one of the standard entity types listed below. For custom entity detection, this field contains one of the entity types that you specified when you trained your custom model.
         public var type: ComprehendClientTypes.EntityType?
 
-        public init (
+        public init(
             beginOffset: Swift.Int? = nil,
             blockReferences: [ComprehendClientTypes.BlockReference]? = nil,
             endOffset: Swift.Int? = nil,
@@ -10290,7 +9972,7 @@ extension ComprehendClientTypes.EntityLabel: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let nameDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.PiiEntityType.self, forKey: .name)
         name = nameDecoded
@@ -10307,7 +9989,7 @@ extension ComprehendClientTypes {
         /// The level of confidence that Amazon Comprehend has in the accuracy of the detection.
         public var score: Swift.Float?
 
-        public init (
+        public init(
             name: ComprehendClientTypes.PiiEntityType? = nil,
             score: Swift.Float? = nil
         )
@@ -10334,7 +10016,7 @@ extension ComprehendClientTypes.EntityRecognitionConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entityTypesContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.EntityTypesListItem?].self, forKey: .entityTypes)
         var entityTypesDecoded0:[ComprehendClientTypes.EntityTypesListItem]? = nil
@@ -10357,7 +10039,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var entityTypes: [ComprehendClientTypes.EntityTypesListItem]?
 
-        public init (
+        public init(
             entityTypes: [ComprehendClientTypes.EntityTypesListItem]? = nil
         )
         {
@@ -10383,7 +10065,7 @@ extension ComprehendClientTypes.EntityRecognizerAnnotations: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -10401,7 +10083,7 @@ extension ComprehendClientTypes {
         /// Specifies the Amazon S3 location where the test annotations for an entity recognizer are located. The URI must be in the same Region as the API endpoint that you are calling.
         public var testS3Uri: Swift.String?
 
-        public init (
+        public init(
             s3Uri: Swift.String? = nil,
             testS3Uri: Swift.String? = nil
         )
@@ -10465,7 +10147,7 @@ extension ComprehendClientTypes.EntityRecognizerDocuments: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -10487,7 +10169,7 @@ extension ComprehendClientTypes {
         /// Specifies the Amazon S3 location where the test documents for an entity recognizer are located. The URI must be in the same Amazon Web Services Region as the API endpoint that you are calling.
         public var testS3Uri: Swift.String?
 
-        public init (
+        public init(
             inputFormat: ComprehendClientTypes.InputFormat? = nil,
             s3Uri: Swift.String? = nil,
             testS3Uri: Swift.String? = nil
@@ -10513,7 +10195,7 @@ extension ComprehendClientTypes.EntityRecognizerEntityList: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -10527,7 +10209,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var s3Uri: Swift.String?
 
-        public init (
+        public init(
             s3Uri: Swift.String? = nil
         )
         {
@@ -10557,7 +10239,7 @@ extension ComprehendClientTypes.EntityRecognizerEvaluationMetrics: Swift.Codable
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let precisionDecoded = try containerValues.decodeIfPresent(Swift.Double.self, forKey: .precision)
         precision = precisionDecoded
@@ -10578,7 +10260,7 @@ extension ComprehendClientTypes {
         /// A measure of how complete the recognizer results are for the test data. High recall means that the recognizer returned most of the relevant results.
         public var recall: Swift.Double?
 
-        public init (
+        public init(
             f1Score: Swift.Double? = nil,
             precision: Swift.Double? = nil,
             recall: Swift.Double? = nil
@@ -10616,7 +10298,7 @@ extension ComprehendClientTypes.EntityRecognizerFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let statusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.ModelStatus.self, forKey: .status)
         status = statusDecoded
@@ -10641,7 +10323,7 @@ extension ComprehendClientTypes {
         /// Filters the list of entities based on the time that the list was submitted for processing. Returns only jobs submitted before the specified time. Jobs are returned in descending order, newest to oldest.
         public var submitTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             recognizerName: Swift.String? = nil,
             status: ComprehendClientTypes.ModelStatus? = nil,
             submitTimeAfter: ClientRuntime.Date? = nil,
@@ -10695,7 +10377,7 @@ extension ComprehendClientTypes.EntityRecognizerInputDataConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let dataFormatDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.EntityRecognizerDataFormat.self, forKey: .dataFormat)
         dataFormat = dataFormatDecoded
@@ -10754,7 +10436,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var entityTypes: [ComprehendClientTypes.EntityTypesListItem]?
 
-        public init (
+        public init(
             annotations: ComprehendClientTypes.EntityRecognizerAnnotations? = nil,
             augmentedManifests: [ComprehendClientTypes.AugmentedManifestsListItem]? = nil,
             dataFormat: ComprehendClientTypes.EntityRecognizerDataFormat? = nil,
@@ -10801,7 +10483,7 @@ extension ComprehendClientTypes.EntityRecognizerMetadata: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let numberOfTrainedDocumentsDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .numberOfTrainedDocuments)
         numberOfTrainedDocuments = numberOfTrainedDocumentsDecoded
@@ -10841,7 +10523,7 @@ extension ComprehendClientTypes {
         /// The number of documents in the input data that were used to train the entity recognizer. Typically this is 80 to 90 percent of the input documents.
         public var numberOfTrainedDocuments: Swift.Int?
 
-        public init (
+        public init(
             entityTypes: [ComprehendClientTypes.EntityRecognizerMetadataEntityTypesListItem]? = nil,
             evaluationMetrics: ComprehendClientTypes.EntityRecognizerEvaluationMetrics? = nil,
             numberOfTestDocuments: Swift.Int? = nil,
@@ -10877,7 +10559,7 @@ extension ComprehendClientTypes.EntityRecognizerMetadataEntityTypesListItem: Swi
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let typeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .type)
         type = typeDecoded
@@ -10898,7 +10580,7 @@ extension ComprehendClientTypes {
         /// Type of entity from the list of entity types in the metadata of an entity recognizer.
         public var type: Swift.String?
 
-        public init (
+        public init(
             evaluationMetrics: ComprehendClientTypes.EntityTypesEvaluationMetrics? = nil,
             numberOfTrainMentions: Swift.Int? = nil,
             type: Swift.String? = nil
@@ -10924,7 +10606,7 @@ extension ComprehendClientTypes.EntityRecognizerOutputDataConfig: Swift.Codable 
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelStatsS3PrefixDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelStatsS3Prefix)
         flywheelStatsS3Prefix = flywheelStatsS3PrefixDecoded
@@ -10937,7 +10619,7 @@ extension ComprehendClientTypes {
         /// The Amazon S3 prefix for the data lake location of the flywheel statistics.
         public var flywheelStatsS3Prefix: Swift.String?
 
-        public init (
+        public init(
             flywheelStatsS3Prefix: Swift.String? = nil
         )
         {
@@ -11027,7 +10709,7 @@ extension ComprehendClientTypes.EntityRecognizerProperties: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entityRecognizerArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .entityRecognizerArn)
         entityRecognizerArn = entityRecognizerArnDecoded
@@ -11121,7 +10803,7 @@ extension ComprehendClientTypes {
         /// Configuration parameters for a private Virtual Private Cloud (VPC) containing the resources you are using for your custom entity recognizer. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
         public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-        public init (
+        public init(
             dataAccessRoleArn: Swift.String? = nil,
             endTime: ClientRuntime.Date? = nil,
             entityRecognizerArn: Swift.String? = nil,
@@ -11193,7 +10875,7 @@ extension ComprehendClientTypes.EntityRecognizerSummary: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let recognizerNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .recognizerName)
         recognizerName = recognizerNameDecoded
@@ -11222,7 +10904,7 @@ extension ComprehendClientTypes {
         /// The name that you assigned the entity recognizer.
         public var recognizerName: Swift.String?
 
-        public init (
+        public init(
             latestVersionCreatedAt: ClientRuntime.Date? = nil,
             latestVersionName: Swift.String? = nil,
             latestVersionStatus: ComprehendClientTypes.ModelStatus? = nil,
@@ -11313,7 +10995,7 @@ extension ComprehendClientTypes.EntityTypesEvaluationMetrics: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let precisionDecoded = try containerValues.decodeIfPresent(Swift.Double.self, forKey: .precision)
         precision = precisionDecoded
@@ -11334,7 +11016,7 @@ extension ComprehendClientTypes {
         /// A measure of how complete the recognizer results are for a specific entity type in the test data. High recall means that the recognizer returned most of the relevant results.
         public var recall: Swift.Double?
 
-        public init (
+        public init(
             f1Score: Swift.Double? = nil,
             precision: Swift.Double? = nil,
             recall: Swift.Double? = nil
@@ -11360,7 +11042,7 @@ extension ComprehendClientTypes.EntityTypesListItem: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let typeDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .type)
         type = typeDecoded
@@ -11370,11 +11052,11 @@ extension ComprehendClientTypes.EntityTypesListItem: Swift.Codable {
 extension ComprehendClientTypes {
     /// An entity type within a labeled training dataset that Amazon Comprehend uses to train a custom entity recognizer.
     public struct EntityTypesListItem: Swift.Equatable {
-        /// An entity type within a labeled training dataset that Amazon Comprehend uses to train a custom entity recognizer. Entity types must not contain the following invalid characters: \n (line break), \\n (escaped line break, \r (carriage return), \\r (escaped carriage return), \t (tab), \\t (escaped tab), space, and , (comma).
+        /// An entity type within a labeled training dataset that Amazon Comprehend uses to train a custom entity recognizer. Entity types must not contain the following invalid characters: \n (line break), \\n (escaped line break, \r (carriage return), \\r (escaped carriage return), \t (tab), \\t (escaped tab), and , (comma).
         /// This member is required.
         public var type: Swift.String?
 
-        public init (
+        public init(
             type: Swift.String? = nil
         )
         {
@@ -11404,7 +11086,7 @@ extension ComprehendClientTypes.ErrorsListItem: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let pageDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .page)
         page = pageDecoded
@@ -11435,7 +11117,7 @@ extension ComprehendClientTypes {
         /// Page number where the error occurred.
         public var page: Swift.Int?
 
-        public init (
+        public init(
             errorCode: ComprehendClientTypes.PageBasedErrorCode? = nil,
             errorMessage: Swift.String? = nil,
             page: Swift.Int? = nil
@@ -11473,7 +11155,7 @@ extension ComprehendClientTypes.EventsDetectionJobFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobName)
         jobName = jobNameDecoded
@@ -11498,7 +11180,7 @@ extension ComprehendClientTypes {
         /// Filters the list of jobs based on the time that the job was submitted for processing. Returns only jobs submitted before the specified time. Jobs are returned in ascending order, oldest to newest.
         public var submitTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             jobName: Swift.String? = nil,
             jobStatus: ComprehendClientTypes.JobStatus? = nil,
             submitTimeAfter: ClientRuntime.Date? = nil,
@@ -11573,7 +11255,7 @@ extension ComprehendClientTypes.EventsDetectionJobProperties: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -11639,7 +11321,7 @@ extension ComprehendClientTypes {
         /// The types of events that are detected by the job.
         public var targetEventTypes: [Swift.String]?
 
-        public init (
+        public init(
             dataAccessRoleArn: Swift.String? = nil,
             endTime: ClientRuntime.Date? = nil,
             inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -11687,7 +11369,7 @@ extension ComprehendClientTypes.ExtractedCharactersListItem: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let pageDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .page)
         page = pageDecoded
@@ -11704,7 +11386,7 @@ extension ComprehendClientTypes {
         /// Page number.
         public var page: Swift.Int?
 
-        public init (
+        public init(
             count: Swift.Int? = nil,
             page: Swift.Int? = nil
         )
@@ -11736,7 +11418,7 @@ extension ComprehendClientTypes.FlywheelFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let statusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.FlywheelStatus.self, forKey: .status)
         status = statusDecoded
@@ -11757,7 +11439,7 @@ extension ComprehendClientTypes {
         /// Filter the flywheels based on the flywheel status.
         public var status: ComprehendClientTypes.FlywheelStatus?
 
-        public init (
+        public init(
             creationTimeAfter: ClientRuntime.Date? = nil,
             creationTimeBefore: ClientRuntime.Date? = nil,
             status: ComprehendClientTypes.FlywheelStatus? = nil
@@ -11787,7 +11469,7 @@ extension ComprehendClientTypes.FlywheelIterationFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let creationTimeAfterDecoded = try containerValues.decodeTimestampIfPresent(.epochSeconds, forKey: .creationTimeAfter)
         creationTimeAfter = creationTimeAfterDecoded
@@ -11804,7 +11486,7 @@ extension ComprehendClientTypes {
         /// Filter the flywheel iterations to include iterations created before the specified time.
         public var creationTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             creationTimeAfter: ClientRuntime.Date? = nil,
             creationTimeBefore: ClientRuntime.Date? = nil
         )
@@ -11868,7 +11550,7 @@ extension ComprehendClientTypes.FlywheelIterationProperties: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
@@ -11921,7 +11603,7 @@ extension ComprehendClientTypes {
         /// The metrics associated with the trained model.
         public var trainedModelMetrics: ComprehendClientTypes.FlywheelModelEvaluationMetrics?
 
-        public init (
+        public init(
             creationTime: ClientRuntime.Date? = nil,
             endTime: ClientRuntime.Date? = nil,
             evaluatedModelArn: Swift.String? = nil,
@@ -12019,7 +11701,7 @@ extension ComprehendClientTypes.FlywheelModelEvaluationMetrics: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let averageF1ScoreDecoded = try containerValues.decodeIfPresent(Swift.Double.self, forKey: .averageF1Score)
         averageF1Score = averageF1ScoreDecoded
@@ -12044,7 +11726,7 @@ extension ComprehendClientTypes {
         /// Average recall metric for the model.
         public var averageRecall: Swift.Double?
 
-        public init (
+        public init(
             averageAccuracy: Swift.Double? = nil,
             averageF1Score: Swift.Double? = nil,
             averagePrecision: Swift.Double? = nil,
@@ -12116,7 +11798,7 @@ extension ComprehendClientTypes.FlywheelProperties: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
@@ -12170,10 +11852,10 @@ extension ComprehendClientTypes {
         public var modelType: ComprehendClientTypes.ModelType?
         /// The status of the flywheel.
         public var status: ComprehendClientTypes.FlywheelStatus?
-        /// Configuration about the custom classifier associated with the flywheel.
+        /// Configuration about the model associated with a flywheel.
         public var taskConfig: ComprehendClientTypes.TaskConfig?
 
-        public init (
+        public init(
             activeModelArn: Swift.String? = nil,
             creationTime: ClientRuntime.Date? = nil,
             dataAccessRoleArn: Swift.String? = nil,
@@ -12290,7 +11972,7 @@ extension ComprehendClientTypes.FlywheelSummary: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
@@ -12335,7 +12017,7 @@ extension ComprehendClientTypes {
         /// The status of the flywheel.
         public var status: ComprehendClientTypes.FlywheelStatus?
 
-        public init (
+        public init(
             activeModelArn: Swift.String? = nil,
             creationTime: ClientRuntime.Date? = nil,
             dataLakeS3Uri: Swift.String? = nil,
@@ -12380,7 +12062,7 @@ extension ComprehendClientTypes.Geometry: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let boundingBoxDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.BoundingBox.self, forKey: .boundingBox)
         boundingBox = boundingBoxDecoded
@@ -12406,7 +12088,7 @@ extension ComprehendClientTypes {
         /// Within the bounding box, a fine-grained polygon around the recognized item.
         public var polygon: [ComprehendClientTypes.Point]?
 
-        public init (
+        public init(
             boundingBox: ComprehendClientTypes.BoundingBox? = nil,
             polygon: [ComprehendClientTypes.Point]? = nil
         )
@@ -12454,8 +12136,9 @@ extension ImportModelInput: Swift.Encodable {
     }
 }
 
-extension ImportModelInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ImportModelInput {
+
+    static func urlPathProvider(_ value: ImportModelInput) -> Swift.String? {
         return "/"
     }
 }
@@ -12479,7 +12162,7 @@ public struct ImportModelInput: Swift.Equatable {
     /// The version name given to the custom model that is created by this import. Version names can have a maximum of 256 characters. Alphanumeric characters, hyphens (-) and underscores (_) are allowed. The version name must be unique among all models with the same classifier name in the account/Region.
     public var versionName: Swift.String?
 
-    public init (
+    public init(
         dataAccessRoleArn: Swift.String? = nil,
         modelKmsKeyId: Swift.String? = nil,
         modelName: Swift.String? = nil,
@@ -12516,7 +12199,7 @@ extension ImportModelInputBody: Swift.Decodable {
         case versionName = "VersionName"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let sourceModelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .sourceModelArn)
         sourceModelArn = sourceModelArnDecoded
@@ -12542,50 +12225,11 @@ extension ImportModelInputBody: Swift.Decodable {
     }
 }
 
-extension ImportModelOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ImportModelOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceLimitExceededException" : self = .resourceLimitExceededException(try ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceUnavailableException" : self = .resourceUnavailableException(try ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ImportModelOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceLimitExceededException(ResourceLimitExceededException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case resourceUnavailableException(ResourceUnavailableException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ImportModelOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ImportModelOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ImportModelOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ImportModelOutputBody = try responseDecoder.decode(responseBody: data)
             self.modelArn = output.modelArn
         } else {
             self.modelArn = nil
@@ -12593,11 +12237,11 @@ extension ImportModelOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct ImportModelOutputResponse: Swift.Equatable {
+public struct ImportModelOutput: Swift.Equatable {
     /// The Amazon Resource Name (ARN) of the custom model being imported.
     public var modelArn: Swift.String?
 
-    public init (
+    public init(
         modelArn: Swift.String? = nil
     )
     {
@@ -12605,19 +12249,38 @@ public struct ImportModelOutputResponse: Swift.Equatable {
     }
 }
 
-struct ImportModelOutputResponseBody: Swift.Equatable {
+struct ImportModelOutputBody: Swift.Equatable {
     let modelArn: Swift.String?
 }
 
-extension ImportModelOutputResponseBody: Swift.Decodable {
+extension ImportModelOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case modelArn = "ModelArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let modelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .modelArn)
         modelArn = modelArnDecoded
+    }
+}
+
+enum ImportModelOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceLimitExceededException": return try await ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceUnavailableException": return try await ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -12641,7 +12304,7 @@ extension ComprehendClientTypes.InputDataConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -12667,7 +12330,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var s3Uri: Swift.String?
 
-        public init (
+        public init(
             documentReaderConfig: ComprehendClientTypes.DocumentReaderConfig? = nil,
             inputFormat: ComprehendClientTypes.InputFormat? = nil,
             s3Uri: Swift.String? = nil
@@ -12714,38 +12377,41 @@ extension ComprehendClientTypes {
 }
 
 extension InternalServerException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InternalServerExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// An internal server error occurred. Retry your request.
-public struct InternalServerException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .server
-    public var message: Swift.String?
+public struct InternalServerException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InternalServerException" }
+    public static var fault: ErrorFault { .server }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -12758,7 +12424,7 @@ extension InternalServerExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -12766,38 +12432,41 @@ extension InternalServerExceptionBody: Swift.Decodable {
 }
 
 extension InvalidFilterException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidFilterExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The filter specified for the operation is invalid. Specify a different filter.
-public struct InvalidFilterException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct InvalidFilterException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidFilterException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -12810,7 +12479,7 @@ extension InvalidFilterExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -12829,7 +12498,7 @@ extension ComprehendClientTypes.InvalidRequestDetail: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let reasonDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.InvalidRequestDetailReason.self, forKey: .reason)
         reason = reasonDecoded
@@ -12837,20 +12506,26 @@ extension ComprehendClientTypes.InvalidRequestDetail: Swift.Codable {
 }
 
 extension ComprehendClientTypes {
-    /// Provides additional detail about why the request failed:
-    ///
-    /// * Document size is too large - Check the size of your file and resubmit the request.
-    ///
-    /// * Document type is not supported - Check the file type and resubmit the request.
-    ///
-    /// * Too many pages in the document - Check the number of pages in your file and resubmit the request.
-    ///
-    /// * Access denied to Amazon Textract - Verify that your account has permission to use Amazon Textract API operations and resubmit the request.
+    /// Provides additional detail about why the request failed.
     public struct InvalidRequestDetail: Swift.Equatable {
-        /// Reason code is INVALID_DOCUMENT.
+        /// Reason codes include the following values:
+        ///
+        /// * DOCUMENT_SIZE_EXCEEDED - Document size is too large. Check the size of your file and resubmit the request.
+        ///
+        /// * UNSUPPORTED_DOC_TYPE - Document type is not supported. Check the file type and resubmit the request.
+        ///
+        /// * PAGE_LIMIT_EXCEEDED - Too many pages in the document. Check the number of pages in your file and resubmit the request.
+        ///
+        /// * TEXTRACT_ACCESS_DENIED - Access denied to Amazon Textract. Verify that your account has permission to use Amazon Textract API operations and resubmit the request.
+        ///
+        /// * NOT_TEXTRACT_JSON - Document is not Amazon Textract JSON format. Verify the format and resubmit the request.
+        ///
+        /// * MISMATCHED_TOTAL_PAGE_COUNT - Check the number of pages in your file and resubmit the request.
+        ///
+        /// * INVALID_DOCUMENT - Invalid document. Check the file and resubmit the request.
         public var reason: ComprehendClientTypes.InvalidRequestDetailReason?
 
-        public init (
+        public init(
             reason: ComprehendClientTypes.InvalidRequestDetailReason? = nil
         )
         {
@@ -12899,57 +12574,52 @@ extension ComprehendClientTypes {
 }
 
 extension InvalidRequestException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidRequestExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.detail = output.detail
-            self.message = output.message
-            self.reason = output.reason
+            self.properties.detail = output.detail
+            self.properties.message = output.message
+            self.properties.reason = output.reason
         } else {
-            self.detail = nil
-            self.message = nil
-            self.reason = nil
+            self.properties.detail = nil
+            self.properties.message = nil
+            self.properties.reason = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The request is invalid.
-public struct InvalidRequestException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    /// Provides additional detail about why the request failed:
-    ///
-    /// * Document size is too large - Check the size of your file and resubmit the request.
-    ///
-    /// * Document type is not supported - Check the file type and resubmit the request.
-    ///
-    /// * Too many pages in the document - Check the number of pages in your file and resubmit the request.
-    ///
-    /// * Access denied to Amazon Textract - Verify that your account has permission to use Amazon Textract API operations and resubmit the request.
-    public var detail: ComprehendClientTypes.InvalidRequestDetail?
-    public var message: Swift.String?
-    public var reason: ComprehendClientTypes.InvalidRequestReason?
+public struct InvalidRequestException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        /// Provides additional detail about why the request failed.
+        public internal(set) var detail: ComprehendClientTypes.InvalidRequestDetail? = nil
+        public internal(set) var message: Swift.String? = nil
+        public internal(set) var reason: ComprehendClientTypes.InvalidRequestReason? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidRequestException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         detail: ComprehendClientTypes.InvalidRequestDetail? = nil,
         message: Swift.String? = nil,
         reason: ComprehendClientTypes.InvalidRequestReason? = nil
     )
     {
-        self.detail = detail
-        self.message = message
-        self.reason = reason
+        self.properties.detail = detail
+        self.properties.message = message
+        self.properties.reason = reason
     }
 }
 
@@ -12966,7 +12636,7 @@ extension InvalidRequestExceptionBody: Swift.Decodable {
         case reason = "Reason"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -13007,38 +12677,41 @@ extension ComprehendClientTypes {
 }
 
 extension JobNotFoundException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: JobNotFoundExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The specified job was not found. Check the job ID and try again.
-public struct JobNotFoundException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct JobNotFoundException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "JobNotFoundException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -13051,7 +12724,7 @@ extension JobNotFoundExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -13126,7 +12799,7 @@ extension ComprehendClientTypes.KeyPhrase: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let scoreDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .score)
         score = scoreDecoded
@@ -13151,7 +12824,7 @@ extension ComprehendClientTypes {
         /// The text of a key noun phrase.
         public var text: Swift.String?
 
-        public init (
+        public init(
             beginOffset: Swift.Int? = nil,
             endOffset: Swift.Int? = nil,
             score: Swift.Float? = nil,
@@ -13191,7 +12864,7 @@ extension ComprehendClientTypes.KeyPhrasesDetectionJobFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobName)
         jobName = jobNameDecoded
@@ -13216,7 +12889,7 @@ extension ComprehendClientTypes {
         /// Filters the list of jobs based on the time that the job was submitted for processing. Returns only jobs submitted before the specified time. Jobs are returned in ascending order, oldest to newest.
         public var submitTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             jobName: Swift.String? = nil,
             jobStatus: ComprehendClientTypes.JobStatus? = nil,
             submitTimeAfter: ClientRuntime.Date? = nil,
@@ -13292,7 +12965,7 @@ extension ComprehendClientTypes.KeyPhrasesDetectionJobProperties: Swift.Codable 
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -13357,7 +13030,7 @@ extension ComprehendClientTypes {
         /// Configuration parameters for a private Virtual Private Cloud (VPC) containing the resources you are using for your key phrases detection job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
         public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-        public init (
+        public init(
             dataAccessRoleArn: Swift.String? = nil,
             endTime: ClientRuntime.Date? = nil,
             inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -13392,38 +13065,41 @@ extension ComprehendClientTypes {
 }
 
 extension KmsKeyValidationException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: KmsKeyValidationExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The KMS customer managed key (CMK) entered cannot be validated. Verify the key and re-enter it.
-public struct KmsKeyValidationException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct KmsKeyValidationException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "KmsKeyValidationException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -13436,7 +13112,7 @@ extension KmsKeyValidationExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -13530,8 +13206,9 @@ extension ListDatasetsInput: Swift.Encodable {
     }
 }
 
-extension ListDatasetsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListDatasetsInput {
+
+    static func urlPathProvider(_ value: ListDatasetsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -13546,7 +13223,7 @@ public struct ListDatasetsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.DatasetFilter? = nil,
         flywheelArn: Swift.String? = nil,
         maxResults: Swift.Int? = nil,
@@ -13575,7 +13252,7 @@ extension ListDatasetsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
@@ -13588,42 +13265,11 @@ extension ListDatasetsInputBody: Swift.Decodable {
     }
 }
 
-extension ListDatasetsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListDatasetsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListDatasetsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListDatasetsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListDatasetsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListDatasetsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListDatasetsOutputBody = try responseDecoder.decode(responseBody: data)
             self.datasetPropertiesList = output.datasetPropertiesList
             self.nextToken = output.nextToken
         } else {
@@ -13633,13 +13279,13 @@ extension ListDatasetsOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct ListDatasetsOutputResponse: Swift.Equatable {
+public struct ListDatasetsOutput: Swift.Equatable {
     /// The dataset properties list.
     public var datasetPropertiesList: [ComprehendClientTypes.DatasetProperties]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         datasetPropertiesList: [ComprehendClientTypes.DatasetProperties]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -13649,18 +13295,18 @@ public struct ListDatasetsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListDatasetsOutputResponseBody: Swift.Equatable {
+struct ListDatasetsOutputBody: Swift.Equatable {
     let datasetPropertiesList: [ComprehendClientTypes.DatasetProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListDatasetsOutputResponseBody: Swift.Decodable {
+extension ListDatasetsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case datasetPropertiesList = "DatasetPropertiesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let datasetPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.DatasetProperties?].self, forKey: .datasetPropertiesList)
         var datasetPropertiesListDecoded0:[ComprehendClientTypes.DatasetProperties]? = nil
@@ -13675,6 +13321,21 @@ extension ListDatasetsOutputResponseBody: Swift.Decodable {
         datasetPropertiesList = datasetPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListDatasetsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -13699,8 +13360,9 @@ extension ListDocumentClassificationJobsInput: Swift.Encodable {
     }
 }
 
-extension ListDocumentClassificationJobsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListDocumentClassificationJobsInput {
+
+    static func urlPathProvider(_ value: ListDocumentClassificationJobsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -13713,7 +13375,7 @@ public struct ListDocumentClassificationJobsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.DocumentClassificationJobFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -13738,7 +13400,7 @@ extension ListDocumentClassificationJobsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DocumentClassificationJobFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -13749,40 +13411,11 @@ extension ListDocumentClassificationJobsInputBody: Swift.Decodable {
     }
 }
 
-extension ListDocumentClassificationJobsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListDocumentClassificationJobsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListDocumentClassificationJobsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListDocumentClassificationJobsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListDocumentClassificationJobsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListDocumentClassificationJobsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListDocumentClassificationJobsOutputBody = try responseDecoder.decode(responseBody: data)
             self.documentClassificationJobPropertiesList = output.documentClassificationJobPropertiesList
             self.nextToken = output.nextToken
         } else {
@@ -13792,13 +13425,13 @@ extension ListDocumentClassificationJobsOutputResponse: ClientRuntime.HttpRespon
     }
 }
 
-public struct ListDocumentClassificationJobsOutputResponse: Swift.Equatable {
+public struct ListDocumentClassificationJobsOutput: Swift.Equatable {
     /// A list containing the properties of each job returned.
     public var documentClassificationJobPropertiesList: [ComprehendClientTypes.DocumentClassificationJobProperties]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         documentClassificationJobPropertiesList: [ComprehendClientTypes.DocumentClassificationJobProperties]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -13808,18 +13441,18 @@ public struct ListDocumentClassificationJobsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListDocumentClassificationJobsOutputResponseBody: Swift.Equatable {
+struct ListDocumentClassificationJobsOutputBody: Swift.Equatable {
     let documentClassificationJobPropertiesList: [ComprehendClientTypes.DocumentClassificationJobProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListDocumentClassificationJobsOutputResponseBody: Swift.Decodable {
+extension ListDocumentClassificationJobsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case documentClassificationJobPropertiesList = "DocumentClassificationJobPropertiesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassificationJobPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.DocumentClassificationJobProperties?].self, forKey: .documentClassificationJobPropertiesList)
         var documentClassificationJobPropertiesListDecoded0:[ComprehendClientTypes.DocumentClassificationJobProperties]? = nil
@@ -13834,6 +13467,20 @@ extension ListDocumentClassificationJobsOutputResponseBody: Swift.Decodable {
         documentClassificationJobPropertiesList = documentClassificationJobPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListDocumentClassificationJobsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -13854,8 +13501,9 @@ extension ListDocumentClassifierSummariesInput: Swift.Encodable {
     }
 }
 
-extension ListDocumentClassifierSummariesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListDocumentClassifierSummariesInput {
+
+    static func urlPathProvider(_ value: ListDocumentClassifierSummariesInput) -> Swift.String? {
         return "/"
     }
 }
@@ -13866,7 +13514,7 @@ public struct ListDocumentClassifierSummariesInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
     )
@@ -13887,7 +13535,7 @@ extension ListDocumentClassifierSummariesInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
@@ -13896,38 +13544,11 @@ extension ListDocumentClassifierSummariesInputBody: Swift.Decodable {
     }
 }
 
-extension ListDocumentClassifierSummariesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListDocumentClassifierSummariesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListDocumentClassifierSummariesOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListDocumentClassifierSummariesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListDocumentClassifierSummariesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListDocumentClassifierSummariesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListDocumentClassifierSummariesOutputBody = try responseDecoder.decode(responseBody: data)
             self.documentClassifierSummariesList = output.documentClassifierSummariesList
             self.nextToken = output.nextToken
         } else {
@@ -13937,13 +13558,13 @@ extension ListDocumentClassifierSummariesOutputResponse: ClientRuntime.HttpRespo
     }
 }
 
-public struct ListDocumentClassifierSummariesOutputResponse: Swift.Equatable {
+public struct ListDocumentClassifierSummariesOutput: Swift.Equatable {
     /// The list of summaries of document classifiers.
     public var documentClassifierSummariesList: [ComprehendClientTypes.DocumentClassifierSummary]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         documentClassifierSummariesList: [ComprehendClientTypes.DocumentClassifierSummary]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -13953,18 +13574,18 @@ public struct ListDocumentClassifierSummariesOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListDocumentClassifierSummariesOutputResponseBody: Swift.Equatable {
+struct ListDocumentClassifierSummariesOutputBody: Swift.Equatable {
     let documentClassifierSummariesList: [ComprehendClientTypes.DocumentClassifierSummary]?
     let nextToken: Swift.String?
 }
 
-extension ListDocumentClassifierSummariesOutputResponseBody: Swift.Decodable {
+extension ListDocumentClassifierSummariesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case documentClassifierSummariesList = "DocumentClassifierSummariesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassifierSummariesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.DocumentClassifierSummary?].self, forKey: .documentClassifierSummariesList)
         var documentClassifierSummariesListDecoded0:[ComprehendClientTypes.DocumentClassifierSummary]? = nil
@@ -13979,6 +13600,19 @@ extension ListDocumentClassifierSummariesOutputResponseBody: Swift.Decodable {
         documentClassifierSummariesList = documentClassifierSummariesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListDocumentClassifierSummariesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -14003,8 +13637,9 @@ extension ListDocumentClassifiersInput: Swift.Encodable {
     }
 }
 
-extension ListDocumentClassifiersInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListDocumentClassifiersInput {
+
+    static func urlPathProvider(_ value: ListDocumentClassifiersInput) -> Swift.String? {
         return "/"
     }
 }
@@ -14017,7 +13652,7 @@ public struct ListDocumentClassifiersInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.DocumentClassifierFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -14042,7 +13677,7 @@ extension ListDocumentClassifiersInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DocumentClassifierFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -14053,40 +13688,11 @@ extension ListDocumentClassifiersInputBody: Swift.Decodable {
     }
 }
 
-extension ListDocumentClassifiersOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListDocumentClassifiersOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListDocumentClassifiersOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListDocumentClassifiersOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListDocumentClassifiersOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListDocumentClassifiersOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListDocumentClassifiersOutputBody = try responseDecoder.decode(responseBody: data)
             self.documentClassifierPropertiesList = output.documentClassifierPropertiesList
             self.nextToken = output.nextToken
         } else {
@@ -14096,13 +13702,13 @@ extension ListDocumentClassifiersOutputResponse: ClientRuntime.HttpResponseBindi
     }
 }
 
-public struct ListDocumentClassifiersOutputResponse: Swift.Equatable {
+public struct ListDocumentClassifiersOutput: Swift.Equatable {
     /// A list containing the properties of each job returned.
     public var documentClassifierPropertiesList: [ComprehendClientTypes.DocumentClassifierProperties]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         documentClassifierPropertiesList: [ComprehendClientTypes.DocumentClassifierProperties]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -14112,18 +13718,18 @@ public struct ListDocumentClassifiersOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListDocumentClassifiersOutputResponseBody: Swift.Equatable {
+struct ListDocumentClassifiersOutputBody: Swift.Equatable {
     let documentClassifierPropertiesList: [ComprehendClientTypes.DocumentClassifierProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListDocumentClassifiersOutputResponseBody: Swift.Decodable {
+extension ListDocumentClassifiersOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case documentClassifierPropertiesList = "DocumentClassifierPropertiesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassifierPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.DocumentClassifierProperties?].self, forKey: .documentClassifierPropertiesList)
         var documentClassifierPropertiesListDecoded0:[ComprehendClientTypes.DocumentClassifierProperties]? = nil
@@ -14138,6 +13744,20 @@ extension ListDocumentClassifiersOutputResponseBody: Swift.Decodable {
         documentClassifierPropertiesList = documentClassifierPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListDocumentClassifiersOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -14162,8 +13782,9 @@ extension ListDominantLanguageDetectionJobsInput: Swift.Encodable {
     }
 }
 
-extension ListDominantLanguageDetectionJobsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListDominantLanguageDetectionJobsInput {
+
+    static func urlPathProvider(_ value: ListDominantLanguageDetectionJobsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -14176,7 +13797,7 @@ public struct ListDominantLanguageDetectionJobsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.DominantLanguageDetectionJobFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -14201,7 +13822,7 @@ extension ListDominantLanguageDetectionJobsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.DominantLanguageDetectionJobFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -14212,40 +13833,11 @@ extension ListDominantLanguageDetectionJobsInputBody: Swift.Decodable {
     }
 }
 
-extension ListDominantLanguageDetectionJobsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListDominantLanguageDetectionJobsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListDominantLanguageDetectionJobsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListDominantLanguageDetectionJobsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListDominantLanguageDetectionJobsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListDominantLanguageDetectionJobsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListDominantLanguageDetectionJobsOutputBody = try responseDecoder.decode(responseBody: data)
             self.dominantLanguageDetectionJobPropertiesList = output.dominantLanguageDetectionJobPropertiesList
             self.nextToken = output.nextToken
         } else {
@@ -14255,13 +13847,13 @@ extension ListDominantLanguageDetectionJobsOutputResponse: ClientRuntime.HttpRes
     }
 }
 
-public struct ListDominantLanguageDetectionJobsOutputResponse: Swift.Equatable {
+public struct ListDominantLanguageDetectionJobsOutput: Swift.Equatable {
     /// A list containing the properties of each job that is returned.
     public var dominantLanguageDetectionJobPropertiesList: [ComprehendClientTypes.DominantLanguageDetectionJobProperties]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         dominantLanguageDetectionJobPropertiesList: [ComprehendClientTypes.DominantLanguageDetectionJobProperties]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -14271,18 +13863,18 @@ public struct ListDominantLanguageDetectionJobsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListDominantLanguageDetectionJobsOutputResponseBody: Swift.Equatable {
+struct ListDominantLanguageDetectionJobsOutputBody: Swift.Equatable {
     let dominantLanguageDetectionJobPropertiesList: [ComprehendClientTypes.DominantLanguageDetectionJobProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListDominantLanguageDetectionJobsOutputResponseBody: Swift.Decodable {
+extension ListDominantLanguageDetectionJobsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case dominantLanguageDetectionJobPropertiesList = "DominantLanguageDetectionJobPropertiesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let dominantLanguageDetectionJobPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.DominantLanguageDetectionJobProperties?].self, forKey: .dominantLanguageDetectionJobPropertiesList)
         var dominantLanguageDetectionJobPropertiesListDecoded0:[ComprehendClientTypes.DominantLanguageDetectionJobProperties]? = nil
@@ -14297,6 +13889,20 @@ extension ListDominantLanguageDetectionJobsOutputResponseBody: Swift.Decodable {
         dominantLanguageDetectionJobPropertiesList = dominantLanguageDetectionJobPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListDominantLanguageDetectionJobsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -14321,8 +13927,9 @@ extension ListEndpointsInput: Swift.Encodable {
     }
 }
 
-extension ListEndpointsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListEndpointsInput {
+
+    static func urlPathProvider(_ value: ListEndpointsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -14335,7 +13942,7 @@ public struct ListEndpointsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.EndpointFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -14360,7 +13967,7 @@ extension ListEndpointsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.EndpointFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -14371,38 +13978,11 @@ extension ListEndpointsInputBody: Swift.Decodable {
     }
 }
 
-extension ListEndpointsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListEndpointsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListEndpointsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListEndpointsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListEndpointsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListEndpointsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListEndpointsOutputBody = try responseDecoder.decode(responseBody: data)
             self.endpointPropertiesList = output.endpointPropertiesList
             self.nextToken = output.nextToken
         } else {
@@ -14412,13 +13992,13 @@ extension ListEndpointsOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct ListEndpointsOutputResponse: Swift.Equatable {
+public struct ListEndpointsOutput: Swift.Equatable {
     /// Displays a list of endpoint properties being retrieved by the service in response to the request.
     public var endpointPropertiesList: [ComprehendClientTypes.EndpointProperties]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         endpointPropertiesList: [ComprehendClientTypes.EndpointProperties]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -14428,18 +14008,18 @@ public struct ListEndpointsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListEndpointsOutputResponseBody: Swift.Equatable {
+struct ListEndpointsOutputBody: Swift.Equatable {
     let endpointPropertiesList: [ComprehendClientTypes.EndpointProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListEndpointsOutputResponseBody: Swift.Decodable {
+extension ListEndpointsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case endpointPropertiesList = "EndpointPropertiesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let endpointPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.EndpointProperties?].self, forKey: .endpointPropertiesList)
         var endpointPropertiesListDecoded0:[ComprehendClientTypes.EndpointProperties]? = nil
@@ -14454,6 +14034,19 @@ extension ListEndpointsOutputResponseBody: Swift.Decodable {
         endpointPropertiesList = endpointPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListEndpointsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -14478,8 +14071,9 @@ extension ListEntitiesDetectionJobsInput: Swift.Encodable {
     }
 }
 
-extension ListEntitiesDetectionJobsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListEntitiesDetectionJobsInput {
+
+    static func urlPathProvider(_ value: ListEntitiesDetectionJobsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -14492,7 +14086,7 @@ public struct ListEntitiesDetectionJobsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.EntitiesDetectionJobFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -14517,7 +14111,7 @@ extension ListEntitiesDetectionJobsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.EntitiesDetectionJobFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -14528,40 +14122,11 @@ extension ListEntitiesDetectionJobsInputBody: Swift.Decodable {
     }
 }
 
-extension ListEntitiesDetectionJobsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListEntitiesDetectionJobsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListEntitiesDetectionJobsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListEntitiesDetectionJobsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListEntitiesDetectionJobsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListEntitiesDetectionJobsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListEntitiesDetectionJobsOutputBody = try responseDecoder.decode(responseBody: data)
             self.entitiesDetectionJobPropertiesList = output.entitiesDetectionJobPropertiesList
             self.nextToken = output.nextToken
         } else {
@@ -14571,13 +14136,13 @@ extension ListEntitiesDetectionJobsOutputResponse: ClientRuntime.HttpResponseBin
     }
 }
 
-public struct ListEntitiesDetectionJobsOutputResponse: Swift.Equatable {
+public struct ListEntitiesDetectionJobsOutput: Swift.Equatable {
     /// A list containing the properties of each job that is returned.
     public var entitiesDetectionJobPropertiesList: [ComprehendClientTypes.EntitiesDetectionJobProperties]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         entitiesDetectionJobPropertiesList: [ComprehendClientTypes.EntitiesDetectionJobProperties]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -14587,18 +14152,18 @@ public struct ListEntitiesDetectionJobsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListEntitiesDetectionJobsOutputResponseBody: Swift.Equatable {
+struct ListEntitiesDetectionJobsOutputBody: Swift.Equatable {
     let entitiesDetectionJobPropertiesList: [ComprehendClientTypes.EntitiesDetectionJobProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListEntitiesDetectionJobsOutputResponseBody: Swift.Decodable {
+extension ListEntitiesDetectionJobsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case entitiesDetectionJobPropertiesList = "EntitiesDetectionJobPropertiesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entitiesDetectionJobPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.EntitiesDetectionJobProperties?].self, forKey: .entitiesDetectionJobPropertiesList)
         var entitiesDetectionJobPropertiesListDecoded0:[ComprehendClientTypes.EntitiesDetectionJobProperties]? = nil
@@ -14613,6 +14178,20 @@ extension ListEntitiesDetectionJobsOutputResponseBody: Swift.Decodable {
         entitiesDetectionJobPropertiesList = entitiesDetectionJobPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListEntitiesDetectionJobsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -14633,8 +14212,9 @@ extension ListEntityRecognizerSummariesInput: Swift.Encodable {
     }
 }
 
-extension ListEntityRecognizerSummariesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListEntityRecognizerSummariesInput {
+
+    static func urlPathProvider(_ value: ListEntityRecognizerSummariesInput) -> Swift.String? {
         return "/"
     }
 }
@@ -14645,7 +14225,7 @@ public struct ListEntityRecognizerSummariesInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
     )
@@ -14666,7 +14246,7 @@ extension ListEntityRecognizerSummariesInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
@@ -14675,38 +14255,11 @@ extension ListEntityRecognizerSummariesInputBody: Swift.Decodable {
     }
 }
 
-extension ListEntityRecognizerSummariesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListEntityRecognizerSummariesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListEntityRecognizerSummariesOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListEntityRecognizerSummariesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListEntityRecognizerSummariesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListEntityRecognizerSummariesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListEntityRecognizerSummariesOutputBody = try responseDecoder.decode(responseBody: data)
             self.entityRecognizerSummariesList = output.entityRecognizerSummariesList
             self.nextToken = output.nextToken
         } else {
@@ -14716,13 +14269,13 @@ extension ListEntityRecognizerSummariesOutputResponse: ClientRuntime.HttpRespons
     }
 }
 
-public struct ListEntityRecognizerSummariesOutputResponse: Swift.Equatable {
+public struct ListEntityRecognizerSummariesOutput: Swift.Equatable {
     /// The list entity recognizer summaries.
     public var entityRecognizerSummariesList: [ComprehendClientTypes.EntityRecognizerSummary]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         entityRecognizerSummariesList: [ComprehendClientTypes.EntityRecognizerSummary]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -14732,18 +14285,18 @@ public struct ListEntityRecognizerSummariesOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListEntityRecognizerSummariesOutputResponseBody: Swift.Equatable {
+struct ListEntityRecognizerSummariesOutputBody: Swift.Equatable {
     let entityRecognizerSummariesList: [ComprehendClientTypes.EntityRecognizerSummary]?
     let nextToken: Swift.String?
 }
 
-extension ListEntityRecognizerSummariesOutputResponseBody: Swift.Decodable {
+extension ListEntityRecognizerSummariesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case entityRecognizerSummariesList = "EntityRecognizerSummariesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entityRecognizerSummariesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.EntityRecognizerSummary?].self, forKey: .entityRecognizerSummariesList)
         var entityRecognizerSummariesListDecoded0:[ComprehendClientTypes.EntityRecognizerSummary]? = nil
@@ -14758,6 +14311,19 @@ extension ListEntityRecognizerSummariesOutputResponseBody: Swift.Decodable {
         entityRecognizerSummariesList = entityRecognizerSummariesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListEntityRecognizerSummariesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -14782,8 +14348,9 @@ extension ListEntityRecognizersInput: Swift.Encodable {
     }
 }
 
-extension ListEntityRecognizersInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListEntityRecognizersInput {
+
+    static func urlPathProvider(_ value: ListEntityRecognizersInput) -> Swift.String? {
         return "/"
     }
 }
@@ -14796,7 +14363,7 @@ public struct ListEntityRecognizersInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.EntityRecognizerFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -14821,7 +14388,7 @@ extension ListEntityRecognizersInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.EntityRecognizerFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -14832,40 +14399,11 @@ extension ListEntityRecognizersInputBody: Swift.Decodable {
     }
 }
 
-extension ListEntityRecognizersOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListEntityRecognizersOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListEntityRecognizersOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListEntityRecognizersOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListEntityRecognizersOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListEntityRecognizersOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListEntityRecognizersOutputBody = try responseDecoder.decode(responseBody: data)
             self.entityRecognizerPropertiesList = output.entityRecognizerPropertiesList
             self.nextToken = output.nextToken
         } else {
@@ -14875,13 +14413,13 @@ extension ListEntityRecognizersOutputResponse: ClientRuntime.HttpResponseBinding
     }
 }
 
-public struct ListEntityRecognizersOutputResponse: Swift.Equatable {
+public struct ListEntityRecognizersOutput: Swift.Equatable {
     /// The list of properties of an entity recognizer.
     public var entityRecognizerPropertiesList: [ComprehendClientTypes.EntityRecognizerProperties]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         entityRecognizerPropertiesList: [ComprehendClientTypes.EntityRecognizerProperties]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -14891,18 +14429,18 @@ public struct ListEntityRecognizersOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListEntityRecognizersOutputResponseBody: Swift.Equatable {
+struct ListEntityRecognizersOutputBody: Swift.Equatable {
     let entityRecognizerPropertiesList: [ComprehendClientTypes.EntityRecognizerProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListEntityRecognizersOutputResponseBody: Swift.Decodable {
+extension ListEntityRecognizersOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case entityRecognizerPropertiesList = "EntityRecognizerPropertiesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entityRecognizerPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.EntityRecognizerProperties?].self, forKey: .entityRecognizerPropertiesList)
         var entityRecognizerPropertiesListDecoded0:[ComprehendClientTypes.EntityRecognizerProperties]? = nil
@@ -14917,6 +14455,20 @@ extension ListEntityRecognizersOutputResponseBody: Swift.Decodable {
         entityRecognizerPropertiesList = entityRecognizerPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListEntityRecognizersOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -14941,8 +14493,9 @@ extension ListEventsDetectionJobsInput: Swift.Encodable {
     }
 }
 
-extension ListEventsDetectionJobsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListEventsDetectionJobsInput {
+
+    static func urlPathProvider(_ value: ListEventsDetectionJobsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -14955,7 +14508,7 @@ public struct ListEventsDetectionJobsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.EventsDetectionJobFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -14980,7 +14533,7 @@ extension ListEventsDetectionJobsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.EventsDetectionJobFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -14991,40 +14544,11 @@ extension ListEventsDetectionJobsInputBody: Swift.Decodable {
     }
 }
 
-extension ListEventsDetectionJobsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListEventsDetectionJobsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListEventsDetectionJobsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListEventsDetectionJobsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListEventsDetectionJobsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListEventsDetectionJobsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListEventsDetectionJobsOutputBody = try responseDecoder.decode(responseBody: data)
             self.eventsDetectionJobPropertiesList = output.eventsDetectionJobPropertiesList
             self.nextToken = output.nextToken
         } else {
@@ -15034,13 +14558,13 @@ extension ListEventsDetectionJobsOutputResponse: ClientRuntime.HttpResponseBindi
     }
 }
 
-public struct ListEventsDetectionJobsOutputResponse: Swift.Equatable {
+public struct ListEventsDetectionJobsOutput: Swift.Equatable {
     /// A list containing the properties of each job that is returned.
     public var eventsDetectionJobPropertiesList: [ComprehendClientTypes.EventsDetectionJobProperties]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         eventsDetectionJobPropertiesList: [ComprehendClientTypes.EventsDetectionJobProperties]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -15050,18 +14574,18 @@ public struct ListEventsDetectionJobsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListEventsDetectionJobsOutputResponseBody: Swift.Equatable {
+struct ListEventsDetectionJobsOutputBody: Swift.Equatable {
     let eventsDetectionJobPropertiesList: [ComprehendClientTypes.EventsDetectionJobProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListEventsDetectionJobsOutputResponseBody: Swift.Decodable {
+extension ListEventsDetectionJobsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case eventsDetectionJobPropertiesList = "EventsDetectionJobPropertiesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let eventsDetectionJobPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.EventsDetectionJobProperties?].self, forKey: .eventsDetectionJobPropertiesList)
         var eventsDetectionJobPropertiesListDecoded0:[ComprehendClientTypes.EventsDetectionJobProperties]? = nil
@@ -15076,6 +14600,20 @@ extension ListEventsDetectionJobsOutputResponseBody: Swift.Decodable {
         eventsDetectionJobPropertiesList = eventsDetectionJobPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListEventsDetectionJobsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -15104,8 +14642,9 @@ extension ListFlywheelIterationHistoryInput: Swift.Encodable {
     }
 }
 
-extension ListFlywheelIterationHistoryInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListFlywheelIterationHistoryInput {
+
+    static func urlPathProvider(_ value: ListFlywheelIterationHistoryInput) -> Swift.String? {
         return "/"
     }
 }
@@ -15121,7 +14660,7 @@ public struct ListFlywheelIterationHistoryInput: Swift.Equatable {
     /// Next token
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.FlywheelIterationFilter? = nil,
         flywheelArn: Swift.String? = nil,
         maxResults: Swift.Int? = nil,
@@ -15150,7 +14689,7 @@ extension ListFlywheelIterationHistoryInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
@@ -15163,42 +14702,11 @@ extension ListFlywheelIterationHistoryInputBody: Swift.Decodable {
     }
 }
 
-extension ListFlywheelIterationHistoryOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListFlywheelIterationHistoryOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListFlywheelIterationHistoryOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListFlywheelIterationHistoryOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListFlywheelIterationHistoryOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListFlywheelIterationHistoryOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListFlywheelIterationHistoryOutputBody = try responseDecoder.decode(responseBody: data)
             self.flywheelIterationPropertiesList = output.flywheelIterationPropertiesList
             self.nextToken = output.nextToken
         } else {
@@ -15208,13 +14716,13 @@ extension ListFlywheelIterationHistoryOutputResponse: ClientRuntime.HttpResponse
     }
 }
 
-public struct ListFlywheelIterationHistoryOutputResponse: Swift.Equatable {
+public struct ListFlywheelIterationHistoryOutput: Swift.Equatable {
     /// List of flywheel iteration properties
     public var flywheelIterationPropertiesList: [ComprehendClientTypes.FlywheelIterationProperties]?
     /// Next token
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         flywheelIterationPropertiesList: [ComprehendClientTypes.FlywheelIterationProperties]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -15224,18 +14732,18 @@ public struct ListFlywheelIterationHistoryOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListFlywheelIterationHistoryOutputResponseBody: Swift.Equatable {
+struct ListFlywheelIterationHistoryOutputBody: Swift.Equatable {
     let flywheelIterationPropertiesList: [ComprehendClientTypes.FlywheelIterationProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListFlywheelIterationHistoryOutputResponseBody: Swift.Decodable {
+extension ListFlywheelIterationHistoryOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case flywheelIterationPropertiesList = "FlywheelIterationPropertiesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelIterationPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.FlywheelIterationProperties?].self, forKey: .flywheelIterationPropertiesList)
         var flywheelIterationPropertiesListDecoded0:[ComprehendClientTypes.FlywheelIterationProperties]? = nil
@@ -15250,6 +14758,21 @@ extension ListFlywheelIterationHistoryOutputResponseBody: Swift.Decodable {
         flywheelIterationPropertiesList = flywheelIterationPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListFlywheelIterationHistoryOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -15274,8 +14797,9 @@ extension ListFlywheelsInput: Swift.Encodable {
     }
 }
 
-extension ListFlywheelsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListFlywheelsInput {
+
+    static func urlPathProvider(_ value: ListFlywheelsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -15288,7 +14812,7 @@ public struct ListFlywheelsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.FlywheelFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -15313,7 +14837,7 @@ extension ListFlywheelsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.FlywheelFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -15324,40 +14848,11 @@ extension ListFlywheelsInputBody: Swift.Decodable {
     }
 }
 
-extension ListFlywheelsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListFlywheelsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListFlywheelsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListFlywheelsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListFlywheelsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListFlywheelsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListFlywheelsOutputBody = try responseDecoder.decode(responseBody: data)
             self.flywheelSummaryList = output.flywheelSummaryList
             self.nextToken = output.nextToken
         } else {
@@ -15367,13 +14862,13 @@ extension ListFlywheelsOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct ListFlywheelsOutputResponse: Swift.Equatable {
+public struct ListFlywheelsOutput: Swift.Equatable {
     /// A list of flywheel properties retrieved by the service in response to the request.
     public var flywheelSummaryList: [ComprehendClientTypes.FlywheelSummary]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         flywheelSummaryList: [ComprehendClientTypes.FlywheelSummary]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -15383,18 +14878,18 @@ public struct ListFlywheelsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListFlywheelsOutputResponseBody: Swift.Equatable {
+struct ListFlywheelsOutputBody: Swift.Equatable {
     let flywheelSummaryList: [ComprehendClientTypes.FlywheelSummary]?
     let nextToken: Swift.String?
 }
 
-extension ListFlywheelsOutputResponseBody: Swift.Decodable {
+extension ListFlywheelsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case flywheelSummaryList = "FlywheelSummaryList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelSummaryListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.FlywheelSummary?].self, forKey: .flywheelSummaryList)
         var flywheelSummaryListDecoded0:[ComprehendClientTypes.FlywheelSummary]? = nil
@@ -15409,6 +14904,20 @@ extension ListFlywheelsOutputResponseBody: Swift.Decodable {
         flywheelSummaryList = flywheelSummaryListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListFlywheelsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -15433,8 +14942,9 @@ extension ListKeyPhrasesDetectionJobsInput: Swift.Encodable {
     }
 }
 
-extension ListKeyPhrasesDetectionJobsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListKeyPhrasesDetectionJobsInput {
+
+    static func urlPathProvider(_ value: ListKeyPhrasesDetectionJobsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -15447,7 +14957,7 @@ public struct ListKeyPhrasesDetectionJobsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.KeyPhrasesDetectionJobFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -15472,7 +14982,7 @@ extension ListKeyPhrasesDetectionJobsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.KeyPhrasesDetectionJobFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -15483,40 +14993,11 @@ extension ListKeyPhrasesDetectionJobsInputBody: Swift.Decodable {
     }
 }
 
-extension ListKeyPhrasesDetectionJobsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListKeyPhrasesDetectionJobsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListKeyPhrasesDetectionJobsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListKeyPhrasesDetectionJobsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListKeyPhrasesDetectionJobsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListKeyPhrasesDetectionJobsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListKeyPhrasesDetectionJobsOutputBody = try responseDecoder.decode(responseBody: data)
             self.keyPhrasesDetectionJobPropertiesList = output.keyPhrasesDetectionJobPropertiesList
             self.nextToken = output.nextToken
         } else {
@@ -15526,13 +15007,13 @@ extension ListKeyPhrasesDetectionJobsOutputResponse: ClientRuntime.HttpResponseB
     }
 }
 
-public struct ListKeyPhrasesDetectionJobsOutputResponse: Swift.Equatable {
+public struct ListKeyPhrasesDetectionJobsOutput: Swift.Equatable {
     /// A list containing the properties of each job that is returned.
     public var keyPhrasesDetectionJobPropertiesList: [ComprehendClientTypes.KeyPhrasesDetectionJobProperties]?
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         keyPhrasesDetectionJobPropertiesList: [ComprehendClientTypes.KeyPhrasesDetectionJobProperties]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -15542,18 +15023,18 @@ public struct ListKeyPhrasesDetectionJobsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListKeyPhrasesDetectionJobsOutputResponseBody: Swift.Equatable {
+struct ListKeyPhrasesDetectionJobsOutputBody: Swift.Equatable {
     let keyPhrasesDetectionJobPropertiesList: [ComprehendClientTypes.KeyPhrasesDetectionJobProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListKeyPhrasesDetectionJobsOutputResponseBody: Swift.Decodable {
+extension ListKeyPhrasesDetectionJobsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case keyPhrasesDetectionJobPropertiesList = "KeyPhrasesDetectionJobPropertiesList"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let keyPhrasesDetectionJobPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.KeyPhrasesDetectionJobProperties?].self, forKey: .keyPhrasesDetectionJobPropertiesList)
         var keyPhrasesDetectionJobPropertiesListDecoded0:[ComprehendClientTypes.KeyPhrasesDetectionJobProperties]? = nil
@@ -15568,6 +15049,20 @@ extension ListKeyPhrasesDetectionJobsOutputResponseBody: Swift.Decodable {
         keyPhrasesDetectionJobPropertiesList = keyPhrasesDetectionJobPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListKeyPhrasesDetectionJobsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -15592,8 +15087,9 @@ extension ListPiiEntitiesDetectionJobsInput: Swift.Encodable {
     }
 }
 
-extension ListPiiEntitiesDetectionJobsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListPiiEntitiesDetectionJobsInput {
+
+    static func urlPathProvider(_ value: ListPiiEntitiesDetectionJobsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -15606,7 +15102,7 @@ public struct ListPiiEntitiesDetectionJobsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.PiiEntitiesDetectionJobFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -15631,7 +15127,7 @@ extension ListPiiEntitiesDetectionJobsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.PiiEntitiesDetectionJobFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -15642,40 +15138,11 @@ extension ListPiiEntitiesDetectionJobsInputBody: Swift.Decodable {
     }
 }
 
-extension ListPiiEntitiesDetectionJobsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListPiiEntitiesDetectionJobsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListPiiEntitiesDetectionJobsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListPiiEntitiesDetectionJobsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListPiiEntitiesDetectionJobsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListPiiEntitiesDetectionJobsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListPiiEntitiesDetectionJobsOutputBody = try responseDecoder.decode(responseBody: data)
             self.nextToken = output.nextToken
             self.piiEntitiesDetectionJobPropertiesList = output.piiEntitiesDetectionJobPropertiesList
         } else {
@@ -15685,13 +15152,13 @@ extension ListPiiEntitiesDetectionJobsOutputResponse: ClientRuntime.HttpResponse
     }
 }
 
-public struct ListPiiEntitiesDetectionJobsOutputResponse: Swift.Equatable {
+public struct ListPiiEntitiesDetectionJobsOutput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
     /// A list containing the properties of each job that is returned.
     public var piiEntitiesDetectionJobPropertiesList: [ComprehendClientTypes.PiiEntitiesDetectionJobProperties]?
 
-    public init (
+    public init(
         nextToken: Swift.String? = nil,
         piiEntitiesDetectionJobPropertiesList: [ComprehendClientTypes.PiiEntitiesDetectionJobProperties]? = nil
     )
@@ -15701,18 +15168,18 @@ public struct ListPiiEntitiesDetectionJobsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListPiiEntitiesDetectionJobsOutputResponseBody: Swift.Equatable {
+struct ListPiiEntitiesDetectionJobsOutputBody: Swift.Equatable {
     let piiEntitiesDetectionJobPropertiesList: [ComprehendClientTypes.PiiEntitiesDetectionJobProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListPiiEntitiesDetectionJobsOutputResponseBody: Swift.Decodable {
+extension ListPiiEntitiesDetectionJobsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case nextToken = "NextToken"
         case piiEntitiesDetectionJobPropertiesList = "PiiEntitiesDetectionJobPropertiesList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let piiEntitiesDetectionJobPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.PiiEntitiesDetectionJobProperties?].self, forKey: .piiEntitiesDetectionJobPropertiesList)
         var piiEntitiesDetectionJobPropertiesListDecoded0:[ComprehendClientTypes.PiiEntitiesDetectionJobProperties]? = nil
@@ -15727,6 +15194,20 @@ extension ListPiiEntitiesDetectionJobsOutputResponseBody: Swift.Decodable {
         piiEntitiesDetectionJobPropertiesList = piiEntitiesDetectionJobPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListPiiEntitiesDetectionJobsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -15751,8 +15232,9 @@ extension ListSentimentDetectionJobsInput: Swift.Encodable {
     }
 }
 
-extension ListSentimentDetectionJobsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListSentimentDetectionJobsInput {
+
+    static func urlPathProvider(_ value: ListSentimentDetectionJobsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -15765,7 +15247,7 @@ public struct ListSentimentDetectionJobsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.SentimentDetectionJobFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -15790,7 +15272,7 @@ extension ListSentimentDetectionJobsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.SentimentDetectionJobFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -15801,40 +15283,11 @@ extension ListSentimentDetectionJobsInputBody: Swift.Decodable {
     }
 }
 
-extension ListSentimentDetectionJobsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListSentimentDetectionJobsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListSentimentDetectionJobsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListSentimentDetectionJobsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListSentimentDetectionJobsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListSentimentDetectionJobsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListSentimentDetectionJobsOutputBody = try responseDecoder.decode(responseBody: data)
             self.nextToken = output.nextToken
             self.sentimentDetectionJobPropertiesList = output.sentimentDetectionJobPropertiesList
         } else {
@@ -15844,13 +15297,13 @@ extension ListSentimentDetectionJobsOutputResponse: ClientRuntime.HttpResponseBi
     }
 }
 
-public struct ListSentimentDetectionJobsOutputResponse: Swift.Equatable {
+public struct ListSentimentDetectionJobsOutput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
     /// A list containing the properties of each job that is returned.
     public var sentimentDetectionJobPropertiesList: [ComprehendClientTypes.SentimentDetectionJobProperties]?
 
-    public init (
+    public init(
         nextToken: Swift.String? = nil,
         sentimentDetectionJobPropertiesList: [ComprehendClientTypes.SentimentDetectionJobProperties]? = nil
     )
@@ -15860,18 +15313,18 @@ public struct ListSentimentDetectionJobsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListSentimentDetectionJobsOutputResponseBody: Swift.Equatable {
+struct ListSentimentDetectionJobsOutputBody: Swift.Equatable {
     let sentimentDetectionJobPropertiesList: [ComprehendClientTypes.SentimentDetectionJobProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListSentimentDetectionJobsOutputResponseBody: Swift.Decodable {
+extension ListSentimentDetectionJobsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case nextToken = "NextToken"
         case sentimentDetectionJobPropertiesList = "SentimentDetectionJobPropertiesList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let sentimentDetectionJobPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.SentimentDetectionJobProperties?].self, forKey: .sentimentDetectionJobPropertiesList)
         var sentimentDetectionJobPropertiesListDecoded0:[ComprehendClientTypes.SentimentDetectionJobProperties]? = nil
@@ -15889,6 +15342,20 @@ extension ListSentimentDetectionJobsOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum ListSentimentDetectionJobsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension ListTagsForResourceInput: Swift.Encodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case resourceArn = "ResourceArn"
@@ -15902,8 +15369,9 @@ extension ListTagsForResourceInput: Swift.Encodable {
     }
 }
 
-extension ListTagsForResourceInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListTagsForResourceInput {
+
+    static func urlPathProvider(_ value: ListTagsForResourceInput) -> Swift.String? {
         return "/"
     }
 }
@@ -15913,7 +15381,7 @@ public struct ListTagsForResourceInput: Swift.Equatable {
     /// This member is required.
     public var resourceArn: Swift.String?
 
-    public init (
+    public init(
         resourceArn: Swift.String? = nil
     )
     {
@@ -15930,45 +15398,18 @@ extension ListTagsForResourceInputBody: Swift.Decodable {
         case resourceArn = "ResourceArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourceArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceArn)
         resourceArn = resourceArnDecoded
     }
 }
 
-extension ListTagsForResourceOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListTagsForResourceOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListTagsForResourceOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListTagsForResourceOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListTagsForResourceOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListTagsForResourceOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListTagsForResourceOutputBody = try responseDecoder.decode(responseBody: data)
             self.resourceArn = output.resourceArn
             self.tags = output.tags
         } else {
@@ -15978,13 +15419,13 @@ extension ListTagsForResourceOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct ListTagsForResourceOutputResponse: Swift.Equatable {
+public struct ListTagsForResourceOutput: Swift.Equatable {
     /// The Amazon Resource Name (ARN) of the given Amazon Comprehend resource you are querying.
     public var resourceArn: Swift.String?
     /// Tags associated with the Amazon Comprehend resource being queried. A tag is a key-value pair that adds as a metadata to a resource used by Amazon Comprehend. For example, a tag with "Sales" as the key might be added to a resource to indicate its use by the sales department.
     public var tags: [ComprehendClientTypes.Tag]?
 
-    public init (
+    public init(
         resourceArn: Swift.String? = nil,
         tags: [ComprehendClientTypes.Tag]? = nil
     )
@@ -15994,18 +15435,18 @@ public struct ListTagsForResourceOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListTagsForResourceOutputResponseBody: Swift.Equatable {
+struct ListTagsForResourceOutputBody: Swift.Equatable {
     let resourceArn: Swift.String?
     let tags: [ComprehendClientTypes.Tag]?
 }
 
-extension ListTagsForResourceOutputResponseBody: Swift.Decodable {
+extension ListTagsForResourceOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case resourceArn = "ResourceArn"
         case tags = "Tags"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourceArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceArn)
         resourceArn = resourceArnDecoded
@@ -16020,6 +15461,19 @@ extension ListTagsForResourceOutputResponseBody: Swift.Decodable {
             }
         }
         tags = tagsDecoded0
+    }
+}
+
+enum ListTagsForResourceOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -16044,8 +15498,9 @@ extension ListTargetedSentimentDetectionJobsInput: Swift.Encodable {
     }
 }
 
-extension ListTargetedSentimentDetectionJobsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListTargetedSentimentDetectionJobsInput {
+
+    static func urlPathProvider(_ value: ListTargetedSentimentDetectionJobsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -16058,7 +15513,7 @@ public struct ListTargetedSentimentDetectionJobsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.TargetedSentimentDetectionJobFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -16083,7 +15538,7 @@ extension ListTargetedSentimentDetectionJobsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.TargetedSentimentDetectionJobFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -16094,40 +15549,11 @@ extension ListTargetedSentimentDetectionJobsInputBody: Swift.Decodable {
     }
 }
 
-extension ListTargetedSentimentDetectionJobsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListTargetedSentimentDetectionJobsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListTargetedSentimentDetectionJobsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListTargetedSentimentDetectionJobsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListTargetedSentimentDetectionJobsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListTargetedSentimentDetectionJobsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListTargetedSentimentDetectionJobsOutputBody = try responseDecoder.decode(responseBody: data)
             self.nextToken = output.nextToken
             self.targetedSentimentDetectionJobPropertiesList = output.targetedSentimentDetectionJobPropertiesList
         } else {
@@ -16137,13 +15563,13 @@ extension ListTargetedSentimentDetectionJobsOutputResponse: ClientRuntime.HttpRe
     }
 }
 
-public struct ListTargetedSentimentDetectionJobsOutputResponse: Swift.Equatable {
+public struct ListTargetedSentimentDetectionJobsOutput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
     /// A list containing the properties of each job that is returned.
     public var targetedSentimentDetectionJobPropertiesList: [ComprehendClientTypes.TargetedSentimentDetectionJobProperties]?
 
-    public init (
+    public init(
         nextToken: Swift.String? = nil,
         targetedSentimentDetectionJobPropertiesList: [ComprehendClientTypes.TargetedSentimentDetectionJobProperties]? = nil
     )
@@ -16153,18 +15579,18 @@ public struct ListTargetedSentimentDetectionJobsOutputResponse: Swift.Equatable 
     }
 }
 
-struct ListTargetedSentimentDetectionJobsOutputResponseBody: Swift.Equatable {
+struct ListTargetedSentimentDetectionJobsOutputBody: Swift.Equatable {
     let targetedSentimentDetectionJobPropertiesList: [ComprehendClientTypes.TargetedSentimentDetectionJobProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListTargetedSentimentDetectionJobsOutputResponseBody: Swift.Decodable {
+extension ListTargetedSentimentDetectionJobsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case nextToken = "NextToken"
         case targetedSentimentDetectionJobPropertiesList = "TargetedSentimentDetectionJobPropertiesList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let targetedSentimentDetectionJobPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.TargetedSentimentDetectionJobProperties?].self, forKey: .targetedSentimentDetectionJobPropertiesList)
         var targetedSentimentDetectionJobPropertiesListDecoded0:[ComprehendClientTypes.TargetedSentimentDetectionJobProperties]? = nil
@@ -16179,6 +15605,20 @@ extension ListTargetedSentimentDetectionJobsOutputResponseBody: Swift.Decodable 
         targetedSentimentDetectionJobPropertiesList = targetedSentimentDetectionJobPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListTargetedSentimentDetectionJobsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -16203,8 +15643,9 @@ extension ListTopicsDetectionJobsInput: Swift.Encodable {
     }
 }
 
-extension ListTopicsDetectionJobsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListTopicsDetectionJobsInput {
+
+    static func urlPathProvider(_ value: ListTopicsDetectionJobsInput) -> Swift.String? {
         return "/"
     }
 }
@@ -16217,7 +15658,7 @@ public struct ListTopicsDetectionJobsInput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         filter: ComprehendClientTypes.TopicsDetectionJobFilter? = nil,
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil
@@ -16242,7 +15683,7 @@ extension ListTopicsDetectionJobsInputBody: Swift.Decodable {
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let filterDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.TopicsDetectionJobFilter.self, forKey: .filter)
         filter = filterDecoded
@@ -16253,40 +15694,11 @@ extension ListTopicsDetectionJobsInputBody: Swift.Decodable {
     }
 }
 
-extension ListTopicsDetectionJobsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListTopicsDetectionJobsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidFilterException" : self = .invalidFilterException(try InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListTopicsDetectionJobsOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidFilterException(InvalidFilterException)
-    case invalidRequestException(InvalidRequestException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListTopicsDetectionJobsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListTopicsDetectionJobsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListTopicsDetectionJobsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListTopicsDetectionJobsOutputBody = try responseDecoder.decode(responseBody: data)
             self.nextToken = output.nextToken
             self.topicsDetectionJobPropertiesList = output.topicsDetectionJobPropertiesList
         } else {
@@ -16296,13 +15708,13 @@ extension ListTopicsDetectionJobsOutputResponse: ClientRuntime.HttpResponseBindi
     }
 }
 
-public struct ListTopicsDetectionJobsOutputResponse: Swift.Equatable {
+public struct ListTopicsDetectionJobsOutput: Swift.Equatable {
     /// Identifies the next page of results to return.
     public var nextToken: Swift.String?
     /// A list containing the properties of each job that is returned.
     public var topicsDetectionJobPropertiesList: [ComprehendClientTypes.TopicsDetectionJobProperties]?
 
-    public init (
+    public init(
         nextToken: Swift.String? = nil,
         topicsDetectionJobPropertiesList: [ComprehendClientTypes.TopicsDetectionJobProperties]? = nil
     )
@@ -16312,18 +15724,18 @@ public struct ListTopicsDetectionJobsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListTopicsDetectionJobsOutputResponseBody: Swift.Equatable {
+struct ListTopicsDetectionJobsOutputBody: Swift.Equatable {
     let topicsDetectionJobPropertiesList: [ComprehendClientTypes.TopicsDetectionJobProperties]?
     let nextToken: Swift.String?
 }
 
-extension ListTopicsDetectionJobsOutputResponseBody: Swift.Decodable {
+extension ListTopicsDetectionJobsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case nextToken = "NextToken"
         case topicsDetectionJobPropertiesList = "TopicsDetectionJobPropertiesList"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let topicsDetectionJobPropertiesListContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.TopicsDetectionJobProperties?].self, forKey: .topicsDetectionJobPropertiesList)
         var topicsDetectionJobPropertiesListDecoded0:[ComprehendClientTypes.TopicsDetectionJobProperties]? = nil
@@ -16338,6 +15750,20 @@ extension ListTopicsDetectionJobsOutputResponseBody: Swift.Decodable {
         topicsDetectionJobPropertiesList = topicsDetectionJobPropertiesListDecoded0
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
+    }
+}
+
+enum ListTopicsDetectionJobsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidFilterException": return try await InvalidFilterException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -16357,7 +15783,7 @@ extension ComprehendClientTypes.MentionSentiment: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let sentimentDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.SentimentType.self, forKey: .sentiment)
         sentiment = sentimentDecoded
@@ -16367,14 +15793,14 @@ extension ComprehendClientTypes.MentionSentiment: Swift.Codable {
 }
 
 extension ComprehendClientTypes {
-    /// Contains the sentiment and sentiment score for one mention of an entity. For more information about targeted sentiment, see [Targeted sentiment](https://docs.aws.amazon.com/comprehend/latest/dg/how-targeted-sentiment.html).
+    /// Contains the sentiment and sentiment score for one mention of an entity. For more information about targeted sentiment, see [Targeted sentiment](https://docs.aws.amazon.com/comprehend/latest/dg/how-targeted-sentiment.html) in the Amazon Comprehend Developer Guide.
     public struct MentionSentiment: Swift.Equatable {
         /// The sentiment of the mention.
         public var sentiment: ComprehendClientTypes.SentimentType?
         /// Describes the level of confidence that Amazon Comprehend has in the accuracy of its detection of sentiments.
         public var sentimentScore: ComprehendClientTypes.SentimentScore?
 
-        public init (
+        public init(
             sentiment: ComprehendClientTypes.SentimentType? = nil,
             sentimentScore: ComprehendClientTypes.SentimentScore? = nil
         )
@@ -16484,7 +15910,7 @@ extension ComprehendClientTypes.OutputDataConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -16496,7 +15922,7 @@ extension ComprehendClientTypes.OutputDataConfig: Swift.Codable {
 extension ComprehendClientTypes {
     /// Provides configuration parameters for the output of inference jobs.
     public struct OutputDataConfig: Swift.Equatable {
-        /// ID for the Amazon Web Services Key Management Service (KMS) key that Amazon Comprehend uses to encrypt the output results from an analysis job. The KmsKeyId can be one of the following formats:
+        /// ID for the Amazon Web Services Key Management Service (KMS) key that Amazon Comprehend uses to encrypt the output results from an analysis job. Specify the Key Id of a symmetric key, because you cannot use an asymmetric key for uploading data to S3. The KmsKeyId can be one of the following formats:
         ///
         /// * KMS Key ID: "1234abcd-12ab-34cd-56ef-1234567890ab"
         ///
@@ -16510,7 +15936,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var s3Uri: Swift.String?
 
-        public init (
+        public init(
             kmsKeyId: Swift.String? = nil,
             s3Uri: Swift.String? = nil
         )
@@ -16563,6 +15989,38 @@ extension ComprehendClientTypes {
     }
 }
 
+extension ComprehendClientTypes {
+    public enum PageBasedWarningCode: Swift.Equatable, Swift.RawRepresentable, Swift.CaseIterable, Swift.Codable, Swift.Hashable {
+        case inferencingNativeDocumentWithPlaintextTrainedModel
+        case inferencingPlaintextWithNativeTrainedModel
+        case sdkUnknown(Swift.String)
+
+        public static var allCases: [PageBasedWarningCode] {
+            return [
+                .inferencingNativeDocumentWithPlaintextTrainedModel,
+                .inferencingPlaintextWithNativeTrainedModel,
+                .sdkUnknown("")
+            ]
+        }
+        public init?(rawValue: Swift.String) {
+            let value = Self.allCases.first(where: { $0.rawValue == rawValue })
+            self = value ?? Self.sdkUnknown(rawValue)
+        }
+        public var rawValue: Swift.String {
+            switch self {
+            case .inferencingNativeDocumentWithPlaintextTrainedModel: return "INFERENCING_NATIVE_DOCUMENT_WITH_PLAINTEXT_TRAINED_MODEL"
+            case .inferencingPlaintextWithNativeTrainedModel: return "INFERENCING_PLAINTEXT_WITH_NATIVE_TRAINED_MODEL"
+            case let .sdkUnknown(s): return s
+            }
+        }
+        public init(from decoder: Swift.Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(RawValue.self)
+            self = PageBasedWarningCode(rawValue: rawValue) ?? PageBasedWarningCode.sdkUnknown(rawValue)
+        }
+    }
+}
+
 extension ComprehendClientTypes.PartOfSpeechTag: Swift.Codable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case score = "Score"
@@ -16579,7 +16037,7 @@ extension ComprehendClientTypes.PartOfSpeechTag: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let tagDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.PartOfSpeechTagType.self, forKey: .tag)
         tag = tagDecoded
@@ -16596,7 +16054,7 @@ extension ComprehendClientTypes {
         /// Identifies the part of speech that the token represents.
         public var tag: ComprehendClientTypes.PartOfSpeechTagType?
 
-        public init (
+        public init(
             score: Swift.Float? = nil,
             tag: ComprehendClientTypes.PartOfSpeechTagType? = nil
         )
@@ -16712,7 +16170,7 @@ extension ComprehendClientTypes.PiiEntitiesDetectionJobFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobName)
         jobName = jobNameDecoded
@@ -16737,7 +16195,7 @@ extension ComprehendClientTypes {
         /// Filters the list of jobs based on the time that the job was submitted for processing. Returns only jobs submitted before the specified time. Jobs are returned in ascending order, oldest to newest.
         public var submitTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             jobName: Swift.String? = nil,
             jobStatus: ComprehendClientTypes.JobStatus? = nil,
             submitTimeAfter: ClientRuntime.Date? = nil,
@@ -16813,7 +16271,7 @@ extension ComprehendClientTypes.PiiEntitiesDetectionJobProperties: Swift.Codable
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -16861,7 +16319,7 @@ extension ComprehendClientTypes {
         public var jobName: Swift.String?
         /// The current status of the PII entities detection job. If the status is FAILED, the Message field shows the reason for the failure.
         public var jobStatus: ComprehendClientTypes.JobStatus?
-        /// The language code of the input documents
+        /// The language code of the input documents.
         public var languageCode: ComprehendClientTypes.LanguageCode?
         /// A description of the status of a job.
         public var message: Swift.String?
@@ -16874,7 +16332,7 @@ extension ComprehendClientTypes {
         /// The time that the PII entities detection job was submitted for processing.
         public var submitTime: ClientRuntime.Date?
 
-        public init (
+        public init(
             dataAccessRoleArn: Swift.String? = nil,
             endTime: ClientRuntime.Date? = nil,
             inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -16996,7 +16454,7 @@ extension ComprehendClientTypes.PiiEntity: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let scoreDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .score)
         score = scoreDecoded
@@ -17021,7 +16479,7 @@ extension ComprehendClientTypes {
         /// The entity's type.
         public var type: ComprehendClientTypes.PiiEntityType?
 
-        public init (
+        public init(
             beginOffset: Swift.Int? = nil,
             endOffset: Swift.Int? = nil,
             score: Swift.Float? = nil,
@@ -17190,7 +16648,7 @@ extension ComprehendClientTypes.PiiOutputDataConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let s3UriDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .s3Uri)
         s3Uri = s3UriDecoded
@@ -17208,7 +16666,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var s3Uri: Swift.String?
 
-        public init (
+        public init(
             kmsKeyId: Swift.String? = nil,
             s3Uri: Swift.String? = nil
         )
@@ -17236,7 +16694,7 @@ extension ComprehendClientTypes.Point: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let xDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .x)
         x = xDecoded
@@ -17253,7 +16711,7 @@ extension ComprehendClientTypes {
         /// The value of the Y coordinate for a point on a polygon
         public var y: Swift.Float?
 
-        public init (
+        public init(
             x: Swift.Float? = nil,
             y: Swift.Float? = nil
         )
@@ -17286,8 +16744,9 @@ extension PutResourcePolicyInput: Swift.Encodable {
     }
 }
 
-extension PutResourcePolicyInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension PutResourcePolicyInput {
+
+    static func urlPathProvider(_ value: PutResourcePolicyInput) -> Swift.String? {
         return "/"
     }
 }
@@ -17302,7 +16761,7 @@ public struct PutResourcePolicyInput: Swift.Equatable {
     /// This member is required.
     public var resourcePolicy: Swift.String?
 
-    public init (
+    public init(
         policyRevisionId: Swift.String? = nil,
         resourceArn: Swift.String? = nil,
         resourcePolicy: Swift.String? = nil
@@ -17327,7 +16786,7 @@ extension PutResourcePolicyInputBody: Swift.Decodable {
         case resourcePolicy = "ResourcePolicy"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourceArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceArn)
         resourceArn = resourceArnDecoded
@@ -17338,38 +16797,11 @@ extension PutResourcePolicyInputBody: Swift.Decodable {
     }
 }
 
-extension PutResourcePolicyOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension PutResourcePolicyOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum PutResourcePolicyOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension PutResourcePolicyOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension PutResourcePolicyOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: PutResourcePolicyOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: PutResourcePolicyOutputBody = try responseDecoder.decode(responseBody: data)
             self.policyRevisionId = output.policyRevisionId
         } else {
             self.policyRevisionId = nil
@@ -17377,11 +16809,11 @@ extension PutResourcePolicyOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct PutResourcePolicyOutputResponse: Swift.Equatable {
+public struct PutResourcePolicyOutput: Swift.Equatable {
     /// The revision ID of the policy. Each time you modify a policy, Amazon Comprehend assigns a new revision ID, and it deletes the prior version of the policy.
     public var policyRevisionId: Swift.String?
 
-    public init (
+    public init(
         policyRevisionId: Swift.String? = nil
     )
     {
@@ -17389,19 +16821,32 @@ public struct PutResourcePolicyOutputResponse: Swift.Equatable {
     }
 }
 
-struct PutResourcePolicyOutputResponseBody: Swift.Equatable {
+struct PutResourcePolicyOutputBody: Swift.Equatable {
     let policyRevisionId: Swift.String?
 }
 
-extension PutResourcePolicyOutputResponseBody: Swift.Decodable {
+extension PutResourcePolicyOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case policyRevisionId = "PolicyRevisionId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let policyRevisionIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .policyRevisionId)
         policyRevisionId = policyRevisionIdDecoded
+    }
+}
+
+enum PutResourcePolicyOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -17428,7 +16873,7 @@ extension ComprehendClientTypes.RedactionConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let piiEntityTypesContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.PiiEntityType?].self, forKey: .piiEntityTypes)
         var piiEntityTypesDecoded0:[ComprehendClientTypes.PiiEntityType]? = nil
@@ -17458,7 +16903,7 @@ extension ComprehendClientTypes {
         /// An array of the types of PII entities that Amazon Comprehend detects in the input text for your request.
         public var piiEntityTypes: [ComprehendClientTypes.PiiEntityType]?
 
-        public init (
+        public init(
             maskCharacter: Swift.String? = nil,
             maskMode: ComprehendClientTypes.PiiEntitiesDetectionMaskMode? = nil,
             piiEntityTypes: [ComprehendClientTypes.PiiEntityType]? = nil
@@ -17520,7 +16965,7 @@ extension ComprehendClientTypes.RelationshipsListItem: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let idsContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .ids)
         var idsDecoded0:[Swift.String]? = nil
@@ -17546,7 +16991,7 @@ extension ComprehendClientTypes {
         /// Only supported relationship is a child relationship.
         public var type: ComprehendClientTypes.RelationshipType?
 
-        public init (
+        public init(
             ids: [Swift.String]? = nil,
             type: ComprehendClientTypes.RelationshipType? = nil
         )
@@ -17559,38 +17004,41 @@ extension ComprehendClientTypes {
 }
 
 extension ResourceInUseException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: ResourceInUseExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The specified resource name is already in use. Use a different name and try your request again.
-public struct ResourceInUseException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct ResourceInUseException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ResourceInUseException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -17603,7 +17051,7 @@ extension ResourceInUseExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -17611,38 +17059,41 @@ extension ResourceInUseExceptionBody: Swift.Decodable {
 }
 
 extension ResourceLimitExceededException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: ResourceLimitExceededExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The maximum number of resources per account has been exceeded. Review the resources, and then try your request again.
-public struct ResourceLimitExceededException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct ResourceLimitExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ResourceLimitExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -17655,7 +17106,7 @@ extension ResourceLimitExceededExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -17663,38 +17114,41 @@ extension ResourceLimitExceededExceptionBody: Swift.Decodable {
 }
 
 extension ResourceNotFoundException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: ResourceNotFoundExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The specified resource ARN was not found. Check the ARN and try your request again.
-public struct ResourceNotFoundException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct ResourceNotFoundException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ResourceNotFoundException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -17707,7 +17161,7 @@ extension ResourceNotFoundExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -17715,38 +17169,41 @@ extension ResourceNotFoundExceptionBody: Swift.Decodable {
 }
 
 extension ResourceUnavailableException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: ResourceUnavailableExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The specified resource is not available. Check the resource and try your request again.
-public struct ResourceUnavailableException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct ResourceUnavailableException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ResourceUnavailableException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -17759,7 +17216,7 @@ extension ResourceUnavailableExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -17790,7 +17247,7 @@ extension ComprehendClientTypes.SentimentDetectionJobFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobName)
         jobName = jobNameDecoded
@@ -17815,7 +17272,7 @@ extension ComprehendClientTypes {
         /// Filters the list of jobs based on the time that the job was submitted for processing. Returns only jobs submitted before the specified time. Jobs are returned in ascending order, oldest to newest.
         public var submitTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             jobName: Swift.String? = nil,
             jobStatus: ComprehendClientTypes.JobStatus? = nil,
             submitTimeAfter: ClientRuntime.Date? = nil,
@@ -17891,7 +17348,7 @@ extension ComprehendClientTypes.SentimentDetectionJobProperties: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -17956,7 +17413,7 @@ extension ComprehendClientTypes {
         /// Configuration parameters for a private Virtual Private Cloud (VPC) containing the resources you are using for your sentiment detection job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
         public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-        public init (
+        public init(
             dataAccessRoleArn: Swift.String? = nil,
             endTime: ClientRuntime.Date? = nil,
             inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -18014,7 +17471,7 @@ extension ComprehendClientTypes.SentimentScore: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let positiveDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .positive)
         positive = positiveDecoded
@@ -18039,7 +17496,7 @@ extension ComprehendClientTypes {
         /// The level of confidence that Amazon Comprehend has in the accuracy of its detection of the POSITIVE sentiment.
         public var positive: Swift.Float?
 
-        public init (
+        public init(
             mixed: Swift.Float? = nil,
             negative: Swift.Float? = nil,
             neutral: Swift.Float? = nil,
@@ -18177,8 +17634,9 @@ extension StartDocumentClassificationJobInput: Swift.Encodable {
     }
 }
 
-extension StartDocumentClassificationJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartDocumentClassificationJobInput {
+
+    static func urlPathProvider(_ value: StartDocumentClassificationJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -18212,7 +17670,7 @@ public struct StartDocumentClassificationJobInput: Swift.Equatable {
     /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for your document classification job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
     public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         documentClassifierArn: Swift.String? = nil,
@@ -18265,7 +17723,7 @@ extension StartDocumentClassificationJobInputBody: Swift.Decodable {
         case vpcConfig = "VpcConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobName)
         jobName = jobNameDecoded
@@ -18299,46 +17757,11 @@ extension StartDocumentClassificationJobInputBody: Swift.Decodable {
     }
 }
 
-extension StartDocumentClassificationJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartDocumentClassificationJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceUnavailableException" : self = .resourceUnavailableException(try ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartDocumentClassificationJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case resourceUnavailableException(ResourceUnavailableException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartDocumentClassificationJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartDocumentClassificationJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartDocumentClassificationJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartDocumentClassificationJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.documentClassifierArn = output.documentClassifierArn
             self.jobArn = output.jobArn
             self.jobId = output.jobId
@@ -18352,7 +17775,7 @@ extension StartDocumentClassificationJobOutputResponse: ClientRuntime.HttpRespon
     }
 }
 
-public struct StartDocumentClassificationJobOutputResponse: Swift.Equatable {
+public struct StartDocumentClassificationJobOutput: Swift.Equatable {
     /// The ARN of the custom classification model.
     public var documentClassifierArn: Swift.String?
     /// The Amazon Resource Name (ARN) of the document classification job. It is a unique, fully qualified identifier for the job. It includes the Amazon Web Services account, Amazon Web Services Region, and the job ID. The format of the ARN is as follows: arn::comprehend:::document-classification-job/ The following is an example job ARN: arn:aws:comprehend:us-west-2:111122223333:document-classification-job/1234abcd12ab34cd56ef1234567890ab
@@ -18374,7 +17797,7 @@ public struct StartDocumentClassificationJobOutputResponse: Swift.Equatable {
     /// * STOPPED - The job was successfully stopped without completing.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         documentClassifierArn: Swift.String? = nil,
         jobArn: Swift.String? = nil,
         jobId: Swift.String? = nil,
@@ -18388,14 +17811,14 @@ public struct StartDocumentClassificationJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartDocumentClassificationJobOutputResponseBody: Swift.Equatable {
+struct StartDocumentClassificationJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobArn: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
     let documentClassifierArn: Swift.String?
 }
 
-extension StartDocumentClassificationJobOutputResponseBody: Swift.Decodable {
+extension StartDocumentClassificationJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case documentClassifierArn = "DocumentClassifierArn"
         case jobArn = "JobArn"
@@ -18403,7 +17826,7 @@ extension StartDocumentClassificationJobOutputResponseBody: Swift.Decodable {
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -18413,6 +17836,24 @@ extension StartDocumentClassificationJobOutputResponseBody: Swift.Decodable {
         jobStatus = jobStatusDecoded
         let documentClassifierArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .documentClassifierArn)
         documentClassifierArn = documentClassifierArnDecoded
+    }
+}
+
+enum StartDocumentClassificationJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceUnavailableException": return try await ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -18460,8 +17901,9 @@ extension StartDominantLanguageDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StartDominantLanguageDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartDominantLanguageDetectionJobInput {
+
+    static func urlPathProvider(_ value: StartDominantLanguageDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -18491,7 +17933,7 @@ public struct StartDominantLanguageDetectionJobInput: Swift.Equatable {
     /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for your dominant language detection job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
     public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -18536,7 +17978,7 @@ extension StartDominantLanguageDetectionJobInputBody: Swift.Decodable {
         case vpcConfig = "VpcConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let inputDataConfigDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.InputDataConfig.self, forKey: .inputDataConfig)
         inputDataConfig = inputDataConfigDecoded
@@ -18566,42 +18008,11 @@ extension StartDominantLanguageDetectionJobInputBody: Swift.Decodable {
     }
 }
 
-extension StartDominantLanguageDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartDominantLanguageDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartDominantLanguageDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartDominantLanguageDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartDominantLanguageDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartDominantLanguageDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartDominantLanguageDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobArn = output.jobArn
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
@@ -18613,7 +18024,7 @@ extension StartDominantLanguageDetectionJobOutputResponse: ClientRuntime.HttpRes
     }
 }
 
-public struct StartDominantLanguageDetectionJobOutputResponse: Swift.Equatable {
+public struct StartDominantLanguageDetectionJobOutput: Swift.Equatable {
     /// The Amazon Resource Name (ARN) of the dominant language detection job. It is a unique, fully qualified identifier for the job. It includes the Amazon Web Services account, Amazon Web Services Region, and the job ID. The format of the ARN is as follows: arn::comprehend:::dominant-language-detection-job/ The following is an example job ARN: arn:aws:comprehend:us-west-2:111122223333:dominant-language-detection-job/1234abcd12ab34cd56ef1234567890ab
     public var jobArn: Swift.String?
     /// The identifier generated for the job. To get the status of a job, use this identifier with the operation.
@@ -18629,7 +18040,7 @@ public struct StartDominantLanguageDetectionJobOutputResponse: Swift.Equatable {
     /// * FAILED - The job did not complete. To get details, use the operation.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobArn: Swift.String? = nil,
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
@@ -18641,20 +18052,20 @@ public struct StartDominantLanguageDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartDominantLanguageDetectionJobOutputResponseBody: Swift.Equatable {
+struct StartDominantLanguageDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobArn: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StartDominantLanguageDetectionJobOutputResponseBody: Swift.Decodable {
+extension StartDominantLanguageDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobArn = "JobArn"
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -18662,6 +18073,22 @@ extension StartDominantLanguageDetectionJobOutputResponseBody: Swift.Decodable {
         jobArn = jobArnDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StartDominantLanguageDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -18721,8 +18148,9 @@ extension StartEntitiesDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StartEntitiesDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartEntitiesDetectionJobInput {
+
+    static func urlPathProvider(_ value: StartEntitiesDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -18759,7 +18187,7 @@ public struct StartEntitiesDetectionJobInput: Swift.Equatable {
     /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for your entity detection job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
     public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         entityRecognizerArn: Swift.String? = nil,
@@ -18816,7 +18244,7 @@ extension StartEntitiesDetectionJobInputBody: Swift.Decodable {
         case vpcConfig = "VpcConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let inputDataConfigDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.InputDataConfig.self, forKey: .inputDataConfig)
         inputDataConfig = inputDataConfigDecoded
@@ -18852,46 +18280,11 @@ extension StartEntitiesDetectionJobInputBody: Swift.Decodable {
     }
 }
 
-extension StartEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartEntitiesDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceUnavailableException" : self = .resourceUnavailableException(try ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartEntitiesDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case resourceUnavailableException(ResourceUnavailableException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartEntitiesDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartEntitiesDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartEntitiesDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartEntitiesDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.entityRecognizerArn = output.entityRecognizerArn
             self.jobArn = output.jobArn
             self.jobId = output.jobId
@@ -18905,7 +18298,7 @@ extension StartEntitiesDetectionJobOutputResponse: ClientRuntime.HttpResponseBin
     }
 }
 
-public struct StartEntitiesDetectionJobOutputResponse: Swift.Equatable {
+public struct StartEntitiesDetectionJobOutput: Swift.Equatable {
     /// The ARN of the custom entity recognition model.
     public var entityRecognizerArn: Swift.String?
     /// The Amazon Resource Name (ARN) of the entities detection job. It is a unique, fully qualified identifier for the job. It includes the Amazon Web Services account, Amazon Web Services Region, and the job ID. The format of the ARN is as follows: arn::comprehend:::entities-detection-job/ The following is an example job ARN: arn:aws:comprehend:us-west-2:111122223333:entities-detection-job/1234abcd12ab34cd56ef1234567890ab
@@ -18927,7 +18320,7 @@ public struct StartEntitiesDetectionJobOutputResponse: Swift.Equatable {
     /// * STOPPED - The job was successfully stopped without completing.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         entityRecognizerArn: Swift.String? = nil,
         jobArn: Swift.String? = nil,
         jobId: Swift.String? = nil,
@@ -18941,14 +18334,14 @@ public struct StartEntitiesDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartEntitiesDetectionJobOutputResponseBody: Swift.Equatable {
+struct StartEntitiesDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobArn: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
     let entityRecognizerArn: Swift.String?
 }
 
-extension StartEntitiesDetectionJobOutputResponseBody: Swift.Decodable {
+extension StartEntitiesDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case entityRecognizerArn = "EntityRecognizerArn"
         case jobArn = "JobArn"
@@ -18956,7 +18349,7 @@ extension StartEntitiesDetectionJobOutputResponseBody: Swift.Decodable {
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -18966,6 +18359,24 @@ extension StartEntitiesDetectionJobOutputResponseBody: Swift.Decodable {
         jobStatus = jobStatusDecoded
         let entityRecognizerArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .entityRecognizerArn)
         entityRecognizerArn = entityRecognizerArnDecoded
+    }
+}
+
+enum StartEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceUnavailableException": return try await ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -19016,8 +18427,9 @@ extension StartEventsDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StartEventsDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartEventsDetectionJobInput {
+
+    static func urlPathProvider(_ value: StartEventsDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -19045,7 +18457,7 @@ public struct StartEventsDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var targetEventTypes: [Swift.String]?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -19090,7 +18502,7 @@ extension StartEventsDetectionJobInputBody: Swift.Decodable {
         case targetEventTypes = "TargetEventTypes"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let inputDataConfigDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.InputDataConfig.self, forKey: .inputDataConfig)
         inputDataConfig = inputDataConfigDecoded
@@ -19129,42 +18541,11 @@ extension StartEventsDetectionJobInputBody: Swift.Decodable {
     }
 }
 
-extension StartEventsDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartEventsDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartEventsDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartEventsDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartEventsDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartEventsDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartEventsDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobArn = output.jobArn
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
@@ -19176,7 +18557,7 @@ extension StartEventsDetectionJobOutputResponse: ClientRuntime.HttpResponseBindi
     }
 }
 
-public struct StartEventsDetectionJobOutputResponse: Swift.Equatable {
+public struct StartEventsDetectionJobOutput: Swift.Equatable {
     /// The Amazon Resource Name (ARN) of the events detection job. It is a unique, fully qualified identifier for the job. It includes the Amazon Web Services account, Amazon Web Services Region, and the job ID. The format of the ARN is as follows: arn::comprehend:::events-detection-job/ The following is an example job ARN: arn:aws:comprehend:us-west-2:111122223333:events-detection-job/1234abcd12ab34cd56ef1234567890ab
     public var jobArn: Swift.String?
     /// An unique identifier for the request. If you don't set the client request token, Amazon Comprehend generates one.
@@ -19184,7 +18565,7 @@ public struct StartEventsDetectionJobOutputResponse: Swift.Equatable {
     /// The status of the events detection job.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobArn: Swift.String? = nil,
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
@@ -19196,20 +18577,20 @@ public struct StartEventsDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartEventsDetectionJobOutputResponseBody: Swift.Equatable {
+struct StartEventsDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobArn: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StartEventsDetectionJobOutputResponseBody: Swift.Decodable {
+extension StartEventsDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobArn = "JobArn"
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -19217,6 +18598,22 @@ extension StartEventsDetectionJobOutputResponseBody: Swift.Decodable {
         jobArn = jobArnDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StartEventsDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -19237,8 +18634,9 @@ extension StartFlywheelIterationInput: Swift.Encodable {
     }
 }
 
-extension StartFlywheelIterationInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartFlywheelIterationInput {
+
+    static func urlPathProvider(_ value: StartFlywheelIterationInput) -> Swift.String? {
         return "/"
     }
 }
@@ -19250,7 +18648,7 @@ public struct StartFlywheelIterationInput: Swift.Equatable {
     /// This member is required.
     public var flywheelArn: Swift.String?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         flywheelArn: Swift.String? = nil
     )
@@ -19271,7 +18669,7 @@ extension StartFlywheelIterationInputBody: Swift.Decodable {
         case flywheelArn = "FlywheelArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
@@ -19280,42 +18678,11 @@ extension StartFlywheelIterationInputBody: Swift.Decodable {
     }
 }
 
-extension StartFlywheelIterationOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartFlywheelIterationOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartFlywheelIterationOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartFlywheelIterationOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartFlywheelIterationOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartFlywheelIterationOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartFlywheelIterationOutputBody = try responseDecoder.decode(responseBody: data)
             self.flywheelArn = output.flywheelArn
             self.flywheelIterationId = output.flywheelIterationId
         } else {
@@ -19325,13 +18692,13 @@ extension StartFlywheelIterationOutputResponse: ClientRuntime.HttpResponseBindin
     }
 }
 
-public struct StartFlywheelIterationOutputResponse: Swift.Equatable {
+public struct StartFlywheelIterationOutput: Swift.Equatable {
     ///
     public var flywheelArn: Swift.String?
     ///
     public var flywheelIterationId: Swift.String?
 
-    public init (
+    public init(
         flywheelArn: Swift.String? = nil,
         flywheelIterationId: Swift.String? = nil
     )
@@ -19341,23 +18708,38 @@ public struct StartFlywheelIterationOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartFlywheelIterationOutputResponseBody: Swift.Equatable {
+struct StartFlywheelIterationOutputBody: Swift.Equatable {
     let flywheelArn: Swift.String?
     let flywheelIterationId: Swift.String?
 }
 
-extension StartFlywheelIterationOutputResponseBody: Swift.Decodable {
+extension StartFlywheelIterationOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case flywheelArn = "FlywheelArn"
         case flywheelIterationId = "FlywheelIterationId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
         let flywheelIterationIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelIterationId)
         flywheelIterationId = flywheelIterationIdDecoded
+    }
+}
+
+enum StartFlywheelIterationOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -19409,8 +18791,9 @@ extension StartKeyPhrasesDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StartKeyPhrasesDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartKeyPhrasesDetectionJobInput {
+
+    static func urlPathProvider(_ value: StartKeyPhrasesDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -19443,7 +18826,7 @@ public struct StartKeyPhrasesDetectionJobInput: Swift.Equatable {
     /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for your key phrases detection job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
     public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -19492,7 +18875,7 @@ extension StartKeyPhrasesDetectionJobInputBody: Swift.Decodable {
         case vpcConfig = "VpcConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let inputDataConfigDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.InputDataConfig.self, forKey: .inputDataConfig)
         inputDataConfig = inputDataConfigDecoded
@@ -19524,42 +18907,11 @@ extension StartKeyPhrasesDetectionJobInputBody: Swift.Decodable {
     }
 }
 
-extension StartKeyPhrasesDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartKeyPhrasesDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartKeyPhrasesDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartKeyPhrasesDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartKeyPhrasesDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartKeyPhrasesDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartKeyPhrasesDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobArn = output.jobArn
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
@@ -19571,7 +18923,7 @@ extension StartKeyPhrasesDetectionJobOutputResponse: ClientRuntime.HttpResponseB
     }
 }
 
-public struct StartKeyPhrasesDetectionJobOutputResponse: Swift.Equatable {
+public struct StartKeyPhrasesDetectionJobOutput: Swift.Equatable {
     /// The Amazon Resource Name (ARN) of the key phrase detection job. It is a unique, fully qualified identifier for the job. It includes the Amazon Web Services account, Amazon Web Services Region, and the job ID. The format of the ARN is as follows: arn::comprehend:::key-phrases-detection-job/ The following is an example job ARN: arn:aws:comprehend:us-west-2:111122223333:key-phrases-detection-job/1234abcd12ab34cd56ef1234567890ab
     public var jobArn: Swift.String?
     /// The identifier generated for the job. To get the status of a job, use this identifier with the operation.
@@ -19587,7 +18939,7 @@ public struct StartKeyPhrasesDetectionJobOutputResponse: Swift.Equatable {
     /// * FAILED - The job did not complete. To get details, use the operation.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobArn: Swift.String? = nil,
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
@@ -19599,20 +18951,20 @@ public struct StartKeyPhrasesDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartKeyPhrasesDetectionJobOutputResponseBody: Swift.Equatable {
+struct StartKeyPhrasesDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobArn: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StartKeyPhrasesDetectionJobOutputResponseBody: Swift.Decodable {
+extension StartKeyPhrasesDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobArn = "JobArn"
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -19620,6 +18972,22 @@ extension StartKeyPhrasesDetectionJobOutputResponseBody: Swift.Decodable {
         jobArn = jobArnDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StartKeyPhrasesDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -19671,8 +19039,9 @@ extension StartPiiEntitiesDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StartPiiEntitiesDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartPiiEntitiesDetectionJobInput {
+
+    static func urlPathProvider(_ value: StartPiiEntitiesDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -19688,7 +19057,7 @@ public struct StartPiiEntitiesDetectionJobInput: Swift.Equatable {
     public var inputDataConfig: ComprehendClientTypes.InputDataConfig?
     /// The identifier of the job.
     public var jobName: Swift.String?
-    /// The language of the input documents. Currently, English is the only valid language.
+    /// The language of the input documents. Enter the language code for English (en) or Spanish (es).
     /// This member is required.
     public var languageCode: ComprehendClientTypes.LanguageCode?
     /// Specifies whether the output provides the locations (offsets) of PII entities or a file in which PII entities are redacted.
@@ -19702,7 +19071,7 @@ public struct StartPiiEntitiesDetectionJobInput: Swift.Equatable {
     /// Tags to associate with the PII entities detection job. A tag is a key-value pair that adds metadata to a resource used by Amazon Comprehend. For example, a tag with "Sales" as the key might be added to a resource to indicate its use by the sales department.
     public var tags: [ComprehendClientTypes.Tag]?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -19751,7 +19120,7 @@ extension StartPiiEntitiesDetectionJobInputBody: Swift.Decodable {
         case tags = "Tags"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let inputDataConfigDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.InputDataConfig.self, forKey: .inputDataConfig)
         inputDataConfig = inputDataConfigDecoded
@@ -19783,42 +19152,11 @@ extension StartPiiEntitiesDetectionJobInputBody: Swift.Decodable {
     }
 }
 
-extension StartPiiEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartPiiEntitiesDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartPiiEntitiesDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartPiiEntitiesDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartPiiEntitiesDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartPiiEntitiesDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartPiiEntitiesDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobArn = output.jobArn
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
@@ -19830,7 +19168,7 @@ extension StartPiiEntitiesDetectionJobOutputResponse: ClientRuntime.HttpResponse
     }
 }
 
-public struct StartPiiEntitiesDetectionJobOutputResponse: Swift.Equatable {
+public struct StartPiiEntitiesDetectionJobOutput: Swift.Equatable {
     /// The Amazon Resource Name (ARN) of the PII entity detection job. It is a unique, fully qualified identifier for the job. It includes the Amazon Web Services account, Amazon Web Services Region, and the job ID. The format of the ARN is as follows: arn::comprehend:::pii-entities-detection-job/ The following is an example job ARN: arn:aws:comprehend:us-west-2:111122223333:pii-entities-detection-job/1234abcd12ab34cd56ef1234567890ab
     public var jobArn: Swift.String?
     /// The identifier generated for the job.
@@ -19838,7 +19176,7 @@ public struct StartPiiEntitiesDetectionJobOutputResponse: Swift.Equatable {
     /// The status of the job.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobArn: Swift.String? = nil,
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
@@ -19850,20 +19188,20 @@ public struct StartPiiEntitiesDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartPiiEntitiesDetectionJobOutputResponseBody: Swift.Equatable {
+struct StartPiiEntitiesDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobArn: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StartPiiEntitiesDetectionJobOutputResponseBody: Swift.Decodable {
+extension StartPiiEntitiesDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobArn = "JobArn"
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -19871,6 +19209,22 @@ extension StartPiiEntitiesDetectionJobOutputResponseBody: Swift.Decodable {
         jobArn = jobArnDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StartPiiEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -19922,8 +19276,9 @@ extension StartSentimentDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StartSentimentDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartSentimentDetectionJobInput {
+
+    static func urlPathProvider(_ value: StartSentimentDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -19956,7 +19311,7 @@ public struct StartSentimentDetectionJobInput: Swift.Equatable {
     /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for your sentiment detection job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
     public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -20005,7 +19360,7 @@ extension StartSentimentDetectionJobInputBody: Swift.Decodable {
         case vpcConfig = "VpcConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let inputDataConfigDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.InputDataConfig.self, forKey: .inputDataConfig)
         inputDataConfig = inputDataConfigDecoded
@@ -20037,42 +19392,11 @@ extension StartSentimentDetectionJobInputBody: Swift.Decodable {
     }
 }
 
-extension StartSentimentDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartSentimentDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartSentimentDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartSentimentDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartSentimentDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartSentimentDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartSentimentDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobArn = output.jobArn
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
@@ -20084,7 +19408,7 @@ extension StartSentimentDetectionJobOutputResponse: ClientRuntime.HttpResponseBi
     }
 }
 
-public struct StartSentimentDetectionJobOutputResponse: Swift.Equatable {
+public struct StartSentimentDetectionJobOutput: Swift.Equatable {
     /// The Amazon Resource Name (ARN) of the sentiment detection job. It is a unique, fully qualified identifier for the job. It includes the Amazon Web Services account, Amazon Web Services Region, and the job ID. The format of the ARN is as follows: arn::comprehend:::sentiment-detection-job/ The following is an example job ARN: arn:aws:comprehend:us-west-2:111122223333:sentiment-detection-job/1234abcd12ab34cd56ef1234567890ab
     public var jobArn: Swift.String?
     /// The identifier generated for the job. To get the status of a job, use this identifier with the operation.
@@ -20100,7 +19424,7 @@ public struct StartSentimentDetectionJobOutputResponse: Swift.Equatable {
     /// * FAILED - The job did not complete. To get details, use the operation.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobArn: Swift.String? = nil,
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
@@ -20112,20 +19436,20 @@ public struct StartSentimentDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartSentimentDetectionJobOutputResponseBody: Swift.Equatable {
+struct StartSentimentDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobArn: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StartSentimentDetectionJobOutputResponseBody: Swift.Decodable {
+extension StartSentimentDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobArn = "JobArn"
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -20133,6 +19457,22 @@ extension StartSentimentDetectionJobOutputResponseBody: Swift.Decodable {
         jobArn = jobArnDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StartSentimentDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -20184,8 +19524,9 @@ extension StartTargetedSentimentDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StartTargetedSentimentDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartTargetedSentimentDetectionJobInput {
+
+    static func urlPathProvider(_ value: StartTargetedSentimentDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -20193,7 +19534,7 @@ extension StartTargetedSentimentDetectionJobInput: ClientRuntime.URLPathProvider
 public struct StartTargetedSentimentDetectionJobInput: Swift.Equatable {
     /// A unique identifier for the request. If you don't set the client request token, Amazon Comprehend generates one.
     public var clientRequestToken: Swift.String?
-    /// The Amazon Resource Name (ARN) of the IAM role that grants Amazon Comprehend read access to your input data. For more information, see [Role-based permissions](https://docs.aws.amazon.com/comprehend/latest/dg/access-control-managing-permissions.html#auth-role-permissions).
+    /// The Amazon Resource Name (ARN) of the IAM role that grants Amazon Comprehend read access to your input data. For more information, see [Role-based permissions](https://docs.aws.amazon.com/comprehend/latest/dg/security_iam_id-based-policy-examples.html#auth-role-permissions).
     /// This member is required.
     public var dataAccessRoleArn: Swift.String?
     /// The input properties for an inference job. The document reader config field applies only to non-text inputs for custom analysis.
@@ -20218,7 +19559,7 @@ public struct StartTargetedSentimentDetectionJobInput: Swift.Equatable {
     /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for the job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
     public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -20267,7 +19608,7 @@ extension StartTargetedSentimentDetectionJobInputBody: Swift.Decodable {
         case vpcConfig = "VpcConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let inputDataConfigDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.InputDataConfig.self, forKey: .inputDataConfig)
         inputDataConfig = inputDataConfigDecoded
@@ -20299,42 +19640,11 @@ extension StartTargetedSentimentDetectionJobInputBody: Swift.Decodable {
     }
 }
 
-extension StartTargetedSentimentDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartTargetedSentimentDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartTargetedSentimentDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartTargetedSentimentDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartTargetedSentimentDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartTargetedSentimentDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartTargetedSentimentDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobArn = output.jobArn
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
@@ -20346,7 +19656,7 @@ extension StartTargetedSentimentDetectionJobOutputResponse: ClientRuntime.HttpRe
     }
 }
 
-public struct StartTargetedSentimentDetectionJobOutputResponse: Swift.Equatable {
+public struct StartTargetedSentimentDetectionJobOutput: Swift.Equatable {
     /// The Amazon Resource Name (ARN) of the targeted sentiment detection job. It is a unique, fully qualified identifier for the job. It includes the Amazon Web Services account, Amazon Web Services Region, and the job ID. The format of the ARN is as follows: arn::comprehend:::targeted-sentiment-detection-job/ The following is an example job ARN: arn:aws:comprehend:us-west-2:111122223333:targeted-sentiment-detection-job/1234abcd12ab34cd56ef1234567890ab
     public var jobArn: Swift.String?
     /// The identifier generated for the job. To get the status of a job, use this identifier with the DescribeTargetedSentimentDetectionJob operation.
@@ -20362,7 +19672,7 @@ public struct StartTargetedSentimentDetectionJobOutputResponse: Swift.Equatable 
     /// * FAILED - The job did not complete. To get details, use the DescribeTargetedSentimentDetectionJob operation.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobArn: Swift.String? = nil,
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
@@ -20374,20 +19684,20 @@ public struct StartTargetedSentimentDetectionJobOutputResponse: Swift.Equatable 
     }
 }
 
-struct StartTargetedSentimentDetectionJobOutputResponseBody: Swift.Equatable {
+struct StartTargetedSentimentDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobArn: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StartTargetedSentimentDetectionJobOutputResponseBody: Swift.Decodable {
+extension StartTargetedSentimentDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobArn = "JobArn"
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -20395,6 +19705,22 @@ extension StartTargetedSentimentDetectionJobOutputResponseBody: Swift.Decodable 
         jobArn = jobArnDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StartTargetedSentimentDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -20446,8 +19772,9 @@ extension StartTopicsDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StartTopicsDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartTopicsDetectionJobInput {
+
+    static func urlPathProvider(_ value: StartTopicsDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -20479,7 +19806,7 @@ public struct StartTopicsDetectionJobInput: Swift.Equatable {
     /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for your topic detection job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
     public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-    public init (
+    public init(
         clientRequestToken: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -20528,7 +19855,7 @@ extension StartTopicsDetectionJobInputBody: Swift.Decodable {
         case vpcConfig = "VpcConfig"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let inputDataConfigDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.InputDataConfig.self, forKey: .inputDataConfig)
         inputDataConfig = inputDataConfigDecoded
@@ -20560,42 +19887,11 @@ extension StartTopicsDetectionJobInputBody: Swift.Decodable {
     }
 }
 
-extension StartTopicsDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartTopicsDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartTopicsDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartTopicsDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartTopicsDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartTopicsDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartTopicsDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobArn = output.jobArn
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
@@ -20607,7 +19903,7 @@ extension StartTopicsDetectionJobOutputResponse: ClientRuntime.HttpResponseBindi
     }
 }
 
-public struct StartTopicsDetectionJobOutputResponse: Swift.Equatable {
+public struct StartTopicsDetectionJobOutput: Swift.Equatable {
     /// The Amazon Resource Name (ARN) of the topics detection job. It is a unique, fully qualified identifier for the job. It includes the Amazon Web Services account, Amazon Web Services Region, and the job ID. The format of the ARN is as follows: arn::comprehend:::topics-detection-job/ The following is an example job ARN: arn:aws:comprehend:us-west-2:111122223333:document-classification-job/1234abcd12ab34cd56ef1234567890ab
     public var jobArn: Swift.String?
     /// The identifier generated for the job. To get the status of the job, use this identifier with the DescribeTopicDetectionJob operation.
@@ -20623,7 +19919,7 @@ public struct StartTopicsDetectionJobOutputResponse: Swift.Equatable {
     /// * FAILED - The job did not complete. To get details, use the DescribeTopicDetectionJob operation.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobArn: Swift.String? = nil,
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
@@ -20635,20 +19931,20 @@ public struct StartTopicsDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartTopicsDetectionJobOutputResponseBody: Swift.Equatable {
+struct StartTopicsDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobArn: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StartTopicsDetectionJobOutputResponseBody: Swift.Decodable {
+extension StartTopicsDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobArn = "JobArn"
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -20656,6 +19952,22 @@ extension StartTopicsDetectionJobOutputResponseBody: Swift.Decodable {
         jobArn = jobArnDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StartTopicsDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -20672,8 +19984,9 @@ extension StopDominantLanguageDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StopDominantLanguageDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StopDominantLanguageDetectionJobInput {
+
+    static func urlPathProvider(_ value: StopDominantLanguageDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -20683,7 +19996,7 @@ public struct StopDominantLanguageDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -20700,45 +20013,18 @@ extension StopDominantLanguageDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension StopDominantLanguageDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StopDominantLanguageDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StopDominantLanguageDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StopDominantLanguageDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StopDominantLanguageDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StopDominantLanguageDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StopDominantLanguageDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
         } else {
@@ -20748,13 +20034,13 @@ extension StopDominantLanguageDetectionJobOutputResponse: ClientRuntime.HttpResp
     }
 }
 
-public struct StopDominantLanguageDetectionJobOutputResponse: Swift.Equatable {
+public struct StopDominantLanguageDetectionJobOutput: Swift.Equatable {
     /// The identifier of the dominant language detection job to stop.
     public var jobId: Swift.String?
     /// Either STOP_REQUESTED if the job is currently running, or STOPPED if the job was previously stopped with the StopDominantLanguageDetectionJob operation.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
     )
@@ -20764,23 +20050,36 @@ public struct StopDominantLanguageDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StopDominantLanguageDetectionJobOutputResponseBody: Swift.Equatable {
+struct StopDominantLanguageDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StopDominantLanguageDetectionJobOutputResponseBody: Swift.Decodable {
+extension StopDominantLanguageDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StopDominantLanguageDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -20797,8 +20096,9 @@ extension StopEntitiesDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StopEntitiesDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StopEntitiesDetectionJobInput {
+
+    static func urlPathProvider(_ value: StopEntitiesDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -20808,7 +20108,7 @@ public struct StopEntitiesDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -20825,45 +20125,18 @@ extension StopEntitiesDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension StopEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StopEntitiesDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StopEntitiesDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StopEntitiesDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StopEntitiesDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StopEntitiesDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StopEntitiesDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
         } else {
@@ -20873,13 +20146,13 @@ extension StopEntitiesDetectionJobOutputResponse: ClientRuntime.HttpResponseBind
     }
 }
 
-public struct StopEntitiesDetectionJobOutputResponse: Swift.Equatable {
+public struct StopEntitiesDetectionJobOutput: Swift.Equatable {
     /// The identifier of the entities detection job to stop.
     public var jobId: Swift.String?
     /// Either STOP_REQUESTED if the job is currently running, or STOPPED if the job was previously stopped with the StopEntitiesDetectionJob operation.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
     )
@@ -20889,23 +20162,36 @@ public struct StopEntitiesDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StopEntitiesDetectionJobOutputResponseBody: Swift.Equatable {
+struct StopEntitiesDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StopEntitiesDetectionJobOutputResponseBody: Swift.Decodable {
+extension StopEntitiesDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StopEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -20922,8 +20208,9 @@ extension StopEventsDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StopEventsDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StopEventsDetectionJobInput {
+
+    static func urlPathProvider(_ value: StopEventsDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -20933,7 +20220,7 @@ public struct StopEventsDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -20950,45 +20237,18 @@ extension StopEventsDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension StopEventsDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StopEventsDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StopEventsDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StopEventsDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StopEventsDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StopEventsDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StopEventsDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
         } else {
@@ -20998,13 +20258,13 @@ extension StopEventsDetectionJobOutputResponse: ClientRuntime.HttpResponseBindin
     }
 }
 
-public struct StopEventsDetectionJobOutputResponse: Swift.Equatable {
+public struct StopEventsDetectionJobOutput: Swift.Equatable {
     /// The identifier of the events detection job to stop.
     public var jobId: Swift.String?
     /// The status of the events detection job.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
     )
@@ -21014,23 +20274,36 @@ public struct StopEventsDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StopEventsDetectionJobOutputResponseBody: Swift.Equatable {
+struct StopEventsDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StopEventsDetectionJobOutputResponseBody: Swift.Decodable {
+extension StopEventsDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StopEventsDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -21047,8 +20320,9 @@ extension StopKeyPhrasesDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StopKeyPhrasesDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StopKeyPhrasesDetectionJobInput {
+
+    static func urlPathProvider(_ value: StopKeyPhrasesDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -21058,7 +20332,7 @@ public struct StopKeyPhrasesDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -21075,45 +20349,18 @@ extension StopKeyPhrasesDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension StopKeyPhrasesDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StopKeyPhrasesDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StopKeyPhrasesDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StopKeyPhrasesDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StopKeyPhrasesDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StopKeyPhrasesDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StopKeyPhrasesDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
         } else {
@@ -21123,13 +20370,13 @@ extension StopKeyPhrasesDetectionJobOutputResponse: ClientRuntime.HttpResponseBi
     }
 }
 
-public struct StopKeyPhrasesDetectionJobOutputResponse: Swift.Equatable {
+public struct StopKeyPhrasesDetectionJobOutput: Swift.Equatable {
     /// The identifier of the key phrases detection job to stop.
     public var jobId: Swift.String?
     /// Either STOP_REQUESTED if the job is currently running, or STOPPED if the job was previously stopped with the StopKeyPhrasesDetectionJob operation.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
     )
@@ -21139,23 +20386,36 @@ public struct StopKeyPhrasesDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StopKeyPhrasesDetectionJobOutputResponseBody: Swift.Equatable {
+struct StopKeyPhrasesDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StopKeyPhrasesDetectionJobOutputResponseBody: Swift.Decodable {
+extension StopKeyPhrasesDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StopKeyPhrasesDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -21172,8 +20432,9 @@ extension StopPiiEntitiesDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StopPiiEntitiesDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StopPiiEntitiesDetectionJobInput {
+
+    static func urlPathProvider(_ value: StopPiiEntitiesDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -21183,7 +20444,7 @@ public struct StopPiiEntitiesDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -21200,45 +20461,18 @@ extension StopPiiEntitiesDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension StopPiiEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StopPiiEntitiesDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StopPiiEntitiesDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StopPiiEntitiesDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StopPiiEntitiesDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StopPiiEntitiesDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StopPiiEntitiesDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
         } else {
@@ -21248,13 +20482,13 @@ extension StopPiiEntitiesDetectionJobOutputResponse: ClientRuntime.HttpResponseB
     }
 }
 
-public struct StopPiiEntitiesDetectionJobOutputResponse: Swift.Equatable {
+public struct StopPiiEntitiesDetectionJobOutput: Swift.Equatable {
     /// The identifier of the PII entities detection job to stop.
     public var jobId: Swift.String?
     /// The status of the PII entities detection job.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
     )
@@ -21264,23 +20498,36 @@ public struct StopPiiEntitiesDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StopPiiEntitiesDetectionJobOutputResponseBody: Swift.Equatable {
+struct StopPiiEntitiesDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StopPiiEntitiesDetectionJobOutputResponseBody: Swift.Decodable {
+extension StopPiiEntitiesDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StopPiiEntitiesDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -21297,8 +20544,9 @@ extension StopSentimentDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StopSentimentDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StopSentimentDetectionJobInput {
+
+    static func urlPathProvider(_ value: StopSentimentDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -21308,7 +20556,7 @@ public struct StopSentimentDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -21325,45 +20573,18 @@ extension StopSentimentDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension StopSentimentDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StopSentimentDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StopSentimentDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StopSentimentDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StopSentimentDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StopSentimentDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StopSentimentDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
         } else {
@@ -21373,13 +20594,13 @@ extension StopSentimentDetectionJobOutputResponse: ClientRuntime.HttpResponseBin
     }
 }
 
-public struct StopSentimentDetectionJobOutputResponse: Swift.Equatable {
+public struct StopSentimentDetectionJobOutput: Swift.Equatable {
     /// The identifier of the sentiment detection job to stop.
     public var jobId: Swift.String?
     /// Either STOP_REQUESTED if the job is currently running, or STOPPED if the job was previously stopped with the StopSentimentDetectionJob operation.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
     )
@@ -21389,23 +20610,36 @@ public struct StopSentimentDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StopSentimentDetectionJobOutputResponseBody: Swift.Equatable {
+struct StopSentimentDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StopSentimentDetectionJobOutputResponseBody: Swift.Decodable {
+extension StopSentimentDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StopSentimentDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -21422,8 +20656,9 @@ extension StopTargetedSentimentDetectionJobInput: Swift.Encodable {
     }
 }
 
-extension StopTargetedSentimentDetectionJobInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StopTargetedSentimentDetectionJobInput {
+
+    static func urlPathProvider(_ value: StopTargetedSentimentDetectionJobInput) -> Swift.String? {
         return "/"
     }
 }
@@ -21433,7 +20668,7 @@ public struct StopTargetedSentimentDetectionJobInput: Swift.Equatable {
     /// This member is required.
     public var jobId: Swift.String?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil
     )
     {
@@ -21450,45 +20685,18 @@ extension StopTargetedSentimentDetectionJobInputBody: Swift.Decodable {
         case jobId = "JobId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
     }
 }
 
-extension StopTargetedSentimentDetectionJobOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StopTargetedSentimentDetectionJobOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "JobNotFoundException" : self = .jobNotFoundException(try JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StopTargetedSentimentDetectionJobOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case jobNotFoundException(JobNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StopTargetedSentimentDetectionJobOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StopTargetedSentimentDetectionJobOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StopTargetedSentimentDetectionJobOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StopTargetedSentimentDetectionJobOutputBody = try responseDecoder.decode(responseBody: data)
             self.jobId = output.jobId
             self.jobStatus = output.jobStatus
         } else {
@@ -21498,13 +20706,13 @@ extension StopTargetedSentimentDetectionJobOutputResponse: ClientRuntime.HttpRes
     }
 }
 
-public struct StopTargetedSentimentDetectionJobOutputResponse: Swift.Equatable {
+public struct StopTargetedSentimentDetectionJobOutput: Swift.Equatable {
     /// The identifier of the targeted sentiment detection job to stop.
     public var jobId: Swift.String?
     /// Either STOP_REQUESTED if the job is currently running, or STOPPED if the job was previously stopped with the StopSentimentDetectionJob operation.
     public var jobStatus: ComprehendClientTypes.JobStatus?
 
-    public init (
+    public init(
         jobId: Swift.String? = nil,
         jobStatus: ComprehendClientTypes.JobStatus? = nil
     )
@@ -21514,23 +20722,36 @@ public struct StopTargetedSentimentDetectionJobOutputResponse: Swift.Equatable {
     }
 }
 
-struct StopTargetedSentimentDetectionJobOutputResponseBody: Swift.Equatable {
+struct StopTargetedSentimentDetectionJobOutputBody: Swift.Equatable {
     let jobId: Swift.String?
     let jobStatus: ComprehendClientTypes.JobStatus?
 }
 
-extension StopTargetedSentimentDetectionJobOutputResponseBody: Swift.Decodable {
+extension StopTargetedSentimentDetectionJobOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case jobId = "JobId"
         case jobStatus = "JobStatus"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
         let jobStatusDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.JobStatus.self, forKey: .jobStatus)
         jobStatus = jobStatusDecoded
+    }
+}
+
+enum StopTargetedSentimentDetectionJobOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "JobNotFoundException": return try await JobNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -21547,8 +20768,9 @@ extension StopTrainingDocumentClassifierInput: Swift.Encodable {
     }
 }
 
-extension StopTrainingDocumentClassifierInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StopTrainingDocumentClassifierInput {
+
+    static func urlPathProvider(_ value: StopTrainingDocumentClassifierInput) -> Swift.String? {
         return "/"
     }
 }
@@ -21558,7 +20780,7 @@ public struct StopTrainingDocumentClassifierInput: Swift.Equatable {
     /// This member is required.
     public var documentClassifierArn: Swift.String?
 
-    public init (
+    public init(
         documentClassifierArn: Swift.String? = nil
     )
     {
@@ -21575,49 +20797,35 @@ extension StopTrainingDocumentClassifierInputBody: Swift.Decodable {
         case documentClassifierArn = "DocumentClassifierArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let documentClassifierArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .documentClassifierArn)
         documentClassifierArn = documentClassifierArnDecoded
     }
 }
 
-extension StopTrainingDocumentClassifierOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension StopTrainingDocumentClassifierOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension StopTrainingDocumentClassifierOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct StopTrainingDocumentClassifierOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum StopTrainingDocumentClassifierOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum StopTrainingDocumentClassifierOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StopTrainingDocumentClassifierOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct StopTrainingDocumentClassifierOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension StopTrainingEntityRecognizerInput: Swift.Encodable {
@@ -21633,8 +20841,9 @@ extension StopTrainingEntityRecognizerInput: Swift.Encodable {
     }
 }
 
-extension StopTrainingEntityRecognizerInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StopTrainingEntityRecognizerInput {
+
+    static func urlPathProvider(_ value: StopTrainingEntityRecognizerInput) -> Swift.String? {
         return "/"
     }
 }
@@ -21644,7 +20853,7 @@ public struct StopTrainingEntityRecognizerInput: Swift.Equatable {
     /// This member is required.
     public var entityRecognizerArn: Swift.String?
 
-    public init (
+    public init(
         entityRecognizerArn: Swift.String? = nil
     )
     {
@@ -21661,49 +20870,35 @@ extension StopTrainingEntityRecognizerInputBody: Swift.Decodable {
         case entityRecognizerArn = "EntityRecognizerArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let entityRecognizerArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .entityRecognizerArn)
         entityRecognizerArn = entityRecognizerArnDecoded
     }
 }
 
-extension StopTrainingEntityRecognizerOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension StopTrainingEntityRecognizerOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension StopTrainingEntityRecognizerOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct StopTrainingEntityRecognizerOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum StopTrainingEntityRecognizerOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum StopTrainingEntityRecognizerOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StopTrainingEntityRecognizerOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct StopTrainingEntityRecognizerOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension ComprehendClientTypes {
@@ -21778,7 +20973,7 @@ extension ComprehendClientTypes.SyntaxToken: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let tokenIdDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .tokenId)
         tokenId = tokenIdDecoded
@@ -21807,7 +21002,7 @@ extension ComprehendClientTypes {
         /// A unique identifier for a token.
         public var tokenId: Swift.Int?
 
-        public init (
+        public init(
             beginOffset: Swift.Int? = nil,
             endOffset: Swift.Int? = nil,
             partOfSpeech: ComprehendClientTypes.PartOfSpeechTag? = nil,
@@ -21841,7 +21036,7 @@ extension ComprehendClientTypes.Tag: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let keyDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .key)
         key = keyDecoded
@@ -21859,7 +21054,7 @@ extension ComprehendClientTypes {
         /// The second part of a key-value pair that forms a tag associated with a given resource. For instance, if you want to show which resources are used by which departments, you might use “Department” as the initial (key) portion of the pair, with a value of “sales” to indicate the sales department.
         public var value: Swift.String?
 
-        public init (
+        public init(
             key: Swift.String? = nil,
             value: Swift.String? = nil
         )
@@ -21891,8 +21086,9 @@ extension TagResourceInput: Swift.Encodable {
     }
 }
 
-extension TagResourceInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension TagResourceInput {
+
+    static func urlPathProvider(_ value: TagResourceInput) -> Swift.String? {
         return "/"
     }
 }
@@ -21905,7 +21101,7 @@ public struct TagResourceInput: Swift.Equatable {
     /// This member is required.
     public var tags: [ComprehendClientTypes.Tag]?
 
-    public init (
+    public init(
         resourceArn: Swift.String? = nil,
         tags: [ComprehendClientTypes.Tag]? = nil
     )
@@ -21926,7 +21122,7 @@ extension TagResourceInputBody: Swift.Decodable {
         case tags = "Tags"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourceArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceArn)
         resourceArn = resourceArnDecoded
@@ -21944,44 +21140,29 @@ extension TagResourceInputBody: Swift.Decodable {
     }
 }
 
-extension TagResourceOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension TagResourceOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension TagResourceOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "ConcurrentModificationException" : self = .concurrentModificationException(try ConcurrentModificationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagsException" : self = .tooManyTagsException(try TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct TagResourceOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum TagResourceOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "ConcurrentModificationException": return try await ConcurrentModificationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagsException": return try await TooManyTagsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum TagResourceOutputError: Swift.Error, Swift.Equatable {
-    case concurrentModificationException(ConcurrentModificationException)
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyTagsException(TooManyTagsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension TagResourceOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct TagResourceOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension ComprehendClientTypes.TargetedSentimentDetectionJobFilter: Swift.Codable {
@@ -22008,7 +21189,7 @@ extension ComprehendClientTypes.TargetedSentimentDetectionJobFilter: Swift.Codab
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobName)
         jobName = jobNameDecoded
@@ -22033,7 +21214,7 @@ extension ComprehendClientTypes {
         /// Filters the list of jobs based on the time that the job was submitted for processing. Returns only jobs submitted before the specified time. Jobs are returned in ascending order, oldest to newest.
         public var submitTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             jobName: Swift.String? = nil,
             jobStatus: ComprehendClientTypes.JobStatus? = nil,
             submitTimeAfter: ClientRuntime.Date? = nil,
@@ -22109,7 +21290,7 @@ extension ComprehendClientTypes.TargetedSentimentDetectionJobProperties: Swift.C
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -22174,7 +21355,7 @@ extension ComprehendClientTypes {
         /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for the job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
         public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-        public init (
+        public init(
             dataAccessRoleArn: Swift.String? = nil,
             endTime: ClientRuntime.Date? = nil,
             inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -22230,7 +21411,7 @@ extension ComprehendClientTypes.TargetedSentimentEntity: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let descriptiveMentionIndexContainer = try containerValues.decodeIfPresent([Swift.Int?].self, forKey: .descriptiveMentionIndex)
         var descriptiveMentionIndexDecoded0:[Swift.Int]? = nil
@@ -22258,14 +21439,14 @@ extension ComprehendClientTypes.TargetedSentimentEntity: Swift.Codable {
 }
 
 extension ComprehendClientTypes {
-    /// Information about one of the entities found by targeted sentiment analysis. For more information about targeted sentiment, see [Targeted sentiment](https://docs.aws.amazon.com/comprehend/latest/dg/how-targeted-sentiment.html).
+    /// Information about one of the entities found by targeted sentiment analysis. For more information about targeted sentiment, see [Targeted sentiment](https://docs.aws.amazon.com/comprehend/latest/dg/how-targeted-sentiment.html) in the Amazon Comprehend Developer Guide.
     public struct TargetedSentimentEntity: Swift.Equatable {
         /// One or more index into the Mentions array that provides the best name for the entity group.
         public var descriptiveMentionIndex: [Swift.Int]?
         /// An array of mentions of the entity in the document. The array represents a co-reference group. See [ Co-reference group](https://docs.aws.amazon.com/comprehend/latest/dg/how-targeted-sentiment.html#how-targeted-sentiment-values) for an example.
         public var mentions: [ComprehendClientTypes.TargetedSentimentMention]?
 
-        public init (
+        public init(
             descriptiveMentionIndex: [Swift.Int]? = nil,
             mentions: [ComprehendClientTypes.TargetedSentimentMention]? = nil
         )
@@ -22390,7 +21571,7 @@ extension ComprehendClientTypes.TargetedSentimentMention: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let scoreDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .score)
         score = scoreDecoded
@@ -22410,7 +21591,7 @@ extension ComprehendClientTypes.TargetedSentimentMention: Swift.Codable {
 }
 
 extension ComprehendClientTypes {
-    /// Information about one mention of an entity. The mention information includes the location of the mention in the text and the sentiment of the mention. For more information about targeted sentiment, see [Targeted sentiment](https://docs.aws.amazon.com/comprehend/latest/dg/how-targeted-sentiment.html).
+    /// Information about one mention of an entity. The mention information includes the location of the mention in the text and the sentiment of the mention. For more information about targeted sentiment, see [Targeted sentiment](https://docs.aws.amazon.com/comprehend/latest/dg/how-targeted-sentiment.html) in the Amazon Comprehend Developer Guide.
     public struct TargetedSentimentMention: Swift.Equatable {
         /// The offset into the document text where the mention begins.
         public var beginOffset: Swift.Int?
@@ -22427,7 +21608,7 @@ extension ComprehendClientTypes {
         /// The type of the entity. Amazon Comprehend supports a variety of [entity types](https://docs.aws.amazon.com/comprehend/latest/dg/how-targeted-sentiment.html#how-targeted-sentiment-entities).
         public var type: ComprehendClientTypes.TargetedSentimentEntityType?
 
-        public init (
+        public init(
             beginOffset: Swift.Int? = nil,
             endOffset: Swift.Int? = nil,
             groupScore: Swift.Float? = nil,
@@ -22469,7 +21650,7 @@ extension ComprehendClientTypes.TaskConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let languageCodeDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.LanguageCode.self, forKey: .languageCode)
         languageCode = languageCodeDecoded
@@ -22481,9 +21662,9 @@ extension ComprehendClientTypes.TaskConfig: Swift.Codable {
 }
 
 extension ComprehendClientTypes {
-    /// Configuration about the custom classifier associated with the flywheel.
+    /// Configuration about the model associated with a flywheel.
     public struct TaskConfig: Swift.Equatable {
-        /// Configuration required for a classification model.
+        /// Configuration required for a document classification model.
         public var documentClassificationConfig: ComprehendClientTypes.DocumentClassificationConfig?
         /// Configuration required for an entity recognition model.
         public var entityRecognitionConfig: ComprehendClientTypes.EntityRecognitionConfig?
@@ -22491,7 +21672,7 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var languageCode: ComprehendClientTypes.LanguageCode?
 
-        public init (
+        public init(
             documentClassificationConfig: ComprehendClientTypes.DocumentClassificationConfig? = nil,
             entityRecognitionConfig: ComprehendClientTypes.EntityRecognitionConfig? = nil,
             languageCode: ComprehendClientTypes.LanguageCode? = nil
@@ -22505,39 +21686,83 @@ extension ComprehendClientTypes {
 
 }
 
-extension TextSizeLimitExceededException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
-            let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: TextSizeLimitExceededExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
-        } else {
-            self.message = nil
+extension ComprehendClientTypes.TextSegment: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case text = "Text"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let text = self.text {
+            try encodeContainer.encode(text, forKey: .text)
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let textDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .text)
+        text = textDecoded
+    }
+}
+
+extension ComprehendClientTypes.TextSegment: Swift.CustomDebugStringConvertible {
+    public var debugDescription: Swift.String {
+        "TextSegment(text: \"CONTENT_REDACTED\")"}
+}
+
+extension ComprehendClientTypes {
+    /// One of the of text strings. Each string has a size limit of 1KB.
+    public struct TextSegment: Swift.Equatable {
+        /// The text content.
+        /// This member is required.
+        public var text: Swift.String?
+
+        public init(
+            text: Swift.String? = nil
+        )
+        {
+            self.text = text
+        }
+    }
+
+}
+
+extension TextSizeLimitExceededException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: TextSizeLimitExceededExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.message = output.message
+        } else {
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The size of the input text exceeds the limit. Use a smaller document.
-public struct TextSizeLimitExceededException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct TextSizeLimitExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "TextSizeLimitExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -22550,7 +21775,7 @@ extension TextSizeLimitExceededExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -22558,38 +21783,41 @@ extension TextSizeLimitExceededExceptionBody: Swift.Decodable {
 }
 
 extension TooManyRequestsException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: TooManyRequestsExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The number of requests exceeds the limit. Resubmit your request later.
-public struct TooManyRequestsException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct TooManyRequestsException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "TooManyRequestsException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -22602,7 +21830,7 @@ extension TooManyRequestsExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -22610,38 +21838,41 @@ extension TooManyRequestsExceptionBody: Swift.Decodable {
 }
 
 extension TooManyTagKeysException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: TooManyTagKeysExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The request contains more tag keys than can be associated with a resource (50 tag keys per resource).
-public struct TooManyTagKeysException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct TooManyTagKeysException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "TooManyTagKeysException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -22654,7 +21885,7 @@ extension TooManyTagKeysExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -22662,38 +21893,41 @@ extension TooManyTagKeysExceptionBody: Swift.Decodable {
 }
 
 extension TooManyTagsException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: TooManyTagsExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The request contains more tags than can be associated with a resource (50 tags per resource). The maximum number of tags includes both existing tags and those included in your current request.
-public struct TooManyTagsException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct TooManyTagsException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "TooManyTagsException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -22706,7 +21940,7 @@ extension TooManyTagsExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -22737,7 +21971,7 @@ extension ComprehendClientTypes.TopicsDetectionJobFilter: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobNameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobName)
         jobName = jobNameDecoded
@@ -22762,7 +21996,7 @@ extension ComprehendClientTypes {
         /// Filters the list of jobs based on the time that the job was submitted for processing. Only returns jobs submitted before the specified time. Jobs are returned in descending order, newest to oldest.
         public var submitTimeBefore: ClientRuntime.Date?
 
-        public init (
+        public init(
             jobName: Swift.String? = nil,
             jobStatus: ComprehendClientTypes.JobStatus? = nil,
             submitTimeAfter: ClientRuntime.Date? = nil,
@@ -22838,7 +22072,7 @@ extension ComprehendClientTypes.TopicsDetectionJobProperties: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let jobIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .jobId)
         jobId = jobIdDecoded
@@ -22903,7 +22137,7 @@ extension ComprehendClientTypes {
         /// Configuration parameters for a private Virtual Private Cloud (VPC) containing the resources you are using for your topic detection job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
         public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-        public init (
+        public init(
             dataAccessRoleArn: Swift.String? = nil,
             endTime: ClientRuntime.Date? = nil,
             inputDataConfig: ComprehendClientTypes.InputDataConfig? = nil,
@@ -22937,39 +22171,191 @@ extension ComprehendClientTypes {
 
 }
 
-extension UnsupportedLanguageException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
-            let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: UnsupportedLanguageExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
-        } else {
-            self.message = nil
+extension ComprehendClientTypes.ToxicContent: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case name = "Name"
+        case score = "Score"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let name = self.name {
+            try encodeContainer.encode(name.rawValue, forKey: .name)
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        if let score = self.score {
+            try encodeContainer.encode(score, forKey: .score)
+        }
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let nameDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.ToxicContentType.self, forKey: .name)
+        name = nameDecoded
+        let scoreDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .score)
+        score = scoreDecoded
     }
 }
 
-/// Amazon Comprehend can't process the language of the input text. For custom entity recognition APIs, only English, Spanish, French, Italian, German, or Portuguese are accepted. For a list of supported languages, [Supported languages](https://docs.aws.amazon.com/comprehend/latest/dg/supported-languages.html) in the Comprehend Developer Guide.
-public struct UnsupportedLanguageException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+extension ComprehendClientTypes {
+    /// Toxic content analysis result for one string. For more information about toxicity detection, see [Toxicity detection](https://docs.aws.amazon.com/comprehend/latest/dg/toxicity-detection.html) in the Amazon Comprehend Developer Guide
+    public struct ToxicContent: Swift.Equatable {
+        /// The name of the toxic content type.
+        public var name: ComprehendClientTypes.ToxicContentType?
+        /// Model confidence in the detected content type. Value range is zero to one, where one is highest confidence.
+        public var score: Swift.Float?
 
-    public init (
+        public init(
+            name: ComprehendClientTypes.ToxicContentType? = nil,
+            score: Swift.Float? = nil
+        )
+        {
+            self.name = name
+            self.score = score
+        }
+    }
+
+}
+
+extension ComprehendClientTypes {
+    public enum ToxicContentType: Swift.Equatable, Swift.RawRepresentable, Swift.CaseIterable, Swift.Codable, Swift.Hashable {
+        case graphic
+        case harassmentOrAbuse
+        case hateSpeech
+        case insult
+        case profanity
+        case sexual
+        case violenceOrThreat
+        case sdkUnknown(Swift.String)
+
+        public static var allCases: [ToxicContentType] {
+            return [
+                .graphic,
+                .harassmentOrAbuse,
+                .hateSpeech,
+                .insult,
+                .profanity,
+                .sexual,
+                .violenceOrThreat,
+                .sdkUnknown("")
+            ]
+        }
+        public init?(rawValue: Swift.String) {
+            let value = Self.allCases.first(where: { $0.rawValue == rawValue })
+            self = value ?? Self.sdkUnknown(rawValue)
+        }
+        public var rawValue: Swift.String {
+            switch self {
+            case .graphic: return "GRAPHIC"
+            case .harassmentOrAbuse: return "HARASSMENT_OR_ABUSE"
+            case .hateSpeech: return "HATE_SPEECH"
+            case .insult: return "INSULT"
+            case .profanity: return "PROFANITY"
+            case .sexual: return "SEXUAL"
+            case .violenceOrThreat: return "VIOLENCE_OR_THREAT"
+            case let .sdkUnknown(s): return s
+            }
+        }
+        public init(from decoder: Swift.Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(RawValue.self)
+            self = ToxicContentType(rawValue: rawValue) ?? ToxicContentType.sdkUnknown(rawValue)
+        }
+    }
+}
+
+extension ComprehendClientTypes.ToxicLabels: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case labels = "Labels"
+        case toxicity = "Toxicity"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let labels = labels {
+            var labelsContainer = encodeContainer.nestedUnkeyedContainer(forKey: .labels)
+            for toxiccontent0 in labels {
+                try labelsContainer.encode(toxiccontent0)
+            }
+        }
+        if let toxicity = self.toxicity {
+            try encodeContainer.encode(toxicity, forKey: .toxicity)
+        }
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let labelsContainer = try containerValues.decodeIfPresent([ComprehendClientTypes.ToxicContent?].self, forKey: .labels)
+        var labelsDecoded0:[ComprehendClientTypes.ToxicContent]? = nil
+        if let labelsContainer = labelsContainer {
+            labelsDecoded0 = [ComprehendClientTypes.ToxicContent]()
+            for structure0 in labelsContainer {
+                if let structure0 = structure0 {
+                    labelsDecoded0?.append(structure0)
+                }
+            }
+        }
+        labels = labelsDecoded0
+        let toxicityDecoded = try containerValues.decodeIfPresent(Swift.Float.self, forKey: .toxicity)
+        toxicity = toxicityDecoded
+    }
+}
+
+extension ComprehendClientTypes {
+    /// Toxicity analysis result for one string. For more information about toxicity detection, see [Toxicity detection](https://docs.aws.amazon.com/comprehend/latest/dg/toxicity-detection.html) in the Amazon Comprehend Developer Guide.
+    public struct ToxicLabels: Swift.Equatable {
+        /// Array of toxic content types identified in the string.
+        public var labels: [ComprehendClientTypes.ToxicContent]?
+        /// Overall toxicity score for the string. Value range is zero to one, where one is the highest confidence.
+        public var toxicity: Swift.Float?
+
+        public init(
+            labels: [ComprehendClientTypes.ToxicContent]? = nil,
+            toxicity: Swift.Float? = nil
+        )
+        {
+            self.labels = labels
+            self.toxicity = toxicity
+        }
+    }
+
+}
+
+extension UnsupportedLanguageException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: UnsupportedLanguageExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.message = output.message
+        } else {
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
+    }
+}
+
+/// Amazon Comprehend can't process the language of the input text. For a list of supported languages, [Supported languages](https://docs.aws.amazon.com/comprehend/latest/dg/supported-languages.html) in the Comprehend Developer Guide.
+public struct UnsupportedLanguageException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
+
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "UnsupportedLanguageException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -22982,7 +22368,7 @@ extension UnsupportedLanguageExceptionBody: Swift.Decodable {
         case message = "Message"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -23009,8 +22395,9 @@ extension UntagResourceInput: Swift.Encodable {
     }
 }
 
-extension UntagResourceInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension UntagResourceInput {
+
+    static func urlPathProvider(_ value: UntagResourceInput) -> Swift.String? {
         return "/"
     }
 }
@@ -23023,7 +22410,7 @@ public struct UntagResourceInput: Swift.Equatable {
     /// This member is required.
     public var tagKeys: [Swift.String]?
 
-    public init (
+    public init(
         resourceArn: Swift.String? = nil,
         tagKeys: [Swift.String]? = nil
     )
@@ -23044,7 +22431,7 @@ extension UntagResourceInputBody: Swift.Decodable {
         case tagKeys = "TagKeys"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let resourceArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .resourceArn)
         resourceArn = resourceArnDecoded
@@ -23062,44 +22449,29 @@ extension UntagResourceInputBody: Swift.Decodable {
     }
 }
 
-extension UntagResourceOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension UntagResourceOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension UntagResourceOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "ConcurrentModificationException" : self = .concurrentModificationException(try ConcurrentModificationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyTagKeysException" : self = .tooManyTagKeysException(try TooManyTagKeysException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct UntagResourceOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum UntagResourceOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "ConcurrentModificationException": return try await ConcurrentModificationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyTagKeysException": return try await TooManyTagKeysException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum UntagResourceOutputError: Swift.Error, Swift.Equatable {
-    case concurrentModificationException(ConcurrentModificationException)
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyTagKeysException(TooManyTagKeysException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension UntagResourceOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct UntagResourceOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension ComprehendClientTypes.UpdateDataSecurityConfig: Swift.Codable {
@@ -23122,7 +22494,7 @@ extension ComprehendClientTypes.UpdateDataSecurityConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let modelKmsKeyIdDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .modelKmsKeyId)
         modelKmsKeyId = modelKmsKeyIdDecoded
@@ -23147,7 +22519,7 @@ extension ComprehendClientTypes {
         /// Configuration parameters for an optional private Virtual Private Cloud (VPC) containing the resources you are using for the job. For more information, see [Amazon VPC](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html).
         public var vpcConfig: ComprehendClientTypes.VpcConfig?
 
-        public init (
+        public init(
             modelKmsKeyId: Swift.String? = nil,
             volumeKmsKeyId: Swift.String? = nil,
             vpcConfig: ComprehendClientTypes.VpcConfig? = nil
@@ -23190,8 +22562,9 @@ extension UpdateEndpointInput: Swift.Encodable {
     }
 }
 
-extension UpdateEndpointInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension UpdateEndpointInput {
+
+    static func urlPathProvider(_ value: UpdateEndpointInput) -> Swift.String? {
         return "/"
     }
 }
@@ -23209,7 +22582,7 @@ public struct UpdateEndpointInput: Swift.Equatable {
     /// The Amazon Resource Number (ARN) of the flywheel
     public var flywheelArn: Swift.String?
 
-    public init (
+    public init(
         desiredDataAccessRoleArn: Swift.String? = nil,
         desiredInferenceUnits: Swift.Int? = nil,
         desiredModelArn: Swift.String? = nil,
@@ -23242,7 +22615,7 @@ extension UpdateEndpointInputBody: Swift.Decodable {
         case flywheelArn = "FlywheelArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let endpointArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .endpointArn)
         endpointArn = endpointArnDecoded
@@ -23257,46 +22630,11 @@ extension UpdateEndpointInputBody: Swift.Decodable {
     }
 }
 
-extension UpdateEndpointOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension UpdateEndpointOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceInUseException" : self = .resourceInUseException(try ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceLimitExceededException" : self = .resourceLimitExceededException(try ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceUnavailableException" : self = .resourceUnavailableException(try ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum UpdateEndpointOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case resourceInUseException(ResourceInUseException)
-    case resourceLimitExceededException(ResourceLimitExceededException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case resourceUnavailableException(ResourceUnavailableException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension UpdateEndpointOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension UpdateEndpointOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: UpdateEndpointOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: UpdateEndpointOutputBody = try responseDecoder.decode(responseBody: data)
             self.desiredModelArn = output.desiredModelArn
         } else {
             self.desiredModelArn = nil
@@ -23304,11 +22642,11 @@ extension UpdateEndpointOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct UpdateEndpointOutputResponse: Swift.Equatable {
+public struct UpdateEndpointOutput: Swift.Equatable {
     /// The Amazon Resource Number (ARN) of the new model.
     public var desiredModelArn: Swift.String?
 
-    public init (
+    public init(
         desiredModelArn: Swift.String? = nil
     )
     {
@@ -23316,19 +22654,36 @@ public struct UpdateEndpointOutputResponse: Swift.Equatable {
     }
 }
 
-struct UpdateEndpointOutputResponseBody: Swift.Equatable {
+struct UpdateEndpointOutputBody: Swift.Equatable {
     let desiredModelArn: Swift.String?
 }
 
-extension UpdateEndpointOutputResponseBody: Swift.Decodable {
+extension UpdateEndpointOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case desiredModelArn = "DesiredModelArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let desiredModelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .desiredModelArn)
         desiredModelArn = desiredModelArnDecoded
+    }
+}
+
+enum UpdateEndpointOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceInUseException": return try await ResourceInUseException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceLimitExceededException": return try await ResourceLimitExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceUnavailableException": return try await ResourceUnavailableException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -23357,8 +22712,9 @@ extension UpdateFlywheelInput: Swift.Encodable {
     }
 }
 
-extension UpdateFlywheelInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension UpdateFlywheelInput {
+
+    static func urlPathProvider(_ value: UpdateFlywheelInput) -> Swift.String? {
         return "/"
     }
 }
@@ -23374,7 +22730,7 @@ public struct UpdateFlywheelInput: Swift.Equatable {
     /// This member is required.
     public var flywheelArn: Swift.String?
 
-    public init (
+    public init(
         activeModelArn: Swift.String? = nil,
         dataAccessRoleArn: Swift.String? = nil,
         dataSecurityConfig: ComprehendClientTypes.UpdateDataSecurityConfig? = nil,
@@ -23403,7 +22759,7 @@ extension UpdateFlywheelInputBody: Swift.Decodable {
         case flywheelArn = "FlywheelArn"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelArnDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .flywheelArn)
         flywheelArn = flywheelArnDecoded
@@ -23416,42 +22772,11 @@ extension UpdateFlywheelInputBody: Swift.Decodable {
     }
 }
 
-extension UpdateFlywheelOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension UpdateFlywheelOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InternalServerException" : self = .internalServerException(try InternalServerException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidRequestException" : self = .invalidRequestException(try InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "KmsKeyValidationException" : self = .kmsKeyValidationException(try KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ResourceNotFoundException" : self = .resourceNotFoundException(try ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TooManyRequestsException" : self = .tooManyRequestsException(try TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum UpdateFlywheelOutputError: Swift.Error, Swift.Equatable {
-    case internalServerException(InternalServerException)
-    case invalidRequestException(InvalidRequestException)
-    case kmsKeyValidationException(KmsKeyValidationException)
-    case resourceNotFoundException(ResourceNotFoundException)
-    case tooManyRequestsException(TooManyRequestsException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension UpdateFlywheelOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension UpdateFlywheelOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: UpdateFlywheelOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: UpdateFlywheelOutputBody = try responseDecoder.decode(responseBody: data)
             self.flywheelProperties = output.flywheelProperties
         } else {
             self.flywheelProperties = nil
@@ -23459,11 +22784,11 @@ extension UpdateFlywheelOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct UpdateFlywheelOutputResponse: Swift.Equatable {
+public struct UpdateFlywheelOutput: Swift.Equatable {
     /// The flywheel properties.
     public var flywheelProperties: ComprehendClientTypes.FlywheelProperties?
 
-    public init (
+    public init(
         flywheelProperties: ComprehendClientTypes.FlywheelProperties? = nil
     )
     {
@@ -23471,19 +22796,34 @@ public struct UpdateFlywheelOutputResponse: Swift.Equatable {
     }
 }
 
-struct UpdateFlywheelOutputResponseBody: Swift.Equatable {
+struct UpdateFlywheelOutputBody: Swift.Equatable {
     let flywheelProperties: ComprehendClientTypes.FlywheelProperties?
 }
 
-extension UpdateFlywheelOutputResponseBody: Swift.Decodable {
+extension UpdateFlywheelOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case flywheelProperties = "FlywheelProperties"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let flywheelPropertiesDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.FlywheelProperties.self, forKey: .flywheelProperties)
         flywheelProperties = flywheelPropertiesDecoded
+    }
+}
+
+enum UpdateFlywheelOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InternalServerException": return try await InternalServerException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidRequestException": return try await InvalidRequestException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "KmsKeyValidationException": return try await KmsKeyValidationException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ResourceNotFoundException": return try await ResourceNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TooManyRequestsException": return try await TooManyRequestsException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -23509,7 +22849,7 @@ extension ComprehendClientTypes.VpcConfig: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let securityGroupIdsContainer = try containerValues.decodeIfPresent([Swift.String?].self, forKey: .securityGroupIds)
         var securityGroupIdsDecoded0:[Swift.String]? = nil
@@ -23546,13 +22886,72 @@ extension ComprehendClientTypes {
         /// This member is required.
         public var subnets: [Swift.String]?
 
-        public init (
+        public init(
             securityGroupIds: [Swift.String]? = nil,
             subnets: [Swift.String]? = nil
         )
         {
             self.securityGroupIds = securityGroupIds
             self.subnets = subnets
+        }
+    }
+
+}
+
+extension ComprehendClientTypes.WarningsListItem: Swift.Codable {
+    enum CodingKeys: Swift.String, Swift.CodingKey {
+        case page = "Page"
+        case warnCode = "WarnCode"
+        case warnMessage = "WarnMessage"
+    }
+
+    public func encode(to encoder: Swift.Encoder) throws {
+        var encodeContainer = encoder.container(keyedBy: CodingKeys.self)
+        if let page = self.page {
+            try encodeContainer.encode(page, forKey: .page)
+        }
+        if let warnCode = self.warnCode {
+            try encodeContainer.encode(warnCode.rawValue, forKey: .warnCode)
+        }
+        if let warnMessage = self.warnMessage {
+            try encodeContainer.encode(warnMessage, forKey: .warnMessage)
+        }
+    }
+
+    public init(from decoder: Swift.Decoder) throws {
+        let containerValues = try decoder.container(keyedBy: CodingKeys.self)
+        let pageDecoded = try containerValues.decodeIfPresent(Swift.Int.self, forKey: .page)
+        page = pageDecoded
+        let warnCodeDecoded = try containerValues.decodeIfPresent(ComprehendClientTypes.PageBasedWarningCode.self, forKey: .warnCode)
+        warnCode = warnCodeDecoded
+        let warnMessageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .warnMessage)
+        warnMessage = warnMessageDecoded
+    }
+}
+
+extension ComprehendClientTypes {
+    /// The system identified one of the following warnings while processing the input document:
+    ///
+    /// * The document to classify is plain text, but the classifier is a native document model.
+    ///
+    /// * The document to classify is semi-structured, but the classifier is a plain-text model.
+    public struct WarningsListItem: Swift.Equatable {
+        /// Page number in the input document.
+        public var page: Swift.Int?
+        /// The type of warning.
+        public var warnCode: ComprehendClientTypes.PageBasedWarningCode?
+        /// Text message associated with the warning.
+        public var warnMessage: Swift.String?
+
+        public init(
+            page: Swift.Int? = nil,
+            warnCode: ComprehendClientTypes.PageBasedWarningCode? = nil,
+            warnMessage: Swift.String? = nil
+        )
+        {
+            self.page = page
+            self.warnCode = warnCode
+            self.warnMessage = warnMessage
         }
     }
 

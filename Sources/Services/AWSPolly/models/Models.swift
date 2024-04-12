@@ -3,9 +3,10 @@ import AWSClientRuntime
 import ClientRuntime
 import typealias Foundation.TimeInterval
 
-extension DeleteLexiconInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
-        guard let name = name else {
+extension DeleteLexiconInput {
+
+    static func urlPathProvider(_ value: DeleteLexiconInput) -> Swift.String? {
+        guard let name = value.name else {
             return nil
         }
         return "/v1/lexicons/\(name.urlPercentEncoding())"
@@ -17,7 +18,7 @@ public struct DeleteLexiconInput: Swift.Equatable {
     /// This member is required.
     public var name: Swift.String?
 
-    public init (
+    public init(
         name: Swift.String? = nil
     )
     {
@@ -30,77 +31,65 @@ struct DeleteLexiconInputBody: Swift.Equatable {
 
 extension DeleteLexiconInputBody: Swift.Decodable {
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
     }
 }
 
-extension DeleteLexiconOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension DeleteLexiconOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension DeleteLexiconOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "LexiconNotFoundException" : self = .lexiconNotFoundException(try LexiconNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ServiceFailureException" : self = .serviceFailureException(try ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct DeleteLexiconOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum DeleteLexiconOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "LexiconNotFoundException": return try await LexiconNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceFailureException": return try await ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
 }
 
-public enum DeleteLexiconOutputError: Swift.Error, Swift.Equatable {
-    case lexiconNotFoundException(LexiconNotFoundException)
-    case serviceFailureException(ServiceFailureException)
-    case unknown(UnknownAWSHttpServiceError)
-}
+extension DescribeVoicesInput {
 
-extension DeleteLexiconOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct DeleteLexiconOutputResponse: Swift.Equatable {
-
-    public init () { }
-}
-
-extension DescribeVoicesInput: ClientRuntime.QueryItemProvider {
-    public var queryItems: [ClientRuntime.URLQueryItem] {
-        get throws {
-            var items = [ClientRuntime.URLQueryItem]()
-            if let languageCode = languageCode {
-                let languageCodeQueryItem = ClientRuntime.URLQueryItem(name: "LanguageCode".urlPercentEncoding(), value: Swift.String(languageCode.rawValue).urlPercentEncoding())
-                items.append(languageCodeQueryItem)
-            }
-            if let nextToken = nextToken {
-                let nextTokenQueryItem = ClientRuntime.URLQueryItem(name: "NextToken".urlPercentEncoding(), value: Swift.String(nextToken).urlPercentEncoding())
-                items.append(nextTokenQueryItem)
-            }
-            if let engine = engine {
-                let engineQueryItem = ClientRuntime.URLQueryItem(name: "Engine".urlPercentEncoding(), value: Swift.String(engine.rawValue).urlPercentEncoding())
-                items.append(engineQueryItem)
-            }
-            if let includeAdditionalLanguageCodes = includeAdditionalLanguageCodes {
-                let includeAdditionalLanguageCodesQueryItem = ClientRuntime.URLQueryItem(name: "IncludeAdditionalLanguageCodes".urlPercentEncoding(), value: Swift.String(includeAdditionalLanguageCodes).urlPercentEncoding())
-                items.append(includeAdditionalLanguageCodesQueryItem)
-            }
-            return items
+    static func queryItemProvider(_ value: DescribeVoicesInput) throws -> [ClientRuntime.SDKURLQueryItem] {
+        var items = [ClientRuntime.SDKURLQueryItem]()
+        if let languageCode = value.languageCode {
+            let languageCodeQueryItem = ClientRuntime.SDKURLQueryItem(name: "LanguageCode".urlPercentEncoding(), value: Swift.String(languageCode.rawValue).urlPercentEncoding())
+            items.append(languageCodeQueryItem)
         }
+        if let nextToken = value.nextToken {
+            let nextTokenQueryItem = ClientRuntime.SDKURLQueryItem(name: "NextToken".urlPercentEncoding(), value: Swift.String(nextToken).urlPercentEncoding())
+            items.append(nextTokenQueryItem)
+        }
+        if let engine = value.engine {
+            let engineQueryItem = ClientRuntime.SDKURLQueryItem(name: "Engine".urlPercentEncoding(), value: Swift.String(engine.rawValue).urlPercentEncoding())
+            items.append(engineQueryItem)
+        }
+        if let includeAdditionalLanguageCodes = value.includeAdditionalLanguageCodes {
+            let includeAdditionalLanguageCodesQueryItem = ClientRuntime.SDKURLQueryItem(name: "IncludeAdditionalLanguageCodes".urlPercentEncoding(), value: Swift.String(includeAdditionalLanguageCodes).urlPercentEncoding())
+            items.append(includeAdditionalLanguageCodesQueryItem)
+        }
+        return items
     }
 }
 
-extension DescribeVoicesInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension DescribeVoicesInput {
+
+    static func urlPathProvider(_ value: DescribeVoicesInput) -> Swift.String? {
         return "/v1/voices"
     }
 }
 
 public struct DescribeVoicesInput: Swift.Equatable {
-    /// Specifies the engine (standard or neural) used by Amazon Polly when processing input text for speech synthesis.
+    /// Specifies the engine (standard, neural or long-form) used by Amazon Polly when processing input text for speech synthesis.
     public var engine: PollyClientTypes.Engine?
     /// Boolean value indicating whether to return any bilingual voices that use the specified language as an additional language. For instance, if you request all languages that use US English (es-US), and there is an Italian voice that speaks both Italian (it-IT) and US English, that voice will be included if you specify yes but not if you specify no.
     public var includeAdditionalLanguageCodes: Swift.Bool?
@@ -109,7 +98,7 @@ public struct DescribeVoicesInput: Swift.Equatable {
     /// An opaque pagination token returned from the previous DescribeVoices operation. If present, this indicates where to continue the listing.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         engine: PollyClientTypes.Engine? = nil,
         includeAdditionalLanguageCodes: Swift.Bool? = nil,
         languageCode: PollyClientTypes.LanguageCode? = nil,
@@ -128,40 +117,15 @@ struct DescribeVoicesInputBody: Swift.Equatable {
 
 extension DescribeVoicesInputBody: Swift.Decodable {
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
     }
 }
 
-extension DescribeVoicesOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension DescribeVoicesOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InvalidNextTokenException" : self = .invalidNextTokenException(try InvalidNextTokenException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ServiceFailureException" : self = .serviceFailureException(try ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum DescribeVoicesOutputError: Swift.Error, Swift.Equatable {
-    case invalidNextTokenException(InvalidNextTokenException)
-    case serviceFailureException(ServiceFailureException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension DescribeVoicesOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension DescribeVoicesOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: DescribeVoicesOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: DescribeVoicesOutputBody = try responseDecoder.decode(responseBody: data)
             self.nextToken = output.nextToken
             self.voices = output.voices
         } else {
@@ -171,13 +135,13 @@ extension DescribeVoicesOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct DescribeVoicesOutputResponse: Swift.Equatable {
+public struct DescribeVoicesOutput: Swift.Equatable {
     /// The pagination token to use in the next request to continue the listing of voices. NextToken is returned only if the response is truncated.
     public var nextToken: Swift.String?
     /// A list of voices with their properties.
     public var voices: [PollyClientTypes.Voice]?
 
-    public init (
+    public init(
         nextToken: Swift.String? = nil,
         voices: [PollyClientTypes.Voice]? = nil
     )
@@ -187,18 +151,18 @@ public struct DescribeVoicesOutputResponse: Swift.Equatable {
     }
 }
 
-struct DescribeVoicesOutputResponseBody: Swift.Equatable {
+struct DescribeVoicesOutputBody: Swift.Equatable {
     let voices: [PollyClientTypes.Voice]?
     let nextToken: Swift.String?
 }
 
-extension DescribeVoicesOutputResponseBody: Swift.Decodable {
+extension DescribeVoicesOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case nextToken = "NextToken"
         case voices = "Voices"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let voicesContainer = try containerValues.decodeIfPresent([PollyClientTypes.Voice?].self, forKey: .voices)
         var voicesDecoded0:[PollyClientTypes.Voice]? = nil
@@ -216,14 +180,28 @@ extension DescribeVoicesOutputResponseBody: Swift.Decodable {
     }
 }
 
+enum DescribeVoicesOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InvalidNextTokenException": return try await InvalidNextTokenException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceFailureException": return try await ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
 extension PollyClientTypes {
     public enum Engine: Swift.Equatable, Swift.RawRepresentable, Swift.CaseIterable, Swift.Codable, Swift.Hashable {
+        case longForm
         case neural
         case standard
         case sdkUnknown(Swift.String)
 
         public static var allCases: [Engine] {
             return [
+                .longForm,
                 .neural,
                 .standard,
                 .sdkUnknown("")
@@ -235,6 +213,7 @@ extension PollyClientTypes {
         }
         public var rawValue: Swift.String {
             switch self {
+            case .longForm: return "long-form"
             case .neural: return "neural"
             case .standard: return "standard"
             case let .sdkUnknown(s): return s
@@ -249,38 +228,41 @@ extension PollyClientTypes {
 }
 
 extension EngineNotSupportedException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: EngineNotSupportedExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// This engine is not compatible with the voice that you have designated. Choose a new voice that is compatible with the engine or change the engine and restart the operation.
-public struct EngineNotSupportedException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct EngineNotSupportedException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "EngineNotSupportedException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -293,7 +275,7 @@ extension EngineNotSupportedExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -332,9 +314,10 @@ extension PollyClientTypes {
     }
 }
 
-extension GetLexiconInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
-        guard let name = name else {
+extension GetLexiconInput {
+
+    static func urlPathProvider(_ value: GetLexiconInput) -> Swift.String? {
+        guard let name = value.name else {
             return nil
         }
         return "/v1/lexicons/\(name.urlPercentEncoding())"
@@ -346,7 +329,7 @@ public struct GetLexiconInput: Swift.Equatable {
     /// This member is required.
     public var name: Swift.String?
 
-    public init (
+    public init(
         name: Swift.String? = nil
     )
     {
@@ -359,40 +342,15 @@ struct GetLexiconInputBody: Swift.Equatable {
 
 extension GetLexiconInputBody: Swift.Decodable {
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
     }
 }
 
-extension GetLexiconOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetLexiconOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "LexiconNotFoundException" : self = .lexiconNotFoundException(try LexiconNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ServiceFailureException" : self = .serviceFailureException(try ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetLexiconOutputError: Swift.Error, Swift.Equatable {
-    case lexiconNotFoundException(LexiconNotFoundException)
-    case serviceFailureException(ServiceFailureException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetLexiconOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetLexiconOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetLexiconOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetLexiconOutputBody = try responseDecoder.decode(responseBody: data)
             self.lexicon = output.lexicon
             self.lexiconAttributes = output.lexiconAttributes
         } else {
@@ -402,13 +360,13 @@ extension GetLexiconOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct GetLexiconOutputResponse: Swift.Equatable {
+public struct GetLexiconOutput: Swift.Equatable {
     /// Lexicon object that provides name and the string content of the lexicon.
     public var lexicon: PollyClientTypes.Lexicon?
     /// Metadata of the lexicon, including phonetic alphabetic used, language code, lexicon ARN, number of lexemes defined in the lexicon, and size of lexicon in bytes.
     public var lexiconAttributes: PollyClientTypes.LexiconAttributes?
 
-    public init (
+    public init(
         lexicon: PollyClientTypes.Lexicon? = nil,
         lexiconAttributes: PollyClientTypes.LexiconAttributes? = nil
     )
@@ -418,18 +376,18 @@ public struct GetLexiconOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetLexiconOutputResponseBody: Swift.Equatable {
+struct GetLexiconOutputBody: Swift.Equatable {
     let lexicon: PollyClientTypes.Lexicon?
     let lexiconAttributes: PollyClientTypes.LexiconAttributes?
 }
 
-extension GetLexiconOutputResponseBody: Swift.Decodable {
+extension GetLexiconOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case lexicon = "Lexicon"
         case lexiconAttributes = "LexiconAttributes"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let lexiconDecoded = try containerValues.decodeIfPresent(PollyClientTypes.Lexicon.self, forKey: .lexicon)
         lexicon = lexiconDecoded
@@ -438,9 +396,22 @@ extension GetLexiconOutputResponseBody: Swift.Decodable {
     }
 }
 
-extension GetSpeechSynthesisTaskInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
-        guard let taskId = taskId else {
+enum GetLexiconOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "LexiconNotFoundException": return try await LexiconNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceFailureException": return try await ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
+    }
+}
+
+extension GetSpeechSynthesisTaskInput {
+
+    static func urlPathProvider(_ value: GetSpeechSynthesisTaskInput) -> Swift.String? {
+        guard let taskId = value.taskId else {
             return nil
         }
         return "/v1/synthesisTasks/\(taskId.urlPercentEncoding())"
@@ -452,7 +423,7 @@ public struct GetSpeechSynthesisTaskInput: Swift.Equatable {
     /// This member is required.
     public var taskId: Swift.String?
 
-    public init (
+    public init(
         taskId: Swift.String? = nil
     )
     {
@@ -465,42 +436,15 @@ struct GetSpeechSynthesisTaskInputBody: Swift.Equatable {
 
 extension GetSpeechSynthesisTaskInputBody: Swift.Decodable {
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
     }
 }
 
-extension GetSpeechSynthesisTaskOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension GetSpeechSynthesisTaskOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InvalidTaskIdException" : self = .invalidTaskIdException(try InvalidTaskIdException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ServiceFailureException" : self = .serviceFailureException(try ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "SynthesisTaskNotFoundException" : self = .synthesisTaskNotFoundException(try SynthesisTaskNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum GetSpeechSynthesisTaskOutputError: Swift.Error, Swift.Equatable {
-    case invalidTaskIdException(InvalidTaskIdException)
-    case serviceFailureException(ServiceFailureException)
-    case synthesisTaskNotFoundException(SynthesisTaskNotFoundException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension GetSpeechSynthesisTaskOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension GetSpeechSynthesisTaskOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: GetSpeechSynthesisTaskOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: GetSpeechSynthesisTaskOutputBody = try responseDecoder.decode(responseBody: data)
             self.synthesisTask = output.synthesisTask
         } else {
             self.synthesisTask = nil
@@ -508,11 +452,11 @@ extension GetSpeechSynthesisTaskOutputResponse: ClientRuntime.HttpResponseBindin
     }
 }
 
-public struct GetSpeechSynthesisTaskOutputResponse: Swift.Equatable {
+public struct GetSpeechSynthesisTaskOutput: Swift.Equatable {
     /// SynthesisTask object that provides information from the requested task, including output format, creation time, task status, and so on.
     public var synthesisTask: PollyClientTypes.SynthesisTask?
 
-    public init (
+    public init(
         synthesisTask: PollyClientTypes.SynthesisTask? = nil
     )
     {
@@ -520,55 +464,71 @@ public struct GetSpeechSynthesisTaskOutputResponse: Swift.Equatable {
     }
 }
 
-struct GetSpeechSynthesisTaskOutputResponseBody: Swift.Equatable {
+struct GetSpeechSynthesisTaskOutputBody: Swift.Equatable {
     let synthesisTask: PollyClientTypes.SynthesisTask?
 }
 
-extension GetSpeechSynthesisTaskOutputResponseBody: Swift.Decodable {
+extension GetSpeechSynthesisTaskOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case synthesisTask = "SynthesisTask"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let synthesisTaskDecoded = try containerValues.decodeIfPresent(PollyClientTypes.SynthesisTask.self, forKey: .synthesisTask)
         synthesisTask = synthesisTaskDecoded
     }
 }
 
-extension InvalidLexiconException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
-            let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: InvalidLexiconExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
-        } else {
-            self.message = nil
+enum GetSpeechSynthesisTaskOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InvalidTaskIdException": return try await InvalidTaskIdException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceFailureException": return try await ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "SynthesisTaskNotFoundException": return try await SynthesisTaskNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+    }
+}
+
+extension InvalidLexiconException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: InvalidLexiconExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.message = output.message
+        } else {
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Amazon Polly can't find the specified lexicon. Verify that the lexicon's name is spelled correctly, and then try again.
-public struct InvalidLexiconException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct InvalidLexiconException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidLexiconException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -581,7 +541,7 @@ extension InvalidLexiconExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -589,38 +549,41 @@ extension InvalidLexiconExceptionBody: Swift.Decodable {
 }
 
 extension InvalidNextTokenException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidNextTokenExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The NextToken is invalid. Verify that it's spelled correctly, and then try again.
-public struct InvalidNextTokenException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct InvalidNextTokenException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidNextTokenException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -633,7 +596,7 @@ extension InvalidNextTokenExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -641,38 +604,41 @@ extension InvalidNextTokenExceptionBody: Swift.Decodable {
 }
 
 extension InvalidS3BucketException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidS3BucketExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The provided Amazon S3 bucket name is invalid. Please check your input with S3 bucket naming requirements and try again.
-public struct InvalidS3BucketException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct InvalidS3BucketException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidS3BucketException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -685,7 +651,7 @@ extension InvalidS3BucketExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -693,38 +659,41 @@ extension InvalidS3BucketExceptionBody: Swift.Decodable {
 }
 
 extension InvalidS3KeyException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidS3KeyExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The provided Amazon S3 key prefix is invalid. Please provide a valid S3 object key name.
-public struct InvalidS3KeyException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct InvalidS3KeyException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidS3KeyException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -737,7 +706,7 @@ extension InvalidS3KeyExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -745,38 +714,41 @@ extension InvalidS3KeyExceptionBody: Swift.Decodable {
 }
 
 extension InvalidSampleRateException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidSampleRateExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The specified sample rate is not valid.
-public struct InvalidSampleRateException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct InvalidSampleRateException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidSampleRateException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -789,7 +761,7 @@ extension InvalidSampleRateExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -797,38 +769,41 @@ extension InvalidSampleRateExceptionBody: Swift.Decodable {
 }
 
 extension InvalidSnsTopicArnException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidSnsTopicArnExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The provided SNS topic ARN is invalid. Please provide a valid SNS topic ARN and try again.
-public struct InvalidSnsTopicArnException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct InvalidSnsTopicArnException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidSnsTopicArnException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -841,7 +816,7 @@ extension InvalidSnsTopicArnExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -849,38 +824,41 @@ extension InvalidSnsTopicArnExceptionBody: Swift.Decodable {
 }
 
 extension InvalidSsmlException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidSsmlExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The SSML you provided is invalid. Verify the SSML syntax, spelling of tags and values, and then try again.
-public struct InvalidSsmlException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct InvalidSsmlException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidSsmlException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -893,7 +871,7 @@ extension InvalidSsmlExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -901,38 +879,41 @@ extension InvalidSsmlExceptionBody: Swift.Decodable {
 }
 
 extension InvalidTaskIdException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: InvalidTaskIdExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The provided Task ID is not valid. Please provide a valid Task ID and try again.
-public struct InvalidTaskIdException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct InvalidTaskIdException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "InvalidTaskIdException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -945,7 +926,7 @@ extension InvalidTaskIdExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -965,6 +946,7 @@ extension PollyClientTypes {
         case enAu
         case enGb
         case enGbWls
+        case enIe
         case enIn
         case enNz
         case enUs
@@ -973,6 +955,7 @@ extension PollyClientTypes {
         case esMx
         case esUs
         case fiFi
+        case frBe
         case frCa
         case frFr
         case hiIn
@@ -981,6 +964,7 @@ extension PollyClientTypes {
         case jaJp
         case koKr
         case nbNo
+        case nlBe
         case nlNl
         case plPl
         case ptBr
@@ -1005,6 +989,7 @@ extension PollyClientTypes {
                 .enAu,
                 .enGb,
                 .enGbWls,
+                .enIe,
                 .enIn,
                 .enNz,
                 .enUs,
@@ -1013,6 +998,7 @@ extension PollyClientTypes {
                 .esMx,
                 .esUs,
                 .fiFi,
+                .frBe,
                 .frCa,
                 .frFr,
                 .hiIn,
@@ -1021,6 +1007,7 @@ extension PollyClientTypes {
                 .jaJp,
                 .koKr,
                 .nbNo,
+                .nlBe,
                 .nlNl,
                 .plPl,
                 .ptBr,
@@ -1050,6 +1037,7 @@ extension PollyClientTypes {
             case .enAu: return "en-AU"
             case .enGb: return "en-GB"
             case .enGbWls: return "en-GB-WLS"
+            case .enIe: return "en-IE"
             case .enIn: return "en-IN"
             case .enNz: return "en-NZ"
             case .enUs: return "en-US"
@@ -1058,6 +1046,7 @@ extension PollyClientTypes {
             case .esMx: return "es-MX"
             case .esUs: return "es-US"
             case .fiFi: return "fi-FI"
+            case .frBe: return "fr-BE"
             case .frCa: return "fr-CA"
             case .frFr: return "fr-FR"
             case .hiIn: return "hi-IN"
@@ -1066,6 +1055,7 @@ extension PollyClientTypes {
             case .jaJp: return "ja-JP"
             case .koKr: return "ko-KR"
             case .nbNo: return "nb-NO"
+            case .nlBe: return "nl-BE"
             case .nlNl: return "nl-NL"
             case .plPl: return "pl-PL"
             case .ptBr: return "pt-BR"
@@ -1087,38 +1077,41 @@ extension PollyClientTypes {
 }
 
 extension LanguageNotSupportedException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: LanguageNotSupportedExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The language specified is not currently supported by Amazon Polly in this capacity.
-public struct LanguageNotSupportedException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct LanguageNotSupportedException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "LanguageNotSupportedException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -1131,7 +1124,7 @@ extension LanguageNotSupportedExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -1154,7 +1147,7 @@ extension PollyClientTypes.Lexicon: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let contentDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .content)
         content = contentDecoded
@@ -1176,7 +1169,7 @@ extension PollyClientTypes {
         /// Name of the lexicon.
         public var name: Swift.String?
 
-        public init (
+        public init(
             content: Swift.String? = nil,
             name: Swift.String? = nil
         )
@@ -1220,7 +1213,7 @@ extension PollyClientTypes.LexiconAttributes: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let alphabetDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .alphabet)
         alphabet = alphabetDecoded
@@ -1253,7 +1246,7 @@ extension PollyClientTypes {
         /// Total size of the lexicon, in characters.
         public var size: Swift.Int
 
-        public init (
+        public init(
             alphabet: Swift.String? = nil,
             languageCode: PollyClientTypes.LanguageCode? = nil,
             lastModified: ClientRuntime.Date? = nil,
@@ -1289,7 +1282,7 @@ extension PollyClientTypes.LexiconDescription: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let nameDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .name)
         name = nameDecoded
@@ -1306,7 +1299,7 @@ extension PollyClientTypes {
         /// Name of the lexicon.
         public var name: Swift.String?
 
-        public init (
+        public init(
             attributes: PollyClientTypes.LexiconAttributes? = nil,
             name: Swift.String? = nil
         )
@@ -1319,38 +1312,41 @@ extension PollyClientTypes {
 }
 
 extension LexiconNotFoundException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: LexiconNotFoundExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Amazon Polly can't find the specified lexicon. This could be caused by a lexicon that is missing, its name is misspelled or specifying a lexicon that is in a different region. Verify that the lexicon exists, is in the region (see [ListLexicons]) and that you spelled its name is spelled correctly. Then try again.
-public struct LexiconNotFoundException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct LexiconNotFoundException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "LexiconNotFoundException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -1363,7 +1359,7 @@ extension LexiconNotFoundExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -1371,38 +1367,41 @@ extension LexiconNotFoundExceptionBody: Swift.Decodable {
 }
 
 extension LexiconSizeExceededException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: LexiconSizeExceededExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The maximum size of the specified lexicon would be exceeded by this operation.
-public struct LexiconSizeExceededException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct LexiconSizeExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "LexiconSizeExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -1415,28 +1414,28 @@ extension LexiconSizeExceededExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
     }
 }
 
-extension ListLexiconsInput: ClientRuntime.QueryItemProvider {
-    public var queryItems: [ClientRuntime.URLQueryItem] {
-        get throws {
-            var items = [ClientRuntime.URLQueryItem]()
-            if let nextToken = nextToken {
-                let nextTokenQueryItem = ClientRuntime.URLQueryItem(name: "NextToken".urlPercentEncoding(), value: Swift.String(nextToken).urlPercentEncoding())
-                items.append(nextTokenQueryItem)
-            }
-            return items
+extension ListLexiconsInput {
+
+    static func queryItemProvider(_ value: ListLexiconsInput) throws -> [ClientRuntime.SDKURLQueryItem] {
+        var items = [ClientRuntime.SDKURLQueryItem]()
+        if let nextToken = value.nextToken {
+            let nextTokenQueryItem = ClientRuntime.SDKURLQueryItem(name: "NextToken".urlPercentEncoding(), value: Swift.String(nextToken).urlPercentEncoding())
+            items.append(nextTokenQueryItem)
         }
+        return items
     }
 }
 
-extension ListLexiconsInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListLexiconsInput {
+
+    static func urlPathProvider(_ value: ListLexiconsInput) -> Swift.String? {
         return "/v1/lexicons"
     }
 }
@@ -1445,7 +1444,7 @@ public struct ListLexiconsInput: Swift.Equatable {
     /// An opaque pagination token returned from previous ListLexicons operation. If present, indicates where to continue the list of lexicons.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         nextToken: Swift.String? = nil
     )
     {
@@ -1458,40 +1457,15 @@ struct ListLexiconsInputBody: Swift.Equatable {
 
 extension ListLexiconsInputBody: Swift.Decodable {
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
     }
 }
 
-extension ListLexiconsOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListLexiconsOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InvalidNextTokenException" : self = .invalidNextTokenException(try InvalidNextTokenException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ServiceFailureException" : self = .serviceFailureException(try ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListLexiconsOutputError: Swift.Error, Swift.Equatable {
-    case invalidNextTokenException(InvalidNextTokenException)
-    case serviceFailureException(ServiceFailureException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListLexiconsOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListLexiconsOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListLexiconsOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListLexiconsOutputBody = try responseDecoder.decode(responseBody: data)
             self.lexicons = output.lexicons
             self.nextToken = output.nextToken
         } else {
@@ -1501,13 +1475,13 @@ extension ListLexiconsOutputResponse: ClientRuntime.HttpResponseBinding {
     }
 }
 
-public struct ListLexiconsOutputResponse: Swift.Equatable {
+public struct ListLexiconsOutput: Swift.Equatable {
     /// A list of lexicon names and attributes.
     public var lexicons: [PollyClientTypes.LexiconDescription]?
     /// The pagination token to use in the next request to continue the listing of lexicons. NextToken is returned only if the response is truncated.
     public var nextToken: Swift.String?
 
-    public init (
+    public init(
         lexicons: [PollyClientTypes.LexiconDescription]? = nil,
         nextToken: Swift.String? = nil
     )
@@ -1517,18 +1491,18 @@ public struct ListLexiconsOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListLexiconsOutputResponseBody: Swift.Equatable {
+struct ListLexiconsOutputBody: Swift.Equatable {
     let lexicons: [PollyClientTypes.LexiconDescription]?
     let nextToken: Swift.String?
 }
 
-extension ListLexiconsOutputResponseBody: Swift.Decodable {
+extension ListLexiconsOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case lexicons = "Lexicons"
         case nextToken = "NextToken"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let lexiconsContainer = try containerValues.decodeIfPresent([PollyClientTypes.LexiconDescription?].self, forKey: .lexicons)
         var lexiconsDecoded0:[PollyClientTypes.LexiconDescription]? = nil
@@ -1546,29 +1520,41 @@ extension ListLexiconsOutputResponseBody: Swift.Decodable {
     }
 }
 
-extension ListSpeechSynthesisTasksInput: ClientRuntime.QueryItemProvider {
-    public var queryItems: [ClientRuntime.URLQueryItem] {
-        get throws {
-            var items = [ClientRuntime.URLQueryItem]()
-            if let status = status {
-                let statusQueryItem = ClientRuntime.URLQueryItem(name: "Status".urlPercentEncoding(), value: Swift.String(status.rawValue).urlPercentEncoding())
-                items.append(statusQueryItem)
-            }
-            if let nextToken = nextToken {
-                let nextTokenQueryItem = ClientRuntime.URLQueryItem(name: "NextToken".urlPercentEncoding(), value: Swift.String(nextToken).urlPercentEncoding())
-                items.append(nextTokenQueryItem)
-            }
-            if let maxResults = maxResults {
-                let maxResultsQueryItem = ClientRuntime.URLQueryItem(name: "MaxResults".urlPercentEncoding(), value: Swift.String(maxResults).urlPercentEncoding())
-                items.append(maxResultsQueryItem)
-            }
-            return items
+enum ListLexiconsOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InvalidNextTokenException": return try await InvalidNextTokenException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceFailureException": return try await ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
 }
 
-extension ListSpeechSynthesisTasksInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension ListSpeechSynthesisTasksInput {
+
+    static func queryItemProvider(_ value: ListSpeechSynthesisTasksInput) throws -> [ClientRuntime.SDKURLQueryItem] {
+        var items = [ClientRuntime.SDKURLQueryItem]()
+        if let status = value.status {
+            let statusQueryItem = ClientRuntime.SDKURLQueryItem(name: "Status".urlPercentEncoding(), value: Swift.String(status.rawValue).urlPercentEncoding())
+            items.append(statusQueryItem)
+        }
+        if let nextToken = value.nextToken {
+            let nextTokenQueryItem = ClientRuntime.SDKURLQueryItem(name: "NextToken".urlPercentEncoding(), value: Swift.String(nextToken).urlPercentEncoding())
+            items.append(nextTokenQueryItem)
+        }
+        if let maxResults = value.maxResults {
+            let maxResultsQueryItem = ClientRuntime.SDKURLQueryItem(name: "MaxResults".urlPercentEncoding(), value: Swift.String(maxResults).urlPercentEncoding())
+            items.append(maxResultsQueryItem)
+        }
+        return items
+    }
+}
+
+extension ListSpeechSynthesisTasksInput {
+
+    static func urlPathProvider(_ value: ListSpeechSynthesisTasksInput) -> Swift.String? {
         return "/v1/synthesisTasks"
     }
 }
@@ -1581,7 +1567,7 @@ public struct ListSpeechSynthesisTasksInput: Swift.Equatable {
     /// Status of the speech synthesis tasks returned in a List operation
     public var status: PollyClientTypes.TaskStatus?
 
-    public init (
+    public init(
         maxResults: Swift.Int? = nil,
         nextToken: Swift.String? = nil,
         status: PollyClientTypes.TaskStatus? = nil
@@ -1598,40 +1584,15 @@ struct ListSpeechSynthesisTasksInputBody: Swift.Equatable {
 
 extension ListSpeechSynthesisTasksInputBody: Swift.Decodable {
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
     }
 }
 
-extension ListSpeechSynthesisTasksOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension ListSpeechSynthesisTasksOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InvalidNextTokenException" : self = .invalidNextTokenException(try InvalidNextTokenException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ServiceFailureException" : self = .serviceFailureException(try ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum ListSpeechSynthesisTasksOutputError: Swift.Error, Swift.Equatable {
-    case invalidNextTokenException(InvalidNextTokenException)
-    case serviceFailureException(ServiceFailureException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension ListSpeechSynthesisTasksOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension ListSpeechSynthesisTasksOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: ListSpeechSynthesisTasksOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: ListSpeechSynthesisTasksOutputBody = try responseDecoder.decode(responseBody: data)
             self.nextToken = output.nextToken
             self.synthesisTasks = output.synthesisTasks
         } else {
@@ -1641,13 +1602,13 @@ extension ListSpeechSynthesisTasksOutputResponse: ClientRuntime.HttpResponseBind
     }
 }
 
-public struct ListSpeechSynthesisTasksOutputResponse: Swift.Equatable {
+public struct ListSpeechSynthesisTasksOutput: Swift.Equatable {
     /// An opaque pagination token returned from the previous List operation in this request. If present, this indicates where to continue the listing.
     public var nextToken: Swift.String?
     /// List of SynthesisTask objects that provides information from the specified task in the list request, including output format, creation time, task status, and so on.
     public var synthesisTasks: [PollyClientTypes.SynthesisTask]?
 
-    public init (
+    public init(
         nextToken: Swift.String? = nil,
         synthesisTasks: [PollyClientTypes.SynthesisTask]? = nil
     )
@@ -1657,18 +1618,18 @@ public struct ListSpeechSynthesisTasksOutputResponse: Swift.Equatable {
     }
 }
 
-struct ListSpeechSynthesisTasksOutputResponseBody: Swift.Equatable {
+struct ListSpeechSynthesisTasksOutputBody: Swift.Equatable {
     let nextToken: Swift.String?
     let synthesisTasks: [PollyClientTypes.SynthesisTask]?
 }
 
-extension ListSpeechSynthesisTasksOutputResponseBody: Swift.Decodable {
+extension ListSpeechSynthesisTasksOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case nextToken = "NextToken"
         case synthesisTasks = "SynthesisTasks"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let nextTokenDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .nextToken)
         nextToken = nextTokenDecoded
@@ -1686,39 +1647,54 @@ extension ListSpeechSynthesisTasksOutputResponseBody: Swift.Decodable {
     }
 }
 
-extension MarksNotSupportedForFormatException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
-            let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: MarksNotSupportedForFormatExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
-        } else {
-            self.message = nil
+enum ListSpeechSynthesisTasksOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InvalidNextTokenException": return try await InvalidNextTokenException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceFailureException": return try await ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+    }
+}
+
+extension MarksNotSupportedForFormatException {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
+            let responseDecoder = decoder {
+            let output: MarksNotSupportedForFormatExceptionBody = try responseDecoder.decode(responseBody: data)
+            self.properties.message = output.message
+        } else {
+            self.properties.message = nil
+        }
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// Speech marks are not supported for the OutputFormat selected. Speech marks are only available for content in json format.
-public struct MarksNotSupportedForFormatException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct MarksNotSupportedForFormatException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "MarksNotSupportedForFormatException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -1731,7 +1707,7 @@ extension MarksNotSupportedForFormatExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -1739,38 +1715,41 @@ extension MarksNotSupportedForFormatExceptionBody: Swift.Decodable {
 }
 
 extension MaxLexemeLengthExceededException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: MaxLexemeLengthExceededExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The maximum size of the lexeme would be exceeded by this operation.
-public struct MaxLexemeLengthExceededException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct MaxLexemeLengthExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "MaxLexemeLengthExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -1783,7 +1762,7 @@ extension MaxLexemeLengthExceededExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -1791,38 +1770,41 @@ extension MaxLexemeLengthExceededExceptionBody: Swift.Decodable {
 }
 
 extension MaxLexiconsNumberExceededException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: MaxLexiconsNumberExceededExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The maximum number of lexicons would be exceeded by this operation.
-public struct MaxLexiconsNumberExceededException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct MaxLexiconsNumberExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "MaxLexiconsNumberExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -1835,7 +1817,7 @@ extension MaxLexiconsNumberExceededExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -1880,6 +1862,8 @@ extension PollyClientTypes {
     }
 }
 
+public enum PollyClientTypes {}
+
 extension PutLexiconInput: Swift.CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "PutLexiconInput(name: \(Swift.String(describing: name)), content: \"CONTENT_REDACTED\")"}
@@ -1898,9 +1882,10 @@ extension PutLexiconInput: Swift.Encodable {
     }
 }
 
-extension PutLexiconInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
-        guard let name = name else {
+extension PutLexiconInput {
+
+    static func urlPathProvider(_ value: PutLexiconInput) -> Swift.String? {
+        guard let name = value.name else {
             return nil
         }
         return "/v1/lexicons/\(name.urlPercentEncoding())"
@@ -1915,7 +1900,7 @@ public struct PutLexiconInput: Swift.Equatable {
     /// This member is required.
     public var name: Swift.String?
 
-    public init (
+    public init(
         content: Swift.String? = nil,
         name: Swift.String? = nil
     )
@@ -1934,90 +1919,76 @@ extension PutLexiconInputBody: Swift.Decodable {
         case content = "Content"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let contentDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .content)
         content = contentDecoded
     }
 }
 
-extension PutLexiconOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
+extension PutLexiconOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
     }
 }
 
-extension PutLexiconOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "InvalidLexiconException" : self = .invalidLexiconException(try InvalidLexiconException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LexiconSizeExceededException" : self = .lexiconSizeExceededException(try LexiconSizeExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "MaxLexemeLengthExceededException" : self = .maxLexemeLengthExceededException(try MaxLexemeLengthExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "MaxLexiconsNumberExceededException" : self = .maxLexiconsNumberExceededException(try MaxLexiconsNumberExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ServiceFailureException" : self = .serviceFailureException(try ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedPlsAlphabetException" : self = .unsupportedPlsAlphabetException(try UnsupportedPlsAlphabetException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "UnsupportedPlsLanguageException" : self = .unsupportedPlsLanguageException(try UnsupportedPlsLanguageException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
+public struct PutLexiconOutput: Swift.Equatable {
+
+    public init() { }
+}
+
+enum PutLexiconOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "InvalidLexiconException": return try await InvalidLexiconException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LexiconSizeExceededException": return try await LexiconSizeExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "MaxLexemeLengthExceededException": return try await MaxLexemeLengthExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "MaxLexiconsNumberExceededException": return try await MaxLexiconsNumberExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceFailureException": return try await ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedPlsAlphabetException": return try await UnsupportedPlsAlphabetException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "UnsupportedPlsLanguageException": return try await UnsupportedPlsLanguageException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
         }
     }
-}
-
-public enum PutLexiconOutputError: Swift.Error, Swift.Equatable {
-    case invalidLexiconException(InvalidLexiconException)
-    case lexiconSizeExceededException(LexiconSizeExceededException)
-    case maxLexemeLengthExceededException(MaxLexemeLengthExceededException)
-    case maxLexiconsNumberExceededException(MaxLexiconsNumberExceededException)
-    case serviceFailureException(ServiceFailureException)
-    case unsupportedPlsAlphabetException(UnsupportedPlsAlphabetException)
-    case unsupportedPlsLanguageException(UnsupportedPlsLanguageException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension PutLexiconOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-    }
-}
-
-public struct PutLexiconOutputResponse: Swift.Equatable {
-
-    public init () { }
 }
 
 extension ServiceFailureException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: ServiceFailureExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// An unknown condition has caused a service failure.
-public struct ServiceFailureException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .server
-    public var message: Swift.String?
+public struct ServiceFailureException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "ServiceFailureException" }
+    public static var fault: ErrorFault { .server }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -2030,7 +2001,7 @@ extension ServiceFailureExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -2076,38 +2047,41 @@ extension PollyClientTypes {
 }
 
 extension SsmlMarksNotSupportedForTextTypeException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: SsmlMarksNotSupportedForTextTypeExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// SSML speech marks are not supported for plain text-type input.
-public struct SsmlMarksNotSupportedForTextTypeException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct SsmlMarksNotSupportedForTextTypeException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "SsmlMarksNotSupportedForTextTypeException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -2120,7 +2094,7 @@ extension SsmlMarksNotSupportedForTextTypeExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -2190,14 +2164,15 @@ extension StartSpeechSynthesisTaskInput: Swift.Encodable {
     }
 }
 
-extension StartSpeechSynthesisTaskInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension StartSpeechSynthesisTaskInput {
+
+    static func urlPathProvider(_ value: StartSpeechSynthesisTaskInput) -> Swift.String? {
         return "/v1/synthesisTasks"
     }
 }
 
 public struct StartSpeechSynthesisTaskInput: Swift.Equatable {
-    /// Specifies the engine (standard or neural) for Amazon Polly to use when processing input text for speech synthesis. Using a voice that is not supported for the engine selected will result in an error.
+    /// Specifies the engine (standard, neural or long-form) for Amazon Polly to use when processing input text for speech synthesis. Using a voice that is not supported for the engine selected will result in an error.
     public var engine: PollyClientTypes.Engine?
     /// Optional language code for the Speech Synthesis request. This is only necessary if using a bilingual voice, such as Aditi, which can be used for either Indian English (en-IN) or Hindi (hi-IN). If a bilingual voice is used and no language code is specified, Amazon Polly uses the default language of the bilingual voice. The default language for any voice is the one returned by the [DescribeVoices](https://docs.aws.amazon.com/polly/latest/dg/API_DescribeVoices.html) operation for the LanguageCode parameter. For example, if no language code is specified, Aditi will use Indian English rather than Hindi.
     public var languageCode: PollyClientTypes.LanguageCode?
@@ -2211,7 +2186,7 @@ public struct StartSpeechSynthesisTaskInput: Swift.Equatable {
     public var outputS3BucketName: Swift.String?
     /// The Amazon S3 key prefix for the output speech file.
     public var outputS3KeyPrefix: Swift.String?
-    /// The audio frequency specified in Hz. The valid values for mp3 and ogg_vorbis are "8000", "16000", "22050", and "24000". The default value for standard voices is "22050". The default value for neural voices is "24000". Valid values for pcm are "8000" and "16000" The default value is "16000".
+    /// The audio frequency specified in Hz. The valid values for mp3 and ogg_vorbis are "8000", "16000", "22050", and "24000". The default value for standard voices is "22050". The default value for neural voices is "24000". The default value for long-form voices is "24000". Valid values for pcm are "8000" and "16000" The default value is "16000".
     public var sampleRate: Swift.String?
     /// ARN for the SNS topic optionally used for providing status notification for a speech synthesis task.
     public var snsTopicArn: Swift.String?
@@ -2226,7 +2201,7 @@ public struct StartSpeechSynthesisTaskInput: Swift.Equatable {
     /// This member is required.
     public var voiceId: PollyClientTypes.VoiceId?
 
-    public init (
+    public init(
         engine: PollyClientTypes.Engine? = nil,
         languageCode: PollyClientTypes.LanguageCode? = nil,
         lexiconNames: [Swift.String]? = nil,
@@ -2287,7 +2262,7 @@ extension StartSpeechSynthesisTaskInputBody: Swift.Decodable {
         case voiceId = "VoiceId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let engineDecoded = try containerValues.decodeIfPresent(PollyClientTypes.Engine.self, forKey: .engine)
         engine = engineDecoded
@@ -2334,56 +2309,11 @@ extension StartSpeechSynthesisTaskInputBody: Swift.Decodable {
     }
 }
 
-extension StartSpeechSynthesisTaskOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension StartSpeechSynthesisTaskOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "EngineNotSupportedException" : self = .engineNotSupportedException(try EngineNotSupportedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3BucketException" : self = .invalidS3BucketException(try InvalidS3BucketException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidS3KeyException" : self = .invalidS3KeyException(try InvalidS3KeyException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidSampleRateException" : self = .invalidSampleRateException(try InvalidSampleRateException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidSnsTopicArnException" : self = .invalidSnsTopicArnException(try InvalidSnsTopicArnException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidSsmlException" : self = .invalidSsmlException(try InvalidSsmlException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LanguageNotSupportedException" : self = .languageNotSupportedException(try LanguageNotSupportedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LexiconNotFoundException" : self = .lexiconNotFoundException(try LexiconNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "MarksNotSupportedForFormatException" : self = .marksNotSupportedForFormatException(try MarksNotSupportedForFormatException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ServiceFailureException" : self = .serviceFailureException(try ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "SsmlMarksNotSupportedForTextTypeException" : self = .ssmlMarksNotSupportedForTextTypeException(try SsmlMarksNotSupportedForTextTypeException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextLengthExceededException" : self = .textLengthExceededException(try TextLengthExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum StartSpeechSynthesisTaskOutputError: Swift.Error, Swift.Equatable {
-    case engineNotSupportedException(EngineNotSupportedException)
-    case invalidS3BucketException(InvalidS3BucketException)
-    case invalidS3KeyException(InvalidS3KeyException)
-    case invalidSampleRateException(InvalidSampleRateException)
-    case invalidSnsTopicArnException(InvalidSnsTopicArnException)
-    case invalidSsmlException(InvalidSsmlException)
-    case languageNotSupportedException(LanguageNotSupportedException)
-    case lexiconNotFoundException(LexiconNotFoundException)
-    case marksNotSupportedForFormatException(MarksNotSupportedForFormatException)
-    case serviceFailureException(ServiceFailureException)
-    case ssmlMarksNotSupportedForTextTypeException(SsmlMarksNotSupportedForTextTypeException)
-    case textLengthExceededException(TextLengthExceededException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension StartSpeechSynthesisTaskOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+extension StartSpeechSynthesisTaskOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
-            let output: StartSpeechSynthesisTaskOutputResponseBody = try responseDecoder.decode(responseBody: data)
+            let output: StartSpeechSynthesisTaskOutputBody = try responseDecoder.decode(responseBody: data)
             self.synthesisTask = output.synthesisTask
         } else {
             self.synthesisTask = nil
@@ -2391,11 +2321,11 @@ extension StartSpeechSynthesisTaskOutputResponse: ClientRuntime.HttpResponseBind
     }
 }
 
-public struct StartSpeechSynthesisTaskOutputResponse: Swift.Equatable {
+public struct StartSpeechSynthesisTaskOutput: Swift.Equatable {
     /// SynthesisTask object that provides information and attributes about a newly submitted speech synthesis task.
     public var synthesisTask: PollyClientTypes.SynthesisTask?
 
-    public init (
+    public init(
         synthesisTask: PollyClientTypes.SynthesisTask? = nil
     )
     {
@@ -2403,19 +2333,41 @@ public struct StartSpeechSynthesisTaskOutputResponse: Swift.Equatable {
     }
 }
 
-struct StartSpeechSynthesisTaskOutputResponseBody: Swift.Equatable {
+struct StartSpeechSynthesisTaskOutputBody: Swift.Equatable {
     let synthesisTask: PollyClientTypes.SynthesisTask?
 }
 
-extension StartSpeechSynthesisTaskOutputResponseBody: Swift.Decodable {
+extension StartSpeechSynthesisTaskOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case synthesisTask = "SynthesisTask"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let synthesisTaskDecoded = try containerValues.decodeIfPresent(PollyClientTypes.SynthesisTask.self, forKey: .synthesisTask)
         synthesisTask = synthesisTaskDecoded
+    }
+}
+
+enum StartSpeechSynthesisTaskOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "EngineNotSupportedException": return try await EngineNotSupportedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3BucketException": return try await InvalidS3BucketException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidS3KeyException": return try await InvalidS3KeyException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidSampleRateException": return try await InvalidSampleRateException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidSnsTopicArnException": return try await InvalidSnsTopicArnException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidSsmlException": return try await InvalidSsmlException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LanguageNotSupportedException": return try await LanguageNotSupportedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LexiconNotFoundException": return try await LexiconNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "MarksNotSupportedForFormatException": return try await MarksNotSupportedForFormatException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceFailureException": return try await ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "SsmlMarksNotSupportedForTextTypeException": return try await SsmlMarksNotSupportedForTextTypeException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextLengthExceededException": return try await TextLengthExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -2493,7 +2445,7 @@ extension PollyClientTypes.SynthesisTask: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let engineDecoded = try containerValues.decodeIfPresent(PollyClientTypes.Engine.self, forKey: .engine)
         engine = engineDecoded
@@ -2551,7 +2503,7 @@ extension PollyClientTypes {
     public struct SynthesisTask: Swift.Equatable {
         /// Timestamp for the time the synthesis task was started.
         public var creationTime: ClientRuntime.Date?
-        /// Specifies the engine (standard or neural) for Amazon Polly to use when processing input text for speech synthesis. Using a voice that is not supported for the engine selected will result in an error.
+        /// Specifies the engine (standard, neural or long-form) for Amazon Polly to use when processing input text for speech synthesis. Using a voice that is not supported for the engine selected will result in an error.
         public var engine: PollyClientTypes.Engine?
         /// Optional language code for a synthesis task. This is only necessary if using a bilingual voice, such as Aditi, which can be used for either Indian English (en-IN) or Hindi (hi-IN). If a bilingual voice is used and no language code is specified, Amazon Polly uses the default language of the bilingual voice. The default language for any voice is the one returned by the [DescribeVoices](https://docs.aws.amazon.com/polly/latest/dg/API_DescribeVoices.html) operation for the LanguageCode parameter. For example, if no language code is specified, Aditi will use Indian English rather than Hindi.
         public var languageCode: PollyClientTypes.LanguageCode?
@@ -2563,7 +2515,7 @@ extension PollyClientTypes {
         public var outputUri: Swift.String?
         /// Number of billable characters synthesized.
         public var requestCharacters: Swift.Int
-        /// The audio frequency specified in Hz. The valid values for mp3 and ogg_vorbis are "8000", "16000", "22050", and "24000". The default value for standard voices is "22050". The default value for neural voices is "24000". Valid values for pcm are "8000" and "16000" The default value is "16000".
+        /// The audio frequency specified in Hz. The valid values for mp3 and ogg_vorbis are "8000", "16000", "22050", and "24000". The default value for standard voices is "22050". The default value for neural voices is "24000". The default value for long-form voices is "24000". Valid values for pcm are "8000" and "16000" The default value is "16000".
         public var sampleRate: Swift.String?
         /// ARN for the SNS topic optionally used for providing status notification for a speech synthesis task.
         public var snsTopicArn: Swift.String?
@@ -2580,7 +2532,7 @@ extension PollyClientTypes {
         /// Voice ID to use for the synthesis.
         public var voiceId: PollyClientTypes.VoiceId?
 
-        public init (
+        public init(
             creationTime: ClientRuntime.Date? = nil,
             engine: PollyClientTypes.Engine? = nil,
             languageCode: PollyClientTypes.LanguageCode? = nil,
@@ -2619,38 +2571,41 @@ extension PollyClientTypes {
 }
 
 extension SynthesisTaskNotFoundException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: SynthesisTaskNotFoundExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The Speech Synthesis task with requested Task ID cannot be found.
-public struct SynthesisTaskNotFoundException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct SynthesisTaskNotFoundException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "SynthesisTaskNotFoundException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -2663,7 +2618,7 @@ extension SynthesisTaskNotFoundExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -2722,7 +2677,7 @@ extension SynthesizeSpeechInput: Swift.Encodable {
 }
 
 extension SynthesizeSpeechInput {
-    public func presignURL(config: PollyClientConfigurationProtocol, expiration: Foundation.TimeInterval) async throws -> ClientRuntime.URL? {
+    public func presignURL(config: PollyClient.PollyClientConfiguration, expiration: Foundation.TimeInterval) async throws -> ClientRuntime.URL? {
         let serviceName = "Polly"
         let input = self
         let encoder = ClientRuntime.JSONEncoder()
@@ -2744,18 +2699,19 @@ extension SynthesizeSpeechInput {
                       .withRegion(value: config.region)
                       .withSigningName(value: "polly")
                       .withSigningRegion(value: config.signingRegion)
-        var operation = ClientRuntime.OperationStack<SynthesizeSpeechInput, SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>(id: "synthesizeSpeech")
-        operation.initializeStep.intercept(position: .after, middleware: ClientRuntime.URLPathMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>())
-        operation.initializeStep.intercept(position: .after, middleware: ClientRuntime.URLHostMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutputResponse>())
+                      .build()
+        var operation = ClientRuntime.OperationStack<SynthesizeSpeechInput, SynthesizeSpeechOutput>(id: "synthesizeSpeech")
+        operation.initializeStep.intercept(position: .after, middleware: ClientRuntime.URLPathMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutput>(SynthesizeSpeechInput.urlPathProvider(_:)))
+        operation.initializeStep.intercept(position: .after, middleware: ClientRuntime.URLHostMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutput>())
         let endpointParams = EndpointParams(endpoint: config.endpoint, region: config.region, useDualStack: config.useDualStack ?? false, useFIPS: config.useFIPS ?? false)
-        operation.buildStep.intercept(position: .before, middleware: EndpointResolverMiddleware<SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>(endpointResolver: config.endpointResolver, endpointParams: endpointParams))
+        operation.buildStep.intercept(position: .before, middleware: EndpointResolverMiddleware<SynthesizeSpeechOutput>(endpointResolver: config.serviceSpecific.endpointResolver, endpointParams: endpointParams))
         operation.serializeStep.intercept(position: .after, middleware: SynthesizeSpeechInputGETQueryItemMiddleware())
-        operation.finalizeStep.intercept(position: .after, middleware: ClientRuntime.RetryerMiddleware<SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>(retryer: config.retryer))
+        operation.finalizeStep.intercept(position: .after, middleware: ClientRuntime.RetryMiddleware<ClientRuntime.DefaultRetryStrategy, AWSClientRuntime.AWSRetryErrorInfoProvider, SynthesizeSpeechOutput>(options: config.retryStrategyOptions))
         let sigv4Config = AWSClientRuntime.SigV4Config(signatureType: .requestQueryParams, expiration: expiration, unsignedBody: false, signingAlgorithm: .sigv4)
-        operation.finalizeStep.intercept(position: .before, middleware: AWSClientRuntime.SigV4Middleware<SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>(config: sigv4Config))
-        operation.deserializeStep.intercept(position: .after, middleware: ClientRuntime.DeserializeMiddleware<SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>())
-        operation.deserializeStep.intercept(position: .after, middleware: ClientRuntime.LoggerMiddleware<SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>(clientLogMode: config.clientLogMode))
-        let presignedRequestBuilder = try await operation.presignedRequest(context: context.build(), input: input, next: ClientRuntime.NoopHandler())
+        operation.finalizeStep.intercept(position: .before, middleware: AWSClientRuntime.SigV4Middleware<SynthesizeSpeechOutput>(config: sigv4Config))
+        operation.deserializeStep.intercept(position: .after, middleware: ClientRuntime.DeserializeMiddleware<SynthesizeSpeechOutput>(responseClosure(decoder: decoder), responseErrorClosure(SynthesizeSpeechOutputError.self, decoder: decoder)))
+        operation.deserializeStep.intercept(position: .after, middleware: ClientRuntime.LoggerMiddleware<SynthesizeSpeechOutput>(clientLogMode: config.clientLogMode))
+        let presignedRequestBuilder = try await operation.presignedRequest(context: context, input: input, output: SynthesizeSpeechOutput(), next: ClientRuntime.NoopHandler())
         guard let builtRequest = presignedRequestBuilder?.build(), let presignedURL = builtRequest.endpoint.url else {
             return nil
         }
@@ -2764,7 +2720,7 @@ extension SynthesizeSpeechInput {
 }
 
 extension SynthesizeSpeechInput {
-    public func presign(config: PollyClientConfigurationProtocol, expiration: Foundation.TimeInterval) async throws -> ClientRuntime.SdkHttpRequest? {
+    public func presign(config: PollyClient.PollyClientConfiguration, expiration: Foundation.TimeInterval) async throws -> ClientRuntime.SdkHttpRequest? {
         let serviceName = "Polly"
         let input = self
         let encoder = ClientRuntime.JSONEncoder()
@@ -2786,22 +2742,22 @@ extension SynthesizeSpeechInput {
                       .withRegion(value: config.region)
                       .withSigningName(value: "polly")
                       .withSigningRegion(value: config.signingRegion)
-        var operation = ClientRuntime.OperationStack<SynthesizeSpeechInput, SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>(id: "synthesizeSpeech")
-        operation.initializeStep.intercept(position: .after, middleware: ClientRuntime.URLPathMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>())
-        operation.initializeStep.intercept(position: .after, middleware: ClientRuntime.URLHostMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutputResponse>())
+                      .build()
+        var operation = ClientRuntime.OperationStack<SynthesizeSpeechInput, SynthesizeSpeechOutput>(id: "synthesizeSpeech")
+        operation.initializeStep.intercept(position: .after, middleware: ClientRuntime.URLPathMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutput>(SynthesizeSpeechInput.urlPathProvider(_:)))
+        operation.initializeStep.intercept(position: .after, middleware: ClientRuntime.URLHostMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutput>())
         let endpointParams = EndpointParams(endpoint: config.endpoint, region: config.region, useDualStack: config.useDualStack ?? false, useFIPS: config.useFIPS ?? false)
-        operation.buildStep.intercept(position: .before, middleware: EndpointResolverMiddleware<SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>(endpointResolver: config.endpointResolver, endpointParams: endpointParams))
-        let apiMetadata = AWSClientRuntime.APIMetadata(serviceId: serviceName, version: "1.0")
-        operation.buildStep.intercept(position: .before, middleware: AWSClientRuntime.UserAgentMiddleware(metadata: AWSClientRuntime.AWSUserAgentMetadata.fromEnv(apiMetadata: apiMetadata, frameworkMetadata: config.frameworkMetadata)))
-        operation.serializeStep.intercept(position: .after, middleware: ContentTypeMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutputResponse>(contentType: "application/json"))
-        operation.serializeStep.intercept(position: .after, middleware: ClientRuntime.SerializableBodyMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutputResponse>(xmlName: "SynthesizeSpeechInput"))
+        operation.buildStep.intercept(position: .before, middleware: EndpointResolverMiddleware<SynthesizeSpeechOutput>(endpointResolver: config.serviceSpecific.endpointResolver, endpointParams: endpointParams))
+        operation.buildStep.intercept(position: .before, middleware: AWSClientRuntime.UserAgentMiddleware(metadata: AWSClientRuntime.AWSUserAgentMetadata.fromConfig(serviceID: serviceName, version: "1.0", config: config)))
+        operation.serializeStep.intercept(position: .after, middleware: ContentTypeMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutput>(contentType: "application/json"))
+        operation.serializeStep.intercept(position: .after, middleware: ClientRuntime.BodyMiddleware<SynthesizeSpeechInput, SynthesizeSpeechOutput, ClientRuntime.JSONWriter>(documentWritingClosure: ClientRuntime.JSONReadWrite.documentWritingClosure(encoder: encoder), inputWritingClosure: JSONReadWrite.writingClosure()))
         operation.finalizeStep.intercept(position: .before, middleware: ClientRuntime.ContentLengthMiddleware())
-        operation.finalizeStep.intercept(position: .after, middleware: ClientRuntime.RetryerMiddleware<SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>(retryer: config.retryer))
+        operation.finalizeStep.intercept(position: .after, middleware: ClientRuntime.RetryMiddleware<ClientRuntime.DefaultRetryStrategy, AWSClientRuntime.AWSRetryErrorInfoProvider, SynthesizeSpeechOutput>(options: config.retryStrategyOptions))
         let sigv4Config = AWSClientRuntime.SigV4Config(expiration: expiration, unsignedBody: false, signingAlgorithm: .sigv4)
-        operation.finalizeStep.intercept(position: .before, middleware: AWSClientRuntime.SigV4Middleware<SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>(config: sigv4Config))
-        operation.deserializeStep.intercept(position: .after, middleware: ClientRuntime.DeserializeMiddleware<SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>())
-        operation.deserializeStep.intercept(position: .after, middleware: ClientRuntime.LoggerMiddleware<SynthesizeSpeechOutputResponse, SynthesizeSpeechOutputError>(clientLogMode: config.clientLogMode))
-        let presignedRequestBuilder = try await operation.presignedRequest(context: context.build(), input: input, next: ClientRuntime.NoopHandler())
+        operation.finalizeStep.intercept(position: .before, middleware: AWSClientRuntime.SigV4Middleware<SynthesizeSpeechOutput>(config: sigv4Config))
+        operation.deserializeStep.intercept(position: .after, middleware: ClientRuntime.DeserializeMiddleware<SynthesizeSpeechOutput>(responseClosure(decoder: decoder), responseErrorClosure(SynthesizeSpeechOutputError.self, decoder: decoder)))
+        operation.deserializeStep.intercept(position: .after, middleware: ClientRuntime.LoggerMiddleware<SynthesizeSpeechOutput>(clientLogMode: config.clientLogMode))
+        let presignedRequestBuilder = try await operation.presignedRequest(context: context, input: input, output: SynthesizeSpeechOutput(), next: ClientRuntime.NoopHandler())
         guard let builtRequest = presignedRequestBuilder?.build() else {
             return nil
         }
@@ -2816,68 +2772,69 @@ public struct SynthesizeSpeechInputGETQueryItemMiddleware: ClientRuntime.Middlew
 
     public func handle<H>(context: Context,
                   input: ClientRuntime.SerializeStepInput<SynthesizeSpeechInput>,
-                  next: H) async throws -> ClientRuntime.OperationOutput<SynthesizeSpeechOutputResponse>
+                  next: H) async throws -> ClientRuntime.OperationOutput<SynthesizeSpeechOutput>
     where H: Handler,
     Self.MInput == H.Input,
     Self.MOutput == H.Output,
     Self.Context == H.Context
     {
         if let engine = input.operationInput.engine {
-            let queryItem = ClientRuntime.URLQueryItem(name: "Engine".urlPercentEncoding(), value: Swift.String(engine.rawValue).urlPercentEncoding())
+            let queryItem = ClientRuntime.SDKURLQueryItem(name: "Engine".urlPercentEncoding(), value: Swift.String(engine.rawValue).urlPercentEncoding())
             input.builder.withQueryItem(queryItem)
         }
         if let languageCode = input.operationInput.languageCode {
-            let queryItem = ClientRuntime.URLQueryItem(name: "LanguageCode".urlPercentEncoding(), value: Swift.String(languageCode.rawValue).urlPercentEncoding())
+            let queryItem = ClientRuntime.SDKURLQueryItem(name: "LanguageCode".urlPercentEncoding(), value: Swift.String(languageCode.rawValue).urlPercentEncoding())
             input.builder.withQueryItem(queryItem)
         }
         if let lexiconNames = input.operationInput.lexiconNames {
             lexiconNames.forEach { item in
-                let queryItem = ClientRuntime.URLQueryItem(name: "LexiconNames".urlPercentEncoding(), value: Swift.String(item).urlPercentEncoding())
+                let queryItem = ClientRuntime.SDKURLQueryItem(name: "LexiconNames".urlPercentEncoding(), value: Swift.String(item).urlPercentEncoding())
                 input.builder.withQueryItem(queryItem)
             }
         }
         if let outputFormat = input.operationInput.outputFormat {
-            let queryItem = ClientRuntime.URLQueryItem(name: "OutputFormat".urlPercentEncoding(), value: Swift.String(outputFormat.rawValue).urlPercentEncoding())
+            let queryItem = ClientRuntime.SDKURLQueryItem(name: "OutputFormat".urlPercentEncoding(), value: Swift.String(outputFormat.rawValue).urlPercentEncoding())
             input.builder.withQueryItem(queryItem)
         }
         if let sampleRate = input.operationInput.sampleRate {
-            let queryItem = ClientRuntime.URLQueryItem(name: "SampleRate".urlPercentEncoding(), value: Swift.String(sampleRate).urlPercentEncoding())
+            let queryItem = ClientRuntime.SDKURLQueryItem(name: "SampleRate".urlPercentEncoding(), value: Swift.String(sampleRate).urlPercentEncoding())
             input.builder.withQueryItem(queryItem)
         }
         if let speechMarkTypes = input.operationInput.speechMarkTypes {
             speechMarkTypes.forEach { item in
-                let queryItem = ClientRuntime.URLQueryItem(name: "SpeechMarkTypes".urlPercentEncoding(), value: Swift.String(item.rawValue).urlPercentEncoding())
+                let queryItem = ClientRuntime.SDKURLQueryItem(name: "SpeechMarkTypes".urlPercentEncoding(), value: Swift.String(item.rawValue).urlPercentEncoding())
                 input.builder.withQueryItem(queryItem)
             }
         }
         if let text = input.operationInput.text {
-            let queryItem = ClientRuntime.URLQueryItem(name: "Text".urlPercentEncoding(), value: Swift.String(text).urlPercentEncoding())
+            let queryItem = ClientRuntime.SDKURLQueryItem(name: "Text".urlPercentEncoding(), value: Swift.String(text).urlPercentEncoding())
             input.builder.withQueryItem(queryItem)
         }
         if let textType = input.operationInput.textType {
-            let queryItem = ClientRuntime.URLQueryItem(name: "TextType".urlPercentEncoding(), value: Swift.String(textType.rawValue).urlPercentEncoding())
+            let queryItem = ClientRuntime.SDKURLQueryItem(name: "TextType".urlPercentEncoding(), value: Swift.String(textType.rawValue).urlPercentEncoding())
             input.builder.withQueryItem(queryItem)
         }
         if let voiceId = input.operationInput.voiceId {
-            let queryItem = ClientRuntime.URLQueryItem(name: "VoiceId".urlPercentEncoding(), value: Swift.String(voiceId.rawValue).urlPercentEncoding())
+            let queryItem = ClientRuntime.SDKURLQueryItem(name: "VoiceId".urlPercentEncoding(), value: Swift.String(voiceId.rawValue).urlPercentEncoding())
             input.builder.withQueryItem(queryItem)
         }
         return try await next.handle(context: context, input: input)
     }
 
     public typealias MInput = ClientRuntime.SerializeStepInput<SynthesizeSpeechInput>
-    public typealias MOutput = ClientRuntime.OperationOutput<SynthesizeSpeechOutputResponse>
+    public typealias MOutput = ClientRuntime.OperationOutput<SynthesizeSpeechOutput>
     public typealias Context = ClientRuntime.HttpContext
 }
 
-extension SynthesizeSpeechInput: ClientRuntime.URLPathProvider {
-    public var urlPath: Swift.String? {
+extension SynthesizeSpeechInput {
+
+    static func urlPathProvider(_ value: SynthesizeSpeechInput) -> Swift.String? {
         return "/v1/speech"
     }
 }
 
 public struct SynthesizeSpeechInput: Swift.Equatable {
-    /// Specifies the engine (standard or neural) for Amazon Polly to use when processing input text for speech synthesis. For information on Amazon Polly voices and which voices are available in standard-only, NTTS-only, and both standard and NTTS formats, see [Available Voices](https://docs.aws.amazon.com/polly/latest/dg/voicelist.html). NTTS-only voices When using NTTS-only voices such as Kevin (en-US), this parameter is required and must be set to neural. If the engine is not specified, or is set to standard, this will result in an error. Type: String Valid Values: standard | neural Required: Yes Standard voices For standard voices, this is not required; the engine parameter defaults to standard. If the engine is not specified, or is set to standard and an NTTS-only voice is selected, this will result in an error.
+    /// Specifies the engine (standard, neural or long-form) for Amazon Polly to use when processing input text for speech synthesis. For information on Amazon Polly voices and which voices are available for each engine, see [Available Voices](https://docs.aws.amazon.com/polly/latest/dg/voicelist.html). NTTS-only voices When using NTTS-only voices such as Kevin (en-US), this parameter is required and must be set to neural. If the engine is not specified, or is set to standard, this will result in an error. long-form-only voices When using long-form-only voices such as Danielle (en-US), this parameter is required and must be set to long-form. If the engine is not specified, or is set to standard or neural, this will result in an error. Type: String Valid Values: standard | neural | long-form Required: Yes Standard voices For standard voices, this is not required; the engine parameter defaults to standard. If the engine is not specified, or is set to standard and an NTTS-only voice is selected, this will result in an error.
     public var engine: PollyClientTypes.Engine?
     /// Optional language code for the Synthesize Speech request. This is only necessary if using a bilingual voice, such as Aditi, which can be used for either Indian English (en-IN) or Hindi (hi-IN). If a bilingual voice is used and no language code is specified, Amazon Polly uses the default language of the bilingual voice. The default language for any voice is the one returned by the [DescribeVoices](https://docs.aws.amazon.com/polly/latest/dg/API_DescribeVoices.html) operation for the LanguageCode parameter. For example, if no language code is specified, Aditi will use Indian English rather than Hindi.
     public var languageCode: PollyClientTypes.LanguageCode?
@@ -2886,7 +2843,7 @@ public struct SynthesizeSpeechInput: Swift.Equatable {
     /// The format in which the returned output will be encoded. For audio stream, this will be mp3, ogg_vorbis, or pcm. For speech marks, this will be json. When pcm is used, the content returned is audio/pcm in a signed 16-bit, 1 channel (mono), little-endian format.
     /// This member is required.
     public var outputFormat: PollyClientTypes.OutputFormat?
-    /// The audio frequency specified in Hz. The valid values for mp3 and ogg_vorbis are "8000", "16000", "22050", and "24000". The default value for standard voices is "22050". The default value for neural voices is "24000". Valid values for pcm are "8000" and "16000" The default value is "16000".
+    /// The audio frequency specified in Hz. The valid values for mp3 and ogg_vorbis are "8000", "16000", "22050", and "24000". The default value for standard voices is "22050". The default value for neural voices is "24000". The default value for long-form voices is "24000". Valid values for pcm are "8000" and "16000" The default value is "16000".
     public var sampleRate: Swift.String?
     /// The type of speech marks returned for the input text.
     public var speechMarkTypes: [PollyClientTypes.SpeechMarkType]?
@@ -2899,7 +2856,7 @@ public struct SynthesizeSpeechInput: Swift.Equatable {
     /// This member is required.
     public var voiceId: PollyClientTypes.VoiceId?
 
-    public init (
+    public init(
         engine: PollyClientTypes.Engine? = nil,
         languageCode: PollyClientTypes.LanguageCode? = nil,
         lexiconNames: [Swift.String]? = nil,
@@ -2948,7 +2905,7 @@ extension SynthesizeSpeechInputBody: Swift.Decodable {
         case voiceId = "VoiceId"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let engineDecoded = try containerValues.decodeIfPresent(PollyClientTypes.Engine.self, forKey: .engine)
         engine = engineDecoded
@@ -2989,46 +2946,8 @@ extension SynthesizeSpeechInputBody: Swift.Decodable {
     }
 }
 
-extension SynthesizeSpeechOutputError: ClientRuntime.HttpResponseBinding {
-    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
-        let errorDetails = try AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
-        let requestID = httpResponse.headers.value(for: X_AMZN_REQUEST_ID_HEADER)
-        try self.init(errorType: errorDetails.errorType, httpResponse: httpResponse, decoder: decoder, message: errorDetails.errorMessage, requestID: requestID)
-    }
-}
-
-extension SynthesizeSpeechOutputError {
-    public init(errorType: Swift.String?, httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        switch errorType {
-        case "EngineNotSupportedException" : self = .engineNotSupportedException(try EngineNotSupportedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidSampleRateException" : self = .invalidSampleRateException(try InvalidSampleRateException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "InvalidSsmlException" : self = .invalidSsmlException(try InvalidSsmlException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LanguageNotSupportedException" : self = .languageNotSupportedException(try LanguageNotSupportedException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "LexiconNotFoundException" : self = .lexiconNotFoundException(try LexiconNotFoundException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "MarksNotSupportedForFormatException" : self = .marksNotSupportedForFormatException(try MarksNotSupportedForFormatException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "ServiceFailureException" : self = .serviceFailureException(try ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "SsmlMarksNotSupportedForTextTypeException" : self = .ssmlMarksNotSupportedForTextTypeException(try SsmlMarksNotSupportedForTextTypeException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        case "TextLengthExceededException" : self = .textLengthExceededException(try TextLengthExceededException(httpResponse: httpResponse, decoder: decoder, message: message, requestID: requestID))
-        default : self = .unknown(UnknownAWSHttpServiceError(httpResponse: httpResponse, message: message, requestID: requestID, errorType: errorType))
-        }
-    }
-}
-
-public enum SynthesizeSpeechOutputError: Swift.Error, Swift.Equatable {
-    case engineNotSupportedException(EngineNotSupportedException)
-    case invalidSampleRateException(InvalidSampleRateException)
-    case invalidSsmlException(InvalidSsmlException)
-    case languageNotSupportedException(LanguageNotSupportedException)
-    case lexiconNotFoundException(LexiconNotFoundException)
-    case marksNotSupportedForFormatException(MarksNotSupportedForFormatException)
-    case serviceFailureException(ServiceFailureException)
-    case ssmlMarksNotSupportedForTextTypeException(SsmlMarksNotSupportedForTextTypeException)
-    case textLengthExceededException(TextLengthExceededException)
-    case unknown(UnknownAWSHttpServiceError)
-}
-
-extension SynthesizeSpeechOutputResponse: ClientRuntime.HttpResponseBinding {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) throws {
+extension SynthesizeSpeechOutput: ClientRuntime.HttpResponseBinding {
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws {
         if let contentTypeHeaderValue = httpResponse.headers.value(for: "Content-Type") {
             self.contentType = contentTypeHeaderValue
         } else {
@@ -3039,15 +2958,18 @@ extension SynthesizeSpeechOutputResponse: ClientRuntime.HttpResponseBinding {
         } else {
             self.requestCharacters = 0
         }
-        if let data = httpResponse.body.toBytes()?.getData() {
-            self.audioStream = ByteStream.from(data: data)
-        } else {
+        switch httpResponse.body {
+        case .data(let data):
+            self.audioStream = .data(data)
+        case .stream(let stream):
+            self.audioStream = .stream(stream)
+        case .noStream:
             self.audioStream = nil
         }
     }
 }
 
-public struct SynthesizeSpeechOutputResponse: Swift.Equatable {
+public struct SynthesizeSpeechOutput: Swift.Equatable {
     /// Stream containing the synthesized speech.
     public var audioStream: ClientRuntime.ByteStream?
     /// Specifies the type audio stream. This should reflect the OutputFormat parameter in your request.
@@ -3063,7 +2985,7 @@ public struct SynthesizeSpeechOutputResponse: Swift.Equatable {
     /// Number of characters synthesized.
     public var requestCharacters: Swift.Int
 
-    public init (
+    public init(
         audioStream: ClientRuntime.ByteStream? = nil,
         contentType: Swift.String? = nil,
         requestCharacters: Swift.Int = 0
@@ -3075,19 +2997,38 @@ public struct SynthesizeSpeechOutputResponse: Swift.Equatable {
     }
 }
 
-struct SynthesizeSpeechOutputResponseBody: Swift.Equatable {
+struct SynthesizeSpeechOutputBody: Swift.Equatable {
     let audioStream: ClientRuntime.ByteStream?
 }
 
-extension SynthesizeSpeechOutputResponseBody: Swift.Decodable {
+extension SynthesizeSpeechOutputBody: Swift.Decodable {
     enum CodingKeys: Swift.String, Swift.CodingKey {
         case audioStream = "AudioStream"
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let audioStreamDecoded = try containerValues.decodeIfPresent(ClientRuntime.ByteStream.self, forKey: .audioStream)
         audioStream = audioStreamDecoded
+    }
+}
+
+enum SynthesizeSpeechOutputError: ClientRuntime.HttpResponseErrorBinding {
+    static func makeError(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil) async throws -> Swift.Error {
+        let restJSONError = try await AWSClientRuntime.RestJSONError(httpResponse: httpResponse)
+        let requestID = httpResponse.requestId
+        switch restJSONError.errorType {
+            case "EngineNotSupportedException": return try await EngineNotSupportedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidSampleRateException": return try await InvalidSampleRateException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "InvalidSsmlException": return try await InvalidSsmlException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LanguageNotSupportedException": return try await LanguageNotSupportedException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "LexiconNotFoundException": return try await LexiconNotFoundException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "MarksNotSupportedForFormatException": return try await MarksNotSupportedForFormatException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "ServiceFailureException": return try await ServiceFailureException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "SsmlMarksNotSupportedForTextTypeException": return try await SsmlMarksNotSupportedForTextTypeException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            case "TextLengthExceededException": return try await TextLengthExceededException(httpResponse: httpResponse, decoder: decoder, message: restJSONError.errorMessage, requestID: requestID)
+            default: return try await AWSClientRuntime.UnknownAWSHTTPServiceError.makeError(httpResponse: httpResponse, message: restJSONError.errorMessage, requestID: requestID, typeName: restJSONError.errorType)
+        }
     }
 }
 
@@ -3130,38 +3071,41 @@ extension PollyClientTypes {
 }
 
 extension TextLengthExceededException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: TextLengthExceededExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The value of the "Text" parameter is longer than the accepted limits. For the SynthesizeSpeech API, the limit for input text is a maximum of 6000 characters total, of which no more than 3000 can be billed characters. For the StartSpeechSynthesisTask API, the maximum is 200,000 characters, of which no more than 100,000 can be billed characters. SSML tags are not counted as billed characters.
-public struct TextLengthExceededException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct TextLengthExceededException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "TextLengthExceededException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -3174,7 +3118,7 @@ extension TextLengthExceededExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -3214,38 +3158,41 @@ extension PollyClientTypes {
 }
 
 extension UnsupportedPlsAlphabetException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: UnsupportedPlsAlphabetExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The alphabet specified by the lexicon is not a supported alphabet. Valid values are x-sampa and ipa.
-public struct UnsupportedPlsAlphabetException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct UnsupportedPlsAlphabetException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "UnsupportedPlsAlphabetException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -3258,7 +3205,7 @@ extension UnsupportedPlsAlphabetExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -3266,38 +3213,41 @@ extension UnsupportedPlsAlphabetExceptionBody: Swift.Decodable {
 }
 
 extension UnsupportedPlsLanguageException {
-    public init (httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) throws {
-        if case .stream(let reader) = httpResponse.body,
+    public init(httpResponse: ClientRuntime.HttpResponse, decoder: ClientRuntime.ResponseDecoder? = nil, message: Swift.String? = nil, requestID: Swift.String? = nil) async throws {
+        if let data = try await httpResponse.body.readData(),
             let responseDecoder = decoder {
-            let data = reader.toBytes().getData()
             let output: UnsupportedPlsLanguageExceptionBody = try responseDecoder.decode(responseBody: data)
-            self.message = output.message
+            self.properties.message = output.message
         } else {
-            self.message = nil
+            self.properties.message = nil
         }
-        self._headers = httpResponse.headers
-        self._statusCode = httpResponse.statusCode
-        self._requestID = requestID
-        self._message = message
+        self.httpResponse = httpResponse
+        self.requestID = requestID
+        self.message = message
     }
 }
 
 /// The language specified in the lexicon is unsupported. For a list of supported languages, see [Lexicon Attributes](https://docs.aws.amazon.com/polly/latest/dg/API_LexiconAttributes.html).
-public struct UnsupportedPlsLanguageException: AWSClientRuntime.AWSHttpServiceError, Swift.Equatable {
-    public var _headers: ClientRuntime.Headers?
-    public var _statusCode: ClientRuntime.HttpStatusCode?
-    public var _message: Swift.String?
-    public var _requestID: Swift.String?
-    public var _retryable: Swift.Bool = false
-    public var _isThrottling: Swift.Bool = false
-    public var _type: ClientRuntime.ErrorType = .client
-    public var message: Swift.String?
+public struct UnsupportedPlsLanguageException: ClientRuntime.ModeledError, AWSClientRuntime.AWSServiceError, ClientRuntime.HTTPError, Swift.Error {
 
-    public init (
+    public struct Properties {
+        public internal(set) var message: Swift.String? = nil
+    }
+
+    public internal(set) var properties = Properties()
+    public static var typeName: Swift.String { "UnsupportedPlsLanguageException" }
+    public static var fault: ErrorFault { .client }
+    public static var isRetryable: Swift.Bool { false }
+    public static var isThrottling: Swift.Bool { false }
+    public internal(set) var httpResponse = HttpResponse()
+    public internal(set) var message: Swift.String?
+    public internal(set) var requestID: Swift.String?
+
+    public init(
         message: Swift.String? = nil
     )
     {
-        self.message = message
+        self.properties.message = message
     }
 }
 
@@ -3310,7 +3260,7 @@ extension UnsupportedPlsLanguageExceptionBody: Swift.Decodable {
         case message
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let messageDecoded = try containerValues.decodeIfPresent(Swift.String.self, forKey: .message)
         message = messageDecoded
@@ -3359,7 +3309,7 @@ extension PollyClientTypes.Voice: Swift.Codable {
         }
     }
 
-    public init (from decoder: Swift.Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let containerValues = try decoder.container(keyedBy: CodingKeys.self)
         let genderDecoded = try containerValues.decodeIfPresent(PollyClientTypes.Gender.self, forKey: .gender)
         gender = genderDecoded
@@ -3411,10 +3361,10 @@ extension PollyClientTypes {
         public var languageName: Swift.String?
         /// Name of the voice (for example, Salli, Kendra, etc.). This provides a human readable voice name that you might display in your application.
         public var name: Swift.String?
-        /// Specifies which engines (standard or neural) that are supported by a given voice.
+        /// Specifies which engines (standard, neural or long-form) are supported by a given voice.
         public var supportedEngines: [PollyClientTypes.Engine]?
 
-        public init (
+        public init(
             additionalLanguageCodes: [PollyClientTypes.LanguageCode]? = nil,
             gender: PollyClientTypes.Gender? = nil,
             id: PollyClientTypes.VoiceId? = nil,
@@ -3457,6 +3407,7 @@ extension PollyClientTypes {
         case conchita
         case cristiano
         case daniel
+        case danielle
         case dora
         case elin
         case emma
@@ -3466,6 +3417,7 @@ extension PollyClientTypes {
         case gabrielle
         case geraint
         case giorgio
+        case gregory
         case gwyneth
         case hala
         case hannah
@@ -3473,6 +3425,7 @@ extension PollyClientTypes {
         case hiujin
         case ida
         case ines
+        case isabelle
         case ivy
         case jacek
         case jan
@@ -3488,6 +3441,7 @@ extension PollyClientTypes {
         case laura
         case lea
         case liam
+        case lisa
         case liv
         case lotte
         case lucia
@@ -3502,6 +3456,7 @@ extension PollyClientTypes {
         case miguel
         case mizuki
         case naja
+        case niamh
         case nicole
         case ola
         case olivia
@@ -3516,6 +3471,7 @@ extension PollyClientTypes {
         case salli
         case seoyeon
         case sergio
+        case sofie
         case stephen
         case suvi
         case takumi
@@ -3524,6 +3480,7 @@ extension PollyClientTypes {
         case tomoko
         case vicki
         case vitoria
+        case zayd
         case zeina
         case zhiyu
         case sdkUnknown(Swift.String)
@@ -3549,6 +3506,7 @@ extension PollyClientTypes {
                 .conchita,
                 .cristiano,
                 .daniel,
+                .danielle,
                 .dora,
                 .elin,
                 .emma,
@@ -3558,6 +3516,7 @@ extension PollyClientTypes {
                 .gabrielle,
                 .geraint,
                 .giorgio,
+                .gregory,
                 .gwyneth,
                 .hala,
                 .hannah,
@@ -3565,6 +3524,7 @@ extension PollyClientTypes {
                 .hiujin,
                 .ida,
                 .ines,
+                .isabelle,
                 .ivy,
                 .jacek,
                 .jan,
@@ -3580,6 +3540,7 @@ extension PollyClientTypes {
                 .laura,
                 .lea,
                 .liam,
+                .lisa,
                 .liv,
                 .lotte,
                 .lucia,
@@ -3594,6 +3555,7 @@ extension PollyClientTypes {
                 .miguel,
                 .mizuki,
                 .naja,
+                .niamh,
                 .nicole,
                 .ola,
                 .olivia,
@@ -3608,6 +3570,7 @@ extension PollyClientTypes {
                 .salli,
                 .seoyeon,
                 .sergio,
+                .sofie,
                 .stephen,
                 .suvi,
                 .takumi,
@@ -3616,6 +3579,7 @@ extension PollyClientTypes {
                 .tomoko,
                 .vicki,
                 .vitoria,
+                .zayd,
                 .zeina,
                 .zhiyu,
                 .sdkUnknown("")
@@ -3646,6 +3610,7 @@ extension PollyClientTypes {
             case .conchita: return "Conchita"
             case .cristiano: return "Cristiano"
             case .daniel: return "Daniel"
+            case .danielle: return "Danielle"
             case .dora: return "Dora"
             case .elin: return "Elin"
             case .emma: return "Emma"
@@ -3655,6 +3620,7 @@ extension PollyClientTypes {
             case .gabrielle: return "Gabrielle"
             case .geraint: return "Geraint"
             case .giorgio: return "Giorgio"
+            case .gregory: return "Gregory"
             case .gwyneth: return "Gwyneth"
             case .hala: return "Hala"
             case .hannah: return "Hannah"
@@ -3662,6 +3628,7 @@ extension PollyClientTypes {
             case .hiujin: return "Hiujin"
             case .ida: return "Ida"
             case .ines: return "Ines"
+            case .isabelle: return "Isabelle"
             case .ivy: return "Ivy"
             case .jacek: return "Jacek"
             case .jan: return "Jan"
@@ -3677,6 +3644,7 @@ extension PollyClientTypes {
             case .laura: return "Laura"
             case .lea: return "Lea"
             case .liam: return "Liam"
+            case .lisa: return "Lisa"
             case .liv: return "Liv"
             case .lotte: return "Lotte"
             case .lucia: return "Lucia"
@@ -3691,6 +3659,7 @@ extension PollyClientTypes {
             case .miguel: return "Miguel"
             case .mizuki: return "Mizuki"
             case .naja: return "Naja"
+            case .niamh: return "Niamh"
             case .nicole: return "Nicole"
             case .ola: return "Ola"
             case .olivia: return "Olivia"
@@ -3705,6 +3674,7 @@ extension PollyClientTypes {
             case .salli: return "Salli"
             case .seoyeon: return "Seoyeon"
             case .sergio: return "Sergio"
+            case .sofie: return "Sofie"
             case .stephen: return "Stephen"
             case .suvi: return "Suvi"
             case .takumi: return "Takumi"
@@ -3713,6 +3683,7 @@ extension PollyClientTypes {
             case .tomoko: return "Tomoko"
             case .vicki: return "Vicki"
             case .vitoria: return "Vitoria"
+            case .zayd: return "Zayd"
             case .zeina: return "Zeina"
             case .zhiyu: return "Zhiyu"
             case let .sdkUnknown(s): return s

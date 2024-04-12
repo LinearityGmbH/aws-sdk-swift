@@ -8,7 +8,6 @@ package software.amazon.smithy.aws.swift.codegen
 import software.amazon.smithy.codegen.core.Symbol
 import software.amazon.smithy.model.shapes.ShapeType
 import software.amazon.smithy.rulesengine.traits.ClientContextParamsTrait
-import software.amazon.smithy.swift.codegen.ClientRuntimeTypes
 import software.amazon.smithy.swift.codegen.SwiftTypes
 import software.amazon.smithy.swift.codegen.SwiftWriter
 import software.amazon.smithy.swift.codegen.integration.ConfigField
@@ -28,223 +27,29 @@ const val REGION_RESOLVER = "regionResolver"
 const val SIGNING_REGION_CONFIG_NAME = "signingRegion"
 const val USE_FIPS_CONFIG_NAME = "useFIPS"
 const val USE_DUAL_STACK_CONFIG_NAME = "useDualStack"
-const val RUNTIME_CONFIG_NAME = "runtimeConfig"
 const val ENDPOINT_CONFIG_NAME = "endpoint"
 
-val runtimeConfig = ConfigField(
-    RUNTIME_CONFIG_NAME,
-    type = ClientRuntimeTypes.Core.SDKRuntimeConfiguration,
-    propFormatter = "\$T",
-    paramFormatter = "\$N",
-)
-
 class AWSServiceConfig(writer: SwiftWriter, val ctx: ProtocolGenerator.GenerationContext) :
-    ServiceConfig(writer, ctx.symbolProvider.toSymbol(ctx.service).name) {
-
-    override val typesToConformConfigTo: List<Symbol>
-        get() = listOf(AWSClientRuntimeTypes.Core.AWSClientConfiguration)
+    ServiceConfig(writer, ctx.symbolProvider.toSymbol(ctx.service).name, ctx.service.sdkId) {
 
     override fun renderInitializers(serviceSymbol: Symbol) {
-        val runtimeConfigs = sdkRuntimeConfigProperties()
-        var otherConfigs = otherRuntimeConfigProperties()
         val serviceConfigs = serviceConfigProperties()
-
-        // aws configs including service specific configs
-        var awsConfigs = (otherConfigs + serviceConfigs + runtimeConfig).sortedBy { it.memberName }
-
-        // init with region and runtime config
-        writer.openBlock("public init(", ") throws {") {
-            awsConfigs.forEachIndexed { index, config ->
-                val terminator = if (index != awsConfigs.lastIndex) ", " else ""
-                writer.write("${config.memberName}: ${config.paramFormatter}$terminator", config.type)
-            }
-        }
-        writer.indent()
-        awsConfigs.forEach {
-            when (it.memberName) {
-                SIGNING_REGION_CONFIG_NAME -> {
-                    writer.write("self.${it.memberName} = ${it.memberName} ?? $REGION_CONFIG_NAME")
+        writer.openBlock("extension \$L {", "}", clientName) {
+            writer.write("public typealias \$LConfiguration = AWSClientConfiguration<ServiceSpecificConfiguration>", clientName)
+            writer.write("")
+            writer.openBlock("public struct ServiceSpecificConfiguration: AWSServiceSpecificConfiguration {", "}") {
+                writer.write("public typealias AWSServiceEndpointResolver = EndpointResolver")
+                writer.write("")
+                writer.write("public var serviceName: String { \$S }", serviceName)
+                writer.write("public var clientName: String { \$S }", clientName)
+                serviceConfigs.forEach { config ->
+                    writer.write("public var \$L: ${config.propFormatter}", config.memberName, config.type)
                 }
-
-                CREDENTIALS_PROVIDER_CONFIG_NAME -> {
-                    writer.openBlock("if let credProvider = ${it.memberName} {", "} else {") {
-                        writer.write(
-                            "self.${it.memberName} = try \$N.fromCustom(credProvider)",
-                            AWSClientRuntimeTypes.Core.AWSCredentialsProvider
-                        )
-                    }
-                    writer.indent().write(
-                        "self.${it.memberName} = try \$N.fromChain()", AWSClientRuntimeTypes.Core.AWSCredentialsProvider
-                    )
-                    writer.dedent().write("}")
-                }
-
-                ENDPOINT_RESOLVER -> {
-                    writer.openBlock("if let endpointResolver = endpointResolver {", "} else {") {
-                        writer.write("self.endpointResolver = endpointResolver")
-                    }
-                    writer.indent().write("self.${it.memberName} = try \$L()", AWSServiceTypes.DefaultEndpointResolver)
-                    writer.dedent().write("}")
-                }
-
-                RUNTIME_CONFIG_NAME -> {
-                    // pass, runtime config is not a config field, but its individual configs are stored
-                }
-
-                REGION_RESOLVER -> {
-                    writer.write("self.${it.memberName} = try ${it.memberName} ?? DefaultRegionResolver()")
-                }
-
-                else -> {
-                    writer.write("self.${it.memberName} = ${it.memberName}")
+                writer.write("")
+                writer.openBlock("public init(endpointResolver: EndpointResolver? = nil) throws {", "}") {
+                    writer.write("self.endpointResolver = try endpointResolver ?? DefaultEndpointResolver()")
                 }
             }
-        }
-        runtimeConfigs.forEach {
-            writer.write("self.${it.memberName} = runtimeConfig.${it.memberName}")
-        }
-        writer.dedent().write("}")
-        writer.write("")
-
-        // convenience init with region but no runtime config
-        writer.openBlock("public convenience init(", ") throws {") {
-            awsConfigs.forEachIndexed { index, config ->
-                when (config.memberName) {
-                    RUNTIME_CONFIG_NAME -> {
-                        // pass
-                    }
-
-                    else -> {
-                        val terminator = if (index != awsConfigs.lastIndex) ", " else ""
-                        writer.write("${config.memberName}: ${config.paramFormatter}$terminator", config.type)
-                    }
-                }
-            }
-        }
-        writer.indent()
-        writer.write(
-            "let runtimeConfig = try \$N(\"${serviceName}\")", ClientRuntimeTypes.Core.DefaultSDKRuntimeConfiguration
-        )
-        writer.write("try self.init(")
-        writer.indent()
-        awsConfigs.forEachIndexed { index, config ->
-            val terminator = if (index != awsConfigs.lastIndex) ", " else ""
-            writer.write("${config.memberName}: ${config.memberName}$terminator")
-        }
-        writer.dedent()
-        writer.write(")")
-        writer.dedent()
-        writer.write("}")
-        writer.write("")
-
-        // init with runtime config but no region
-        writer.openBlock("public init(", ") async throws {") {
-            awsConfigs.forEachIndexed { index, config ->
-                when (config.memberName) {
-                    REGION_CONFIG_NAME -> {
-                        // pass
-                    }
-
-                    else -> {
-                        val terminator = if (index != awsConfigs.lastIndex) ", " else ""
-                        writer.write("${config.memberName}: ${config.paramFormatter}$terminator", config.type)
-                    }
-                }
-            }
-        }
-        writer.indent()
-        awsConfigs.forEach {
-            when (it.memberName) {
-                REGION_CONFIG_NAME -> {
-                    // region must be resolved asynchronously
-                    writer.write("let resolvedRegionResolver = try regionResolver ?? DefaultRegionResolver()")
-                    writer.write("self.${it.memberName} = await resolvedRegionResolver.resolveRegion()")
-                }
-
-                SIGNING_REGION_CONFIG_NAME -> {
-                    writer.write("self.${it.memberName} = ${it.memberName} ?? $REGION_CONFIG_NAME")
-                }
-
-                CREDENTIALS_PROVIDER_CONFIG_NAME -> {
-                    writer.openBlock("if let credProvider = ${it.memberName} {", "} else {") {
-                        writer.write(
-                            "self.${it.memberName} = try \$N.fromCustom(credProvider)",
-                            AWSClientRuntimeTypes.Core.AWSCredentialsProvider
-                        )
-                    }
-                    writer.indent().write(
-                        "self.${it.memberName} = try \$N.fromChain()", AWSClientRuntimeTypes.Core.AWSCredentialsProvider
-                    )
-                    writer.dedent().write("}")
-                }
-
-                ENDPOINT_RESOLVER -> {
-                    writer.openBlock("if let endpointResolver = endpointResolver {", "} else {") {
-                        writer.write("self.endpointResolver = endpointResolver")
-                    }
-                    writer.indent().write("self.${it.memberName} = try \$L()", AWSServiceTypes.DefaultEndpointResolver)
-                    writer.dedent().write("}")
-                }
-
-                RUNTIME_CONFIG_NAME -> {
-                    // pass, runtime config is not a config field, but its individual configs are stored
-                }
-
-                REGION_RESOLVER -> {
-                    writer.write("self.${it.memberName} = try ${it.memberName} ?? DefaultRegionResolver()")
-                }
-
-                else -> {
-                    writer.write("self.${it.memberName} = ${it.memberName}")
-                }
-            }
-        }
-        runtimeConfigs.forEach {
-            writer.write("self.${it.memberName} = runtimeConfig.${it.memberName}")
-        }
-        writer.dedent().write("}")
-        writer.write("")
-
-        // convenience init with neither region nor runtime config
-        writer.openBlock("public convenience init(", ") async throws {") {
-            awsConfigs.forEachIndexed { index, config ->
-                when (config.memberName) {
-                    REGION_CONFIG_NAME, RUNTIME_CONFIG_NAME -> {
-                        // pass
-                    }
-
-                    else -> {
-                        val terminator = if (index != awsConfigs.lastIndex) ", " else ""
-                        writer.write("${config.memberName}: ${config.paramFormatter}$terminator", config.type)
-                    }
-                }
-            }
-        }
-        writer.indent()
-        writer.write(
-            "let runtimeConfig = try \$N(\"${serviceName}\")", ClientRuntimeTypes.Core.DefaultSDKRuntimeConfiguration
-        )
-        writer.write("try await self.init(")
-        writer.indent()
-        awsConfigs.forEachIndexed { index, config ->
-            when (config.memberName) {
-                REGION_CONFIG_NAME -> {
-                    // pass
-                }
-
-                else -> {
-                    val terminator = if (index != awsConfigs.lastIndex) ", " else ""
-                    writer.write("${config.memberName}: ${config.memberName}$terminator")
-                }
-            }
-        }
-        writer.dedent()
-        writer.write(")")
-        writer.dedent()
-        writer.write("}")
-        writer.write("")
-        writer.openBlock("public var partitionID: String? {", "}") {
-            writer.write("return \"\$L - \\(region ?? \"\")\"", serviceName)
         }
     }
 
@@ -253,10 +58,10 @@ class AWSServiceConfig(writer: SwiftWriter, val ctx: ProtocolGenerator.Generatio
             ConfigField(ENDPOINT_CONFIG_NAME, SwiftTypes.String, "\$T"),
             ConfigField(
                 CREDENTIALS_PROVIDER_CONFIG_NAME,
-                AWSClientRuntimeTypes.Core.CredentialsProvider,
+                AWSClientRuntimeTypes.Core.CredentialsProviding,
                 documentation = "The credentials provider to use to authenticate requests."
             ),
-            ConfigField(REGION_CONFIG_NAME, SwiftTypes.String, "\$T", paramFormatter = "\$N"),
+            ConfigField(REGION_CONFIG_NAME, SwiftTypes.String, "\$T"),
             ConfigField(
                 SIGNING_REGION_CONFIG_NAME, SwiftTypes.String, "\$T", "The region to sign requests in. (Required)"
             ),
