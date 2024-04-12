@@ -100,58 +100,25 @@ func addDoccDependency() {
 // MARK: - Services
 
 func addServiceTarget(_ name: String) {
-    package.products += [
-        .library(name: name, targets: [name]),
-    ]
-    package.targets += [
-        .target(
-            name: name,
-            dependencies: [.clientRuntime, .awsClientRuntime],
-            path: "./Sources/Services/\(name)"
-        )
-    ]
+    let allowed = Set(["AWSRekognition", "AWSPolly", "AWSCognitoIdentityProvider", "AWSTranscribeStreaming", "AWSCognitoIdentity", "AWSCloudWatchLogs", "AWSS3", "AWSClientRuntime", "AWSPinpoint", "AWSTextract", "AWSTranslate", "AWSComprehend", "AWSLocation"])
+    if allowed.contains(name) {
+	    package.products += [
+		.library(name: name, targets: [name]),
+	    ]
+	    package.targets += [
+		.target(
+		    name: name,
+		    dependencies: [.clientRuntime, .awsClientRuntime],
+		    path: "./Sources/Services/\(name)"
+		)
+	    ]
+	}
 }
 
 func addServiceUnitTestTarget(_ name: String) {
-    let testName = "\(name)Tests"
-    package.targets += [
-        .testTarget(
-            name: "\(testName)",
-            dependencies: [.crt, .clientRuntime, .awsClientRuntime, .byName(name: name), .smithyTestUtils],
-            path: "./Tests/Services/\(testName)"
-        )
-    ]
 }
 
 func addIntegrationTestTarget(_ name: String) {
-    let integrationTestName = "\(name)IntegrationTests"
-    var additionalDependencies: [String] = []
-    var exclusions: [String] = []
-    switch name {
-    case "AWSECS":
-        additionalDependencies = ["AWSCloudWatchLogs", "AWSEC2",  "AWSIAM", "AWSSTS"]
-        exclusions = [
-            "README.md",
-            "Resources/ECSIntegTestApp/"
-        ]
-    case "AWSS3":
-        additionalDependencies = ["AWSSSOAdmin"]
-    case "AWSSTS":
-        additionalDependencies = ["AWSIAM", "AWSCognitoIdentity"]
-    default:
-        break
-    }
-    integrationTestServices.insert(name)
-    additionalDependencies.forEach { integrationTestServices.insert($0) }
-    package.targets += [
-        .testTarget(
-            name: integrationTestName,
-            dependencies: [.crt, .clientRuntime, .awsClientRuntime, .byName(name: name), .smithyTestUtils] + additionalDependencies.map { Target.Dependency.target(name: $0, condition: nil) },
-            path: "./IntegrationTests/Services/\(integrationTestName)",
-            exclude: exclusions,
-            resources: [.process("Resources")]
-        )
-    ]
 }
 
 var enabledServices = Set<String>()
